@@ -196,6 +196,15 @@ button.chip { height: 44px; min-width: 56px; font-size: 15px; }
 .midnum { font-size: 30px; }
 .pill.big { min-height: 64px; font-size: 18px; }
 
+/* --- Records et fin de séance --- */
+.chip.pr { box-shadow: 0 0 14px rgba(205, 170, 98, 0.55); border-color: #CDAA62; }
+.toast.gold { border-color: #CDAA62; color: var(--gold); box-shadow: 0 0 30px rgba(205, 170, 98, 0.35); }
+.burst { position: fixed; left: 50%; top: 36%; z-index: 30; pointer-events: none; }
+.burst i { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 999px; background: linear-gradient(180deg, #F4E6BC, #C6A35B); transform: rotate(var(--a)); animation: burst 0.95s ease-out forwards; }
+@keyframes burst { to { transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(0.3); opacity: 0; } }
+.sheet.full { align-items: stretch; }
+.sheet.full > div { max-height: none; height: 100dvh; border-radius: 0; border: none; background: #0A090F; padding-bottom: calc(env(safe-area-inset-bottom) + 28px); }
+
 /* --- Semaine et quêtes --- */
 .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .day { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--dim); }

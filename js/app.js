@@ -4,7 +4,7 @@ import { EXOS, RANKS } from './data.js';
 import {
   state, save, exoName, lastSets, kindOf, sorted, runs, xpOf, totalXp, levelInfo, weekStreak, countPrs,
   fr, dur, clock, pace, dateFr, setText, workoutText, importHevy, exportJson, importJson,
-  dailyQuests, weekDays, totals, xpBreakdown, exoHistory, routines, measureOf, lestOf, restOf, setPref,
+  dailyQuests, weekDays, totals, xpBreakdown, exoHistory, routines, measureOf, lestOf, restOf, setPref, isRecord,
 } from './store.js';
 
 const $ = (id) => document.getElementById(id);
@@ -40,13 +40,13 @@ function rankSvg(letter, small) {
     + '<text x="36" y="' + (small ? 53 : 50) + '" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="' + (small ? 38 : 30) + '" font-weight="700" fill="url(#gold)">' + letter + '</text></svg>';
 }
 
-function toast(msg) {
-  $('toast').innerHTML = '<div class="toast glass">' + esc(msg) + '</div>';
+function toast(msg, gold) {
+  $('toast').innerHTML = '<div class="toast glass' + (gold ? ' gold' : '') + '">' + esc(msg) + '</div>';
   clearTimeout(toast.t);
   toast.t = setTimeout(() => { $('toast').innerHTML = ''; }, 2600);
 }
 
-function sheet(html, layer) { $(layer === 2 ? 'sheet2' : 'sheet').innerHTML = '<div class="sheet"><div>' + html + '</div></div>'; }
+function sheet(html, layer, cls) { $(layer === 2 ? 'sheet2' : 'sheet').innerHTML = '<div class="sheet' + (cls ? ' ' + cls : '') + '"><div>' + html + '</div></div>'; }
 function closeSheet() { $('sheet').innerHTML = ''; $('sheet2').innerHTML = ''; ui.edit = null; }
 function closeSheet2() { $('sheet2').innerHTML = ''; }
 const closeBtn = '<button type="button" class="pill gold-btn wide" data-act="close">Fermer</button>';
@@ -222,10 +222,32 @@ function sheetRoutine(id) {
   sheet(h);
 }
 
+// Courbe d'évolution : la meilleure série de chaque séance, de la plus ancienne à la plus récente.
+function chartSvg(values, unit) {
+  const W = 320, H = 110, n = values.length;
+  const min = Math.min(...values), max = Math.max(...values), span = max - min || 1;
+  const x = (i) => 8 + (i * (W - 16)) / (n - 1);
+  const y = (v) => 12 + (H - 30) * (1 - (v - min) / span);
+  const pts = values.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1));
+  return '<svg role="img" aria-label="Évolution sur les ' + n + ' dernières séances" viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">'
+    + '<polygon points="8,' + (H - 14) + ' ' + pts.join(' ') + ' ' + (W - 8) + ',' + (H - 14) + '" fill="rgba(132,104,232,0.14)"/>'
+    + '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#8468E8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<circle cx="' + x(n - 1).toFixed(1) + '" cy="' + y(values[n - 1]).toFixed(1) + '" r="5" fill="#D8BD82"/></svg>'
+    + '<div class="row between small mut"><span>Plus bas : ' + min + unit + '</span><span>Plus haut : ' + max + unit + '</span></div>';
+}
+
 function sheetExo(name) {
-  const { list, best } = exoHistory(name);
+  const { list, most, heavy } = exoHistory(name);
+  const time = measureOf(name) === 'time';
   let h = '<div class="col"><span class="label">' + plural(list.length, 'séance', 'séances') + '</span><h1 class="h1">' + esc(exoName(name)) + '</h1></div>';
-  if (best) h += '<div class="exo"><span class="label">Record</span><span class="num gold-text" style="font-size:24px">' + esc(setText(best.set)) + '</span><span class="small mut">' + dateFr(best.date, true) + '</span></div>';
+  if (list.length >= 2) {
+    const values = list.slice(0, 24).reverse().map((x) => Math.max(...x.sets.map((s) => s.r || s.t || 0)));
+    h += '<div class="exo"><span class="label">Meilleure série de chaque séance</span>' + chartSvg(values, time ? ' s' : ' rép.') + '</div>';
+  }
+  if (most) {
+    h += '<div class="row" style="align-items:stretch"><div class="exo grow"><span class="label">' + (time ? 'Le plus long' : 'Le plus de répétitions') + '</span><span class="num gold-text" style="font-size:22px">' + esc(setText(most.set)) + '</span><span class="small mut">' + dateFr(most.date, true) + '</span></div>'
+      + (heavy ? '<div class="exo grow"><span class="label">Le plus lourd</span><span class="num gold-text" style="font-size:22px">' + esc(setText(heavy.set)) + '</span><span class="small mut">' + dateFr(heavy.date, true) + '</span></div>' : '') + '</div>';
+  }
   if (list.length) {
     h += '<span class="label">Dernières fois</span><div class="list">' + list.slice(0, 12).map((x) => '<button type="button" class="item" data-act="detail" data-id="' + esc(x.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + dateFr(x.date, true) + '</span><span class="small mut">' + esc(x.sets.map(setText).join(', ')) + '</span></div>' + ICON.chev + '</button>').join('') + '</div>';
   } else {
@@ -305,7 +327,7 @@ function viewList(a) {
       + '<div class="row"><span class="badge' + (d ? ' done' : '') + '">' + (d ? '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#17120A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' : (i + 1)) + '</span>'
       + '<div class="col grow" style="gap:2px"><span style="font-weight:600;font-size:16px">' + esc(exoName(e.name)) + '</span><span class="small mut">' + plural(e.sets.length, 'série', 'séries') + (w ? ' · ' + fr(w, 1) + ' kg' : '') + '</span></div>'
       + '<button type="button" class="iconbtn" data-act="ex-menu" data-i="' + i + '" aria-label="Options de l’exercice">' + ICON.more + '</button></div>'
-      + '<div class="chips">' + e.sets.map((s, k) => '<span class="chip' + (s.done ? ' done' : (k === todo && i === cur ? ' sel' : '')) + '">' + chipLabel(e.name, s) + '</span>').join('') + '</div></section>';
+      + '<div class="chips">' + e.sets.map((s, k) => '<span class="chip' + (s.done ? ' done' : (k === todo && i === cur ? ' sel' : '')) + (s.pr ? ' pr' : '') + '">' + chipLabel(e.name, s) + '</span>').join('') + '</div></section>';
   });
   h += '<button type="button" class="pill glass wide" data-act="picker" data-at="' + a.exercises.length + '" style="margin-top:4px">Ajouter un exercice</button>'
     + '<div class="row" style="margin-top:8px"><button type="button" class="pill glass grow" data-act="cancel" style="color:var(--mut)">Abandonner</button>'
@@ -328,7 +350,7 @@ function viewFocus(a) {
     + '<button type="button" class="iconbtn" data-act="ex-menu" data-i="' + a.idx + '" aria-label="Options de l’exercice">' + ICON.more + '</button></div>';
   h += '<div class="col" style="gap:4px"><span class="label violet">Exercice ' + (a.idx + 1) + ' sur ' + n + '</span><h1 class="h1" style="font-size:30px">' + esc(exoName(ex.name)) + '</h1>'
     + '<span class="small mut">' + (ex.prev ? 'La dernière fois : ' + esc(ex.prev) : 'Première fois sur cet exercice') + '</span></div>';
-  h += '<div class="chips">' + ex.sets.map((x, k) => '<button type="button" class="chip' + (x.done ? ' done' : '') + (k === a.setIdx ? ' sel' : '') + '" data-act="sel-set" data-i="' + k + '" aria-label="Série ' + (k + 1) + '">' + chipLabel(ex.name, x) + '</button>').join('') + '</div>';
+  h += '<div class="chips">' + ex.sets.map((x, k) => '<button type="button" class="chip' + (x.done ? ' done' : '') + (k === a.setIdx ? ' sel' : '') + (x.pr ? ' pr' : '') + '" data-act="sel-set" data-i="' + k + '" aria-label="Série ' + (k + 1) + '">' + chipLabel(ex.name, x) + '</button>').join('') + '</div>';
 
   if (s) {
     const f = time ? 't' : 'r';
@@ -383,7 +405,8 @@ function finishWorkout() {
     .map((e) => ({ name: e.name, sets: e.sets.filter((s) => s.done && (s.r || s.t)).map((s) => { const o = { done: true }; if (s.r) o.r = s.r; if (s.w) o.w = s.w; if (s.t) o.t = s.t; return o; }) }))
     .filter((e) => e.sets.length);
   if (!exercises.length) { toast('Valide au moins une série avant de terminer'); return; }
-  const before = levelInfo(totalXp());
+  const xpBefore = totalXp();
+  const qBefore = new Set(dailyQuests().filter((q) => q.done).map((q) => q.id));
   const w = { id: 'a' + a.start, title: a.title, start: a.start, end: Date.now(), exercises };
   state.workouts.push(w);
   w.prs = countPrs(w);
@@ -398,22 +421,81 @@ function finishWorkout() {
   }
   state.active = null;
   save();
-  dailyQuests(); // valide tout de suite les quêtes remplies par cette séance
-  const after = levelInfo(totalXp());
+  const qNew = dailyQuests().filter((q) => q.done && !qBefore.has(q.id)); // quêtes remplies par cette séance
   ui.tab = 'home';
   ui.enter = true;
   render();
   window.scrollTo(0, 0);
-  const sets = exercises.reduce((k, e) => k + e.sets.length, 0);
-  let h = '<div class="col"><span class="label violet">Séance terminée</span><h1 class="h1">' + esc(a.label) + '</h1></div>'
-    + '<div class="row between"><div class="col"><span class="label">Durée</span><span class="h2">' + dur((w.end - w.start) / 1000) + '</span></div>'
-    + '<div class="col"><span class="label">Séries</span><span class="h2">' + sets + '</span></div>'
-    + '<div class="col"><span class="label">Gagné</span><span class="h2 gold-text">+' + xpOf(w) + ' XP</span></div></div>';
-  if (w.prs) h += '<span class="gold-text" style="font-weight:600">' + plural(w.prs, 'record battu', 'records battus') + '</span>';
-  if (after.level > before.level) h += '<span class="gold-text num" style="font-size:22px">Niveau ' + after.level + ' atteint</span>';
-  h += '<button type="button" class="pill glass wide" data-act="detail" data-id="' + w.id + '">Voir le détail</button>'
-    + '<button type="button" class="pill glass wide" data-act="copy" data-id="' + w.id + '" style="color:var(--gold)">' + ICON.copy + 'Copier pour Claude</button>' + closeBtn;
-  sheet(h);
+  sheetSummary(w, a.label, xpBefore, qNew);
+}
+
+// Petite explosion de points dorés, pour un record ou un niveau gagné.
+function burst() {
+  const box = document.createElement('div');
+  box.className = 'burst';
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('i');
+    p.style.setProperty('--a', (i * 20 + Math.random() * 14) + 'deg');
+    p.style.setProperty('--d', (90 + Math.random() * 90) + 'px');
+    p.style.animationDelay = (Math.random() * 0.12) + 's';
+    box.appendChild(p);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 1400);
+}
+
+// Écran de fin de séance : XP gagné, niveau, records, quêtes, comparaison avec la dernière fois.
+function sheetSummary(w, label, xpBefore, qNew) {
+  const xpAfter = totalXp();
+  const before = levelInfo(xpBefore), after = levelInfo(xpAfter);
+  const gained = xpAfter - xpBefore;
+  const levelUp = after.level > before.level;
+  let sets = 0, reps = 0, kg = 0;
+  for (const e of w.exercises) for (const s of e.sets) { sets += 1; reps += s.r || 0; kg += (s.w || 0) * (s.r || 0); }
+  const prev = sorted().find((o) => o.id !== w.id && o.start < w.start && norm(o.title) === norm(w.title));
+  const total = (e) => e.sets.reduce((n, s) => n + (s.r || s.t || 0), 0);
+  const lines = w.exercises.map((e) => {
+    const pe = prev && prev.exercises.find((x) => x.name === e.name);
+    const unit = e.sets[0] && !e.sets[0].r ? ' s' : ' rép.';
+    let delta = '';
+    if (prev && !pe) delta = 'Nouveau';
+    else if (pe) { const d = total(e) - total(pe); delta = d > 0 ? '+' + d + unit : (d < 0 ? d + unit : 'Pareil'); }
+    return { name: e.name, text: e.sets.map(setText).join(', '), delta, up: delta.charAt(0) === '+', rec: e.sets.some((s) => s.pr) };
+  });
+  const recs = lines.filter((l) => l.rec);
+  const stat = (k, v) => '<div class="col" style="gap:2px;align-items:center"><span class="num" style="font-size:20px">' + v + '</span><span class="small mut">' + k + '</span></div>';
+
+  let h = '<div class="col" style="align-items:center;text-align:center;gap:6px;padding-top:calc(env(safe-area-inset-top) + 12px)"><span class="label violet">Séance terminée</span><h1 class="h1" style="font-size:30px">' + esc(label) + '</h1>'
+    + '<span class="num gold-text" style="font-size:64px;line-height:1.1">+<span id="xp-count">0</span> XP</span></div>';
+  h += '<section class="glass card col" style="gap:10px"><div class="row between"><span class="h2">Niveau ' + after.level + '</span>'
+    + (levelUp ? '<span class="gold-text" style="font-weight:600">Niveau supérieur</span>' : '<span class="small mut">Encore ' + (after.need - after.into) + ' XP</span>') + '</div>'
+    + '<div class="bar"><div id="xp-bar" style="transition:width 1.2s cubic-bezier(0.2,0.8,0.2,1);width:' + (levelUp ? 0 : Math.round((before.into / before.need) * 100)) + '%"></div></div></section>';
+  h += '<section class="glass card row between">' + stat('durée', dur((w.end - w.start) / 1000)) + stat(sets > 1 ? 'séries' : 'série', sets) + stat('répétitions', reps) + (kg ? stat('kg soulevés', Math.round(kg).toLocaleString('fr-FR')) : '') + '</section>';
+  if (recs.length) {
+    h += '<section class="glass card col" style="gap:8px;border-color:rgba(205,170,98,0.5)"><span class="gold-text h2">' + plural(recs.length, 'record battu', 'records battus') + '</span>'
+      + recs.map((l) => '<div class="row between"><span style="font-weight:500">' + esc(exoName(l.name)) + '</span><span class="small mut">' + esc(l.text) + '</span></div>').join('') + '</section>';
+  }
+  if (qNew.length) {
+    h += '<section class="glass card col" style="gap:8px"><span class="h2">' + plural(qNew.length, 'quête réussie', 'quêtes réussies') + '</span>'
+      + qNew.map((q) => '<div class="row between"><span>' + esc(q.label) + '</span><span class="gold-text" style="font-weight:600">+' + q.xp + ' XP</span></div>').join('') + '</section>';
+  }
+  h += '<span class="label">' + (prev ? 'Par rapport à la dernière fois' : 'Ta séance') + '</span><div class="list">'
+    + lines.map((l) => '<button type="button" class="item" data-act="exo" data-name="' + esc(l.name) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(l.name)) + '</span><span class="small mut">' + esc(l.text) + '</span></div>'
+      + (l.delta ? '<span class="small ' + (l.up ? 'gold-text' : 'mut') + '" style="font-weight:600;white-space:nowrap">' + l.delta + '</span>' : '') + '</button>').join('') + '</div>';
+  h += '<button type="button" class="pill glass wide" data-act="copy" data-id="' + esc(w.id) + '" style="color:var(--gold)">' + ICON.copy + 'Copier pour Claude</button>' + closeBtn;
+  sheet(h, 1, 'full');
+
+  // Le compteur d'XP grimpe et la barre de niveau se remplit.
+  const el = $('xp-count');
+  const t0 = performance.now();
+  const tick = (t) => {
+    const k = Math.min(1, (t - t0) / 900);
+    el.textContent = Math.round(gained * (1 - Math.pow(1 - k, 3)));
+    if (k < 1 && el.isConnected) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  setTimeout(() => { const b = $('xp-bar'); if (b) b.style.width = Math.round((after.into / after.need) * 100) + '%'; }, 350);
+  if (recs.length || levelUp) burst();
 }
 
 // ---------- Repos ----------
@@ -486,7 +568,7 @@ function sheetDetail(id) {
   const time = new Date(w.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   let h = '<div class="col"><span class="label">' + dateFr(w.start, true) + ' · ' + time + '</span><h1 class="h1">' + esc(titleOf(w)) + '</h1>'
     + '<span class="small mut">' + esc(summary(w)) + ' · <span class="gold-text" style="font-weight:600">+' + xpOf(w) + ' XP</span>' + (w.prs ? ' · ' + plural(w.prs, 'record', 'records') : '') + '</span></div>'
-    + '<div class="list">' + w.exercises.map((e) => '<button type="button" class="item" data-act="exo" data-name="' + esc(e.name) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(e.name)) + '</span><span class="small mut">' + esc(e.name === 'Running' ? e.sets.map((s) => setText(s) + ' · ' + pace(s.d, s.t)).join(', ') : e.sets.map(setText).join(', ')) + '</span></div>' + ICON.chev + '</button>').join('') + '</div>'
+    + '<div class="list">' + w.exercises.map((e) => '<button type="button" class="item" data-act="exo" data-name="' + esc(e.name) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(e.name)) + (e.sets.some((x) => x.pr) ? ' <span class="gold-text small">· record</span>' : '') + '</span><span class="small mut">' + esc(e.name === 'Running' ? e.sets.map((s) => setText(s) + ' · ' + pace(s.d, s.t)).join(', ') : e.sets.map(setText).join(', ')) + '</span></div>' + ICON.chev + '</button>').join('') + '</div>'
     + '<button type="button" class="pill glass wide" data-act="copy" data-id="' + esc(w.id) + '" style="color:var(--gold)">' + ICON.copy + 'Copier pour Claude</button>'
     + '<div class="row"><button type="button" class="pill glass grow" data-act="edit-workout" data-id="' + esc(w.id) + '">Modifier</button><button type="button" class="pill glass grow" data-act="delete" data-id="' + esc(w.id) + '" style="color:var(--mut)">Supprimer</button></div>' + closeBtn;
   sheet(h);
@@ -700,6 +782,9 @@ const ACTIONS = {
     const time = measureOf(ex.name) === 'time';
     if (!(time ? s.t : s.r)) { toast(time ? 'Indique la durée' : 'Indique les répétitions'); return; }
     s.done = true;
+    const amt = (x) => x.r || x.t || 0;
+    const record = isRecord(ex.name, s) && !ex.sets.some((x) => x !== s && x.done && (x.w || 0) >= (s.w || 0) && amt(x) >= amt(s));
+    if (record) s.pr = true;
     const goal = ex.goals && ex.goals[a.setIdx];
     const beat = goal && (time ? s.t >= goal.t : s.r >= goal.r);
     startRest();
@@ -713,9 +798,10 @@ const ACTIONS = {
       if (ni >= 0) { a.idx = ni; a.setIdx = firstTodo(a.exercises[ni]); ui.enter = true; toast(beat ? 'Objectif atteint, exercice suivant' : 'Exercice terminé'); window.scrollTo(0, 0); }
       else { a.view = 'list'; ui.enter = true; toast('Toutes les séries sont faites'); window.scrollTo(0, 0); }
     }
+    if (record) { toast('Record battu', true); burst(); }
     save(); render(); renderRest();
   },
-  unvalidate: () => { curSet().done = false; state.active.rest = null; save(); render(); renderRest(); },
+  unvalidate: () => { curSet().done = false; delete curSet().pr; state.active.rest = null; save(); render(); renderRest(); },
   'add-set': () => { const ex = curExo(); const last = ex.sets[ex.sets.length - 1] || {}; ex.sets.push({ r: last.r || 0, w: last.w || 0, t: last.t || 0, done: false }); if (ex.goals) ex.goals.push(null); state.active.setIdx = ex.sets.length - 1; save(); render(); },
   'del-set': () => { const a = state.active, ex = curExo(); ex.sets.splice(a.setIdx, 1); if (ex.goals) ex.goals.splice(a.setIdx, 1); a.setIdx = Math.max(0, Math.min(a.setIdx, ex.sets.length - 1)); save(); render(); },
   'ex-menu': (el) => sheetExMenu(+el.dataset.i),

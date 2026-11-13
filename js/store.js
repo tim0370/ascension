@@ -24,12 +24,15 @@ function canon(o) {
 
 // Mise à niveau des données déjà enregistrées dans le téléphone (une seule fois par version).
 function migrate() {
-  if ((state.v || 1) >= 2) return;
-  for (const w of state.workouts) canon(w);
-  for (const r of state.routines || []) canon(r);
-  canon(state.active);
-  state.v = 2;
-  save();
+  const v = state.v || 1;
+  if (v < 2) {
+    for (const w of state.workouts) canon(w);
+    for (const r of state.routines || []) canon(r);
+    canon(state.active);
+  }
+  // v3 : nouvelle règle des records, recalculée pour les séances faites dans l'app.
+  if (v < 3) for (const w of state.workouts) if (w.src !== 'hevy') w.prs = countPrs(w);
+  if (v < 3) { state.v = 3; save(); }
 }
 
 function load() {
@@ -184,18 +187,20 @@ export function xpBreakdown() {
   return b;
 }
 
-// Historique d'un exercice (du plus récent au plus ancien) et meilleure série.
+// Historique d'un exercice (du plus récent au plus ancien), série avec le plus de répétitions et série la plus lourde.
 export function exoHistory(name) {
-  const score = (s) => (s.w ? s.w * 1000 + (s.r || 0) : (s.r || s.t || 0));
   const list = [];
-  let best = null;
+  let most = null, heavy = null;
   for (const w of sorted()) {
     const ex = w.exercises.find((e) => e.name === name);
     if (!ex || !ex.sets.length) continue;
     list.push({ id: w.id, date: w.start, title: w.title, sets: ex.sets });
-    for (const s of ex.sets) if (!best || score(s) > score(best.set)) best = { set: s, date: w.start };
+    for (const s of ex.sets) {
+      if (!most || amount(s) > amount(most.set) || (amount(s) === amount(most.set) && (s.w || 0) > (most.set.w || 0))) most = { set: s, date: w.start };
+      if (s.w && (!heavy || s.w > heavy.set.w || (s.w === heavy.set.w && amount(s) > amount(heavy.set)))) heavy = { set: s, date: w.start };
+    }
   }
-  return { list, best };
+  return { list, most, heavy };
 }
 
 // ---------- Routines (modifiables) ----------
@@ -241,18 +246,31 @@ function weekKey(ms) {
   return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
 }
 
-// Records battus dans une séance, comparés à tout ce qui précède.
+// Une série est un record si tu n'as jamais fait autant (répétitions ou secondes) avec un lest égal ou plus lourd.
+// Exemple : 40 pompes sans lest est un record même si tu as déjà fait 6 pompes avec 20 kg.
+function amount(s) { return s.r || s.t || 0; }
+export function isRecord(name, s, before, skipId) {
+  const a = amount(s), w = s.w || 0;
+  if (!a) return false;
+  let seen = false;
+  for (const o of state.workouts) {
+    if (o.id === skipId || (before && o.start >= before)) continue;
+    for (const e of o.exercises) {
+      if (e.name !== name) continue;
+      for (const x of e.sets) { seen = true; if ((x.w || 0) >= w && amount(x) >= a) return false; }
+    }
+  }
+  return seen; // la toute première fois d'un exercice ne compte pas comme un record
+}
+
+// Marque les séries record d'une séance (s.pr) et compte les exercices concernés (w.prs).
 export function countPrs(w) {
   let n = 0;
   for (const e of w.exercises) {
     if (e.name === 'Running') continue;
-    const score = (s) => (s.w ? s.w * 1000 + (s.r || 0) : (s.r || s.t || 0));
-    let best = 0;
-    for (const o of state.workouts) {
-      if (o.id === w.id || o.start >= w.start) continue;
-      for (const oe of o.exercises) if (oe.name === e.name) for (const s of oe.sets) best = Math.max(best, score(s));
-    }
-    if (best > 0 && e.sets.some((s) => score(s) > best)) n += 1;
+    let any = false;
+    for (const s of e.sets) { if (isRecord(e.name, s, w.start, w.id)) { s.pr = true; any = true; } else delete s.pr; }
+    if (any) n += 1;
   }
   return n;
 }
