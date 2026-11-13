@@ -172,6 +172,30 @@ a { color: var(--gold); }
 .exo { border-radius: 20px; padding: 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); display: flex; flex-direction: column; gap: 10px; }
 .sheet .field { height: 44px; }
 
+/* --- Séance : vue d'ensemble --- */
+.ins { display: flex; align-items: center; gap: 10px; height: 36px; margin: -10px 0; color: var(--dim); width: 100%; }
+.ins::before, .ins::after { content: ''; flex: 1 1 0; height: 1px; background: var(--line); }
+.ins svg { width: 18px; height: 18px; }
+.ins:active { color: var(--violet-soft); }
+.badge { width: 32px; height: 32px; flex-shrink: 0; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.18); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-weight: 600; font-size: 14px; color: var(--mut); }
+.badge.done { border: none; background: linear-gradient(180deg, #EBD7A3 0%, #C6A35B 100%); }
+.excard.cur { border-color: rgba(132, 104, 232, 0.75); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 28px rgba(132, 104, 232, 0.22); }
+.excard.done { opacity: 0.62; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-width: 46px; height: 34px; padding: 0 12px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; color: var(--mut); background: rgba(255, 255, 255, 0.06); border: 1px solid transparent; }
+.chip.done { background: rgba(205, 170, 98, 0.16); color: var(--gold); border-color: rgba(205, 170, 98, 0.35); }
+.chip.sel { border-color: var(--violet); color: var(--txt); background: rgba(132, 104, 232, 0.18); }
+button.chip { height: 44px; min-width: 56px; font-size: 15px; }
+
+/* --- Séance : un exercice en grand --- */
+.stepbtn { width: 64px; height: 64px; flex-shrink: 0; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: var(--txt); background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.12); }
+.stepbtn:active { transform: scale(0.93); background: rgba(132, 104, 232, 0.25); }
+.stepbtn.sm { width: 48px; height: 48px; }
+.bignum, .midnum { width: 100%; min-width: 0; background: none; border: none; outline: none; padding: 0; text-align: center; color: var(--txt); font-family: var(--display); font-weight: 700; line-height: 1.05; }
+.bignum { font-size: 76px; letter-spacing: -2px; }
+.midnum { font-size: 30px; }
+.pill.big { min-height: 64px; font-size: 18px; }
+
 /* --- Semaine et quêtes --- */
 .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .day { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--dim); }

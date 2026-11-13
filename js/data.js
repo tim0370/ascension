@@ -1,13 +1,12 @@
 // Catalogue des exercices et routines de départ.
 // La clé est le nom utilisé par Hevy (pour que l'import retrouve tout), "fr" est le nom affiché.
-// kind : 'reps' (répétitions), 'weight' (répétitions + charge), 'time' (durée), 'run' (distance + durée).
+// kind = réglage de départ : 'reps' (répétitions), 'weight' (répétitions avec lest ou charge), 'time' (durée), 'run' (course).
+// L'utilisateur peut ensuite changer le type et le lest de chaque exercice dans l'app (voir prefs dans store.js).
 
 export const EXOS = {
-  'Triceps Dip (Weighted)': { fr: 'Dips lestés', kind: 'weight' },
-  'Triceps Dip': { fr: 'Dips', kind: 'reps' },
+  'Triceps Dip': { fr: 'Dips', kind: 'weight' },
   'Dips Hold': { fr: 'Maintien en dips', kind: 'time' },
   'Push Up': { fr: 'Pompes', kind: 'reps' },
-  'Push Up (Weighted)': { fr: 'Pompes lestées', kind: 'weight' },
   'Decline Push Up': { fr: 'Pompes déclinées', kind: 'reps' },
   'Diamond Push Up': { fr: 'Pompes diamant', kind: 'reps' },
   'Pike Pushup': { fr: 'Pike push-up', kind: 'reps' },
@@ -18,18 +17,14 @@ export const EXOS = {
   'Inverted Row': { fr: 'Rowing inversé', kind: 'reps' },
   'Assisted Pistol Squats': { fr: 'Pistol squat assisté', kind: 'reps' },
   'Pistol Squat': { fr: 'Pistol squat', kind: 'reps' },
-  'Reverse Lunge (Dumbbell)': { fr: 'Fentes arrière haltères', kind: 'weight' },
   'Reverse Lunge': { fr: 'Fentes arrière', kind: 'reps' },
-  'Lunge (Dumbbell)': { fr: 'Fentes haltères', kind: 'weight' },
   'Lunge': { fr: 'Fentes', kind: 'reps' },
   'Bulgarian Split Squat (Dumbbell)': { fr: 'Squat bulgare haltères', kind: 'weight' },
   'Goblet Squat': { fr: 'Goblet squat', kind: 'weight' },
-  'Squat (Dumbbell)': { fr: 'Squat haltères', kind: 'weight' },
   'Squat (Barbell)': { fr: 'Squat barre', kind: 'weight' },
   'Squat (Bodyweight)': { fr: 'Squat', kind: 'reps' },
   'Wall Sit': { fr: 'Chaise', kind: 'time' },
-  'Russian Twist (Weighted)': { fr: 'Russian twist lesté', kind: 'weight' },
-  'Russian Twist (Bodyweight)': { fr: 'Russian twist', kind: 'reps' },
+  'Russian Twist (Bodyweight)': { fr: 'Russian twist', kind: 'weight' },
   'Hanging Leg Raise': { fr: 'Relevés de jambes suspendu', kind: 'reps' },
   'Hollow Rock': { fr: 'Hollow rock', kind: 'time' },
   'Plank': { fr: 'Gainage', kind: 'time' },
@@ -50,6 +45,17 @@ export const EXOS = {
   'Lying Neck Curls': { fr: 'Flexions du cou', kind: 'reps' },
   'Lying Neck Extension': { fr: 'Extensions du cou', kind: 'reps' },
   'Running': { fr: 'Course à pied', kind: 'run' },
+};
+
+// Variantes regroupées : dans Hevy, la version lestée est un exercice à part. Ici c'est le même exercice,
+// avec un lest facultatif. À gauche le nom Hevy, à droite le nom gardé.
+export const ALIAS = {
+  'Triceps Dip (Weighted)': 'Triceps Dip',
+  'Push Up (Weighted)': 'Push Up',
+  'Russian Twist (Weighted)': 'Russian Twist (Bodyweight)',
+  'Reverse Lunge (Dumbbell)': 'Reverse Lunge',
+  'Lunge (Dumbbell)': 'Lunge',
+  'Squat (Dumbbell)': 'Squat (Bodyweight)',
 };
 
 // Routines actuelles (reprises des dernières séances Hevy de novembre 2026).

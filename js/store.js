@@ -1,11 +1,36 @@
 // Données de l'app : sauvegarde dans le téléphone (localStorage), XP, import Hevy, export.
 // Une séance : { id, title, start, end, prs, exercises: [{ name, sets: [{ r, w, t, d, done }] }] }
 //   r = répétitions, w = charge (kg), t = durée (secondes), d = distance (km). start/end en millisecondes.
-import { EXOS, RANKS, ROUTINES } from './data.js';
+import { EXOS, RANKS, ROUTINES, ALIAS } from './data.js';
 
 const KEY = 'ascension.v1';
 
 export const state = load();
+migrate();
+
+// Regroupe les variantes d'un même exercice (avec ou sans lest) sous un seul nom, voir ALIAS dans data.js.
+function canon(o) {
+  if (!o || !o.exercises) return;
+  const out = [];
+  for (const e of o.exercises) {
+    const name = ALIAS[e.name] || e.name;
+    const same = out.find((x) => x.name === name);
+    if (same && (ALIAS[e.name] || same.merged)) { same.sets.push(...e.sets); if (same.goals) delete same.goals; continue; }
+    out.push(Object.assign({}, e, { name, merged: !!ALIAS[e.name] }));
+  }
+  for (const e of out) delete e.merged;
+  o.exercises = out;
+}
+
+// Mise à niveau des données déjà enregistrées dans le téléphone (une seule fois par version).
+function migrate() {
+  if ((state.v || 1) >= 2) return;
+  for (const w of state.workouts) canon(w);
+  for (const r of state.routines || []) canon(r);
+  canon(state.active);
+  state.v = 2;
+  save();
+}
 
 function load() {
   const base = { workouts: [], active: null, settings: { rest: 90 }, quests: {} };
@@ -32,17 +57,31 @@ export function lastSets(name, before) {
   return null;
 }
 
-// Le type vient d'abord de ce que tu as vraiment noté la dernière fois, sinon du catalogue.
-export function kindOf(name) {
+// Réglages par exercice choisis par l'utilisateur : { measure: 'reps' | 'time', lest: true | false, rest: secondes }
+export function prefOf(name) { return (state.prefs && state.prefs[name]) || {}; }
+export function setPref(name, patch) { state.prefs = state.prefs || {}; state.prefs[name] = Object.assign({}, state.prefs[name], patch); save(); }
+
+// Un exercice se compte en répétitions ou en secondes : ton réglage d'abord, sinon ce que tu as noté la dernière fois, sinon le catalogue.
+export function measureOf(name) {
+  const p = prefOf(name);
+  if (p.measure) return p.measure;
   const s = lastSets(name);
-  if (s) {
-    const a = s[0];
-    if (a.d && a.t) return 'run';
-    if (a.t && !a.r) return 'time';
-    if (a.w) return 'weight';
-    if (a.r) return (EXOS[name] && EXOS[name].kind === 'weight') ? 'weight' : 'reps';
-  }
-  return (EXOS[name] && EXOS[name].kind) || 'reps';
+  if (s && s[0]) { if (s[0].t && !s[0].r) return 'time'; if (s[0].r) return 'reps'; }
+  return EXOS[name] && EXOS[name].kind === 'time' ? 'time' : 'reps';
+}
+// Le lest est facultatif pour tous les exercices.
+export function lestOf(name) {
+  const p = prefOf(name);
+  if (typeof p.lest === 'boolean') return p.lest;
+  const s = lastSets(name);
+  if (s) return s.some((x) => x.w > 0);
+  return !!(EXOS[name] && EXOS[name].kind === 'weight');
+}
+export function restOf(name) { return prefOf(name).rest || state.settings.rest || 90; }
+export function kindOf(name) {
+  if (name === 'Running') return 'run';
+  if (measureOf(name) === 'time') return 'time';
+  return lestOf(name) ? 'weight' : 'reps';
 }
 
 export function sorted() { return [...state.workouts].sort((a, b) => b.start - a.start); }
@@ -164,6 +203,7 @@ export function exoHistory(name) {
 export function routines() {
   if (!state.routines) {
     state.routines = ROUTINES.map((r, i) => ({ id: 'rt' + i, title: r.title, label: r.label, exercises: r.exercises.map((e) => ({ name: e.name, sets: e.sets.map((s) => ({ r: s.r || 0, w: s.w || 0, t: s.t || 0 })) })) }));
+    for (const r of state.routines) canon(r);
     save();
   }
   return state.routines;
@@ -321,6 +361,7 @@ export function importHevy(text) {
     if (t) s.t = t;
     ex.sets.push(s);
   }
+  for (const w of map.values()) canon(w);
   let added = 0, skipped = 0;
   for (const [key, w] of map) {
     if (known.has(key)) { skipped += 1; continue; }
@@ -332,16 +373,17 @@ export function importHevy(text) {
 }
 
 // ---------- Sauvegarde complète ----------
-export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines }); }
+export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines, prefs: state.prefs }); }
 export function importJson(text) {
   const data = JSON.parse(text);
   if (!data || data.app !== 'ascension' || !Array.isArray(data.workouts)) throw new Error("Ce fichier n'est pas une sauvegarde de l'app.");
   const known = new Set(state.workouts.map((w) => w.id));
   let added = 0;
-  for (const w of data.workouts) if (!known.has(w.id)) { state.workouts.push(w); added += 1; }
+  for (const w of data.workouts) if (!known.has(w.id)) { canon(w); state.workouts.push(w); added += 1; }
   if (data.settings) Object.assign(state.settings, data.settings);
   if (data.quests) state.quests = Object.assign({}, data.quests, state.quests);
-  if (data.routines && !state.routines) state.routines = data.routines;
+  if (data.routines && !state.routines) { state.routines = data.routines; for (const r of state.routines) canon(r); }
+  if (data.prefs) state.prefs = Object.assign({}, data.prefs, state.prefs);
   save();
   return { added };
 }

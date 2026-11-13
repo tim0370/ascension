@@ -4,7 +4,7 @@ import { EXOS, RANKS } from './data.js';
 import {
   state, save, exoName, lastSets, kindOf, sorted, runs, xpOf, totalXp, levelInfo, weekStreak, countPrs,
   fr, dur, clock, pace, dateFr, setText, workoutText, importHevy, exportJson, importJson,
-  dailyQuests, weekDays, totals, xpBreakdown, exoHistory, routines,
+  dailyQuests, weekDays, totals, xpBreakdown, exoHistory, routines, measureOf, lestOf, restOf, setPref,
 } from './store.js';
 
 const $ = (id) => document.getElementById(id);
@@ -14,7 +14,7 @@ const clean = (s) => String(s).replace(/\s+/g, ' ').trim();
 const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
 const toNum = (v) => parseFloat(String(v).replace(',', '.')) || 0;
 // ui.edit = brouillon en cours de modification : { type: 'routine' | 'workout', id, draft }
-const ui = { tab: 'home', historyLimit: 30, pickerQuery: '', enter: true, edit: null };
+const ui = { tab: 'home', historyLimit: 30, pickerQuery: '', enter: true, edit: null, pick: null };
 
 // ---------- Petits éléments ----------
 const svg = (body, extra) => '<svg aria-hidden="true" ' + (extra || '') + ' viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + body + '</svg>';
@@ -27,6 +27,10 @@ const ICON = {
   up: svg('<path d="M6 14l6-6 6 6"/>'),
   down: svg('<path d="M6 10l6 6 6-6"/>'),
   x: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+  back: svg('<path d="M15 6l-6 6 6 6"/>', 'width="18" height="18"'),
+  more: svg('<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'),
+  plus: svg('<path d="M12 5v14M5 12h14"/>', 'width="22" height="22"'),
+  minus: svg('<path d="M5 12h14"/>', 'width="22" height="22"'),
 };
 
 function rankSvg(letter, small) {
@@ -184,7 +188,7 @@ function sheetWeek() {
     const list = state.workouts.filter((w) => w.start >= d.start && w.start < d.start + 864e5).sort((a, b) => a.start - b.start);
     const head = '<span style="font-weight:600' + (d.today ? ';color:var(--gold)' : '') + '">' + names[i] + ' ' + new Date(d.start).getDate() + (d.today ? ' · aujourd’hui' : '') + '</span>';
     if (!list.length) h += '<div class="item"><div class="col grow" style="gap:2px">' + head + '<span class="small mut">' + (d.start > Date.now() ? 'À venir' : 'Repos') + '</span></div></div>';
-    for (const w of list) h += '<button type="button" class="item" data-act="detail" data-id="' + esc(w.id) + '"><div class="col grow" style="gap:2px">' + head + '<span class="small mut">' + esc(clean(w.title)) + ' · ' + esc(summary(w)) + '</span></div>' + ICON.chev + '</button>';
+    for (const w of list) h += '<button type="button" class="item" data-act="detail" data-id="' + esc(w.id) + '"><div class="col grow" style="gap:2px">' + head + '<span class="small mut">' + esc(titleOf(w)) + ' · ' + esc(summary(w)) + '</span></div>' + ICON.chev + '</button>';
   });
   h += '</div><span class="small mut">Une semaine compte dès que tu fais au moins une séance. La série ne se casse pas tant que la semaine en cours n’est pas finie.</span>' + closeBtn;
   sheet(h);
@@ -231,17 +235,28 @@ function sheetExo(name) {
 }
 
 // ---------- Séance ----------
+const exDone = (ex) => ex.sets.length > 0 && ex.sets.every((s) => s.done);
+const firstTodo = (ex) => { const i = ex.sets.findIndex((s) => !s.done); return i < 0 ? Math.max(0, ex.sets.length - 1) : i; };
+const curSet = () => { const ex = curExo(); return ex && ex.sets[state.active.setIdx]; };
+const titleOf = (w) => { const r = routines().find((x) => norm(x.title) === norm(w.title)); return r ? r.label : clean(w.title); };
+
+// Prépare un exercice pour la séance : valeurs de la dernière fois, et un objectif un cran au-dessus.
+function buildExo(name, sets, title) {
+  const last = title && sorted().find((w) => norm(w.title) === norm(title) && w.exercises.some((e) => e.name === name));
+  const prev = last ? last.exercises.find((e) => e.name === name).sets : lastSets(name);
+  const time = measureOf(name) === 'time';
+  return {
+    name,
+    sets: sets.map((s, i) => { const p = (prev && prev[i]) || s; return { r: time ? 0 : (p.r || s.r || 0), w: p.w || s.w || 0, t: time ? (p.t || s.t || 0) : 0, done: false }; }),
+    goals: sets.map((s, i) => { const p = prev && (prev[i] || prev[prev.length - 1]); if (!p) return null; if (time) return p.t ? { t: p.t + 5 } : null; return p.r ? { r: p.r + 1 } : null; }),
+    prev: prev ? prev.map(setText).join(', ') : '',
+  };
+}
+
 function startWorkout(id) {
   const routine = routines().find((r) => r.id === id);
-  const a = { title: routine ? routine.title : 'Séance libre', label: routine ? routine.label : 'Séance libre', routineId: routine ? routine.id : null, start: Date.now(), idx: 0, exercises: [], rest: null };
-  if (routine) {
-    // La routine donne les exercices et le nombre de séries ; les valeurs viennent de ta dernière séance du même nom.
-    const last = sorted().find((w) => norm(w.title) === norm(routine.title));
-    a.exercises = routine.exercises.map((e) => {
-      const prev = last && last.exercises.find((x) => x.name === e.name);
-      return { name: e.name, sets: e.sets.map((s, i) => { const p = (prev && prev.sets[i]) || s; return { r: p.r || 0, w: p.w || 0, t: p.t || 0, done: false }; }) };
-    });
-  }
+  const a = { title: routine ? routine.title : 'Séance libre', label: routine ? routine.label : 'Séance libre', routineId: routine ? routine.id : null, start: Date.now(), view: 'list', idx: 0, setIdx: 0, exercises: [], rest: null };
+  if (routine) a.exercises = routine.exercises.map((e) => buildExo(e.name, e.sets, routine.title));
   state.active = a;
   save();
   closeSheet();
@@ -266,55 +281,100 @@ function viewWorkout() {
       + '<span class="small mut">Touche une routine pour voir ses exercices ou la modifier.</span>';
     return h;
   }
+  a.idx = Math.max(0, Math.min(a.idx || 0, a.exercises.length - 1));
+  return a.view === 'focus' && a.exercises.length ? viewFocus(a) : viewList(a);
+}
 
-  const n = a.exercises.length;
-  a.idx = Math.min(a.idx, Math.max(0, n - 1));
-  let h = '<div class="row between"><div class="col" style="gap:2px"><span class="small mut">' + (n ? 'Exercice ' + (a.idx + 1) + ' sur ' + n : 'Aucun exercice') + '</span><h1 class="h1">' + esc(a.label) + '</h1></div>'
-    + '<span class="num" id="elapsed" style="font-size:20px;color:var(--soft)">' + clock((Date.now() - a.start) / 1000) + '</span></div>';
+const chipLabel = (name, s) => (measureOf(name) === 'time' ? (s.t || 0) + ' s' : String(s.r || 0));
 
-  if (n) {
-    h += '<div class="segs">' + a.exercises.map((e, i) => '<button type="button" data-act="goto" data-i="' + i + '" aria-label="Exercice ' + (i + 1) + '" class="' + (i === a.idx ? 'cur' : (e.sets.length && e.sets.every((s) => s.done) ? 'done' : '')) + '"></button>').join('') + '</div>';
-    const ex = a.exercises[a.idx];
-    const kind = kindOf(ex.name);
-    // "La dernière fois" : d'abord la dernière séance du même nom, sinon la dernière fois que l'exercice a été fait.
-    const same = sorted().find((w) => norm(w.title) === norm(a.title) && w.exercises.some((e) => e.name === ex.name));
-    const prev = same ? same.exercises.find((e) => e.name === ex.name).sets : lastSets(ex.name);
-    const two = kind === 'weight';
-    h += '<section class="glass card col" style="border-radius:26px;gap:12px"><div class="row" style="align-items:flex-start"><div class="col grow"><span class="num" style="font-size:22px">' + esc(exoName(ex.name)) + '</span>'
-      + '<span class="small mut">' + (prev ? 'La dernière fois : ' + esc(prev.map(setText).join(', ')) : 'Première fois sur cet exercice') + '</span></div>'
-      + '<button type="button" class="pill sm glass" data-act="exo" data-name="' + esc(ex.name) + '">Détails</button></div>';
-    h += '<div class="sets ' + (two ? '' : 'one') + ' label"><span>Série</span><span style="text-align:center">' + (kind === 'time' ? 'Durée' : 'Répétitions') + '</span>' + (two ? '<span style="text-align:center">Charge</span>' : '') + '<span></span></div>';
-    ex.sets.forEach((s, i) => {
-      const main = kind === 'time'
-        ? '<label class="field"><input inputmode="numeric" data-f="t" data-i="' + i + '" value="' + (s.t || '') + '" aria-label="Durée en secondes, série ' + (i + 1) + '"><span class="unit">s</span></label>'
-        : '<label class="field"><input inputmode="numeric" data-f="r" data-i="' + i + '" value="' + (s.r || '') + '" aria-label="Répétitions, série ' + (i + 1) + '"></label>';
-      const load = two ? '<label class="field"><input inputmode="decimal" data-f="w" data-i="' + i + '" value="' + (s.w ? fr(s.w, 1) : '') + '" aria-label="Charge en kilos, série ' + (i + 1) + '"><span class="unit">kg</span></label>' : '';
-      h += '<div class="sets setrow ' + (two ? '' : 'one') + (s.done ? ' done' : '') + '"><span class="idx">' + (i + 1) + '</span>' + main + load
-        + '<button type="button" class="check" data-act="check" data-i="' + i + '" aria-label="' + (s.done ? 'Annuler la série ' : 'Valider la série ') + (i + 1) + '">' + (s.done ? ICON.check : ICON.todo) + '</button></div>';
-    });
-    h += '<div class="row"><button type="button" class="pill sm glass grow" data-act="add-set">Ajouter une série</button>'
-      + (ex.sets.length > 1 ? '<button type="button" class="pill sm glass grow" data-act="del-set">Retirer la dernière</button>' : '')
-      + '</div></section>';
-
-    const allDone = ex.sets.length && ex.sets.every((s) => s.done);
-    h += '<div class="row">'
-      + (a.idx > 0 ? '<button type="button" class="pill glass grow" data-act="goto" data-i="' + (a.idx - 1) + '">Précédent</button>' : '')
-      + (a.idx < n - 1 ? '<button type="button" class="pill grow ' + (allDone ? 'gold-btn' : 'glass') + '" data-act="goto" data-i="' + (a.idx + 1) + '">Exercice suivant</button>' : '')
-      + '</div>';
-
-    if (a.idx < n - 1) {
-      h += '<div class="col" style="gap:8px"><span class="label">Ensuite</span><section class="glass card list" style="padding:4px 16px;border-radius:22px">'
-        + a.exercises.slice(a.idx + 1).map((e, k) => '<button type="button" class="item" data-act="goto" data-i="' + (a.idx + 1 + k) + '"><span class="grow" style="font-weight:500">' + esc(exoName(e.name)) + '</span><span class="small mut">' + esc(setsSummary(e.sets)) + '</span></button>').join('')
-        + '</section></div>';
-    }
-  }
-
-  h += '<button type="button" class="pill glass wide" data-act="picker">Ajouter un exercice</button>';
-  if (n) h += '<button type="button" class="pill sm glass wide" data-act="del-exo" style="color:var(--mut)">Retirer cet exercice de la séance</button>';
-  h += '<div class="row" style="margin-top:8px"><button type="button" class="pill glass grow" data-act="cancel" style="color:var(--mut)">Abandonner</button>'
+// Vue d'ensemble : toute la séance, on touche un exercice pour l'ouvrir en grand.
+function viewList(a) {
+  const total = a.exercises.reduce((n, e) => n + e.sets.length, 0);
+  const done = a.exercises.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0);
+  const cur = a.exercises.findIndex((e) => !exDone(e));
+  let h = '<div class="row between"><div class="col" style="gap:2px"><span class="small mut">Séance en cours</span><h1 class="h1">' + esc(a.label) + '</h1></div>'
+    + '<span class="num" id="elapsed" style="font-size:22px;color:var(--soft)">' + clock((Date.now() - a.start) / 1000) + '</span></div>';
+  h += '<section class="glass card col" style="gap:10px"><div class="row between"><span class="h2">' + done + ' sur ' + plural(total, 'série', 'séries') + '</span><span class="gold-text num" style="font-size:17px">+' + (done * 10) + ' XP</span></div>'
+    + '<div class="bar"><div style="width:' + (total ? Math.round((done / total) * 100) : 0) + '%;background:linear-gradient(90deg,#EBD7A3,#C6A35B)"></div></div></section>';
+  a.exercises.forEach((e, i) => {
+    const d = exDone(e);
+    const w = Math.max(0, ...e.sets.map((s) => s.w || 0));
+    const todo = e.sets.findIndex((s) => !s.done);
+    h += '<button type="button" class="ins" data-act="picker" data-at="' + i + '" aria-label="Ajouter un exercice ici">' + ICON.plus + '</button>';
+    h += '<section class="glass card col tap excard' + (i === cur ? ' cur' : '') + (d ? ' done' : '') + '" role="button" tabindex="0" data-act="goto" data-i="' + i + '" style="gap:12px">'
+      + '<div class="row"><span class="badge' + (d ? ' done' : '') + '">' + (d ? '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#17120A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' : (i + 1)) + '</span>'
+      + '<div class="col grow" style="gap:2px"><span style="font-weight:600;font-size:16px">' + esc(exoName(e.name)) + '</span><span class="small mut">' + plural(e.sets.length, 'série', 'séries') + (w ? ' · ' + fr(w, 1) + ' kg' : '') + '</span></div>'
+      + '<button type="button" class="iconbtn" data-act="ex-menu" data-i="' + i + '" aria-label="Options de l’exercice">' + ICON.more + '</button></div>'
+      + '<div class="chips">' + e.sets.map((s, k) => '<span class="chip' + (s.done ? ' done' : (k === todo && i === cur ? ' sel' : '')) + '">' + chipLabel(e.name, s) + '</span>').join('') + '</div></section>';
+  });
+  h += '<button type="button" class="pill glass wide" data-act="picker" data-at="' + a.exercises.length + '" style="margin-top:4px">Ajouter un exercice</button>'
+    + '<div class="row" style="margin-top:8px"><button type="button" class="pill glass grow" data-act="cancel" style="color:var(--mut)">Abandonner</button>'
     + '<button type="button" class="pill gold-btn grow" data-act="finish">Terminer</button></div>'
     + '<div style="height:90px"></div>'; // place pour le bandeau de repos
   return h;
+}
+
+// Un exercice en grand : gros chiffres, plus et moins, un seul bouton pour valider.
+function viewFocus(a) {
+  const ex = a.exercises[a.idx];
+  const n = a.exercises.length;
+  const time = measureOf(ex.name) === 'time';
+  const lest = lestOf(ex.name) || ex.sets.some((s) => s.w > 0);
+  a.setIdx = Math.max(0, Math.min(a.setIdx || 0, ex.sets.length - 1));
+  const s = ex.sets[a.setIdx];
+  const goal = ex.goals && ex.goals[a.setIdx];
+  let h = '<div class="row between"><button type="button" class="pill sm glass" data-act="list">' + ICON.back + 'Séance</button>'
+    + '<span class="num" id="elapsed" style="font-size:20px;color:var(--soft)">' + clock((Date.now() - a.start) / 1000) + '</span>'
+    + '<button type="button" class="iconbtn" data-act="ex-menu" data-i="' + a.idx + '" aria-label="Options de l’exercice">' + ICON.more + '</button></div>';
+  h += '<div class="col" style="gap:4px"><span class="label violet">Exercice ' + (a.idx + 1) + ' sur ' + n + '</span><h1 class="h1" style="font-size:30px">' + esc(exoName(ex.name)) + '</h1>'
+    + '<span class="small mut">' + (ex.prev ? 'La dernière fois : ' + esc(ex.prev) : 'Première fois sur cet exercice') + '</span></div>';
+  h += '<div class="chips">' + ex.sets.map((x, k) => '<button type="button" class="chip' + (x.done ? ' done' : '') + (k === a.setIdx ? ' sel' : '') + '" data-act="sel-set" data-i="' + k + '" aria-label="Série ' + (k + 1) + '">' + chipLabel(ex.name, x) + '</button>').join('') + '</div>';
+
+  if (s) {
+    const f = time ? 't' : 'r';
+    const step = time ? 5 : 1;
+    const goalText = goal ? 'Objectif : ' + (time ? goal.t + ' s' : goal.r) : '';
+    h += '<section class="glass card col" style="border-radius:30px;padding:22px 18px;gap:18px;align-items:stretch">'
+      + '<div class="row between"><span class="label">Série ' + (a.setIdx + 1) + ' sur ' + ex.sets.length + '</span>' + (goalText ? '<span class="gold-text small" style="font-weight:600">' + goalText + '</span>' : '') + '</div>'
+      + '<div class="row" style="gap:10px"><button type="button" class="stepbtn" data-act="step" data-f="' + f + '" data-d="-' + step + '" aria-label="Moins">' + ICON.minus + '</button>'
+      + '<div class="col grow" style="align-items:center;gap:0"><input class="bignum" inputmode="numeric" data-f="' + f + '" data-i="' + a.setIdx + '" value="' + (s[f] || 0) + '" aria-label="' + (time ? 'Secondes' : 'Répétitions') + '"><span class="small mut">' + (time ? 'secondes' : 'répétitions') + '</span></div>'
+      + '<button type="button" class="stepbtn" data-act="step" data-f="' + f + '" data-d="' + step + '" aria-label="Plus">' + ICON.plus + '</button></div>';
+    if (lest) {
+      h += '<div class="hair"></div><div class="row" style="gap:10px"><button type="button" class="stepbtn sm" data-act="step" data-f="w" data-d="-1" aria-label="Moins de lest">' + ICON.minus + '</button>'
+        + '<div class="col grow" style="align-items:center;gap:0"><input class="midnum" inputmode="decimal" data-f="w" data-i="' + a.setIdx + '" value="' + (s.w ? fr(s.w, 1) : 0) + '" aria-label="Lest en kilos"><span class="small mut">kg de lest</span></div>'
+        + '<button type="button" class="stepbtn sm" data-act="step" data-f="w" data-d="1" aria-label="Plus de lest">' + ICON.plus + '</button></div>';
+    }
+    h += (s.done
+      ? '<button type="button" class="pill glass wide big" data-act="unvalidate" style="color:var(--gold)">Série validée · annuler</button>'
+      : '<button type="button" class="pill gold-btn wide big" data-act="validate">Valider la série</button>') + '</section>';
+  }
+  h += '<div class="row"><button type="button" class="pill sm glass grow" data-act="add-set">Ajouter une série</button>'
+    + (ex.sets.length > 1 ? '<button type="button" class="pill sm glass grow" data-act="del-set">Retirer cette série</button>' : '') + '</div>';
+  h += '<div class="row">'
+    + (a.idx > 0 ? '<button type="button" class="pill glass grow" data-act="goto" data-i="' + (a.idx - 1) + '">Précédent</button>' : '')
+    + (a.idx < n - 1 ? '<button type="button" class="pill glass grow" data-act="goto" data-i="' + (a.idx + 1) + '">Suivant</button>' : '<button type="button" class="pill glass grow" data-act="list">Voir toute la séance</button>')
+    + '</div>';
+  if (a.idx < n - 1) h += '<span class="small mut" style="text-align:center">Ensuite : ' + esc(exoName(a.exercises[a.idx + 1].name)) + '</span>';
+  h += '<div style="height:90px"></div>';
+  return h;
+}
+
+// Options d'un exercice pendant la séance : déplacer, remplacer, type, lest, repos, retirer.
+function sheetExMenu(i) {
+  const a = state.active;
+  const ex = a && a.exercises[i];
+  if (!ex) return;
+  const time = measureOf(ex.name) === 'time', lest = lestOf(ex.name), rest = restOf(ex.name), n = a.exercises.length;
+  const item = (act, label) => '<button type="button" class="item" data-act="' + act + '" data-i="' + i + '"><span class="grow" style="font-weight:500">' + label + '</span>' + ICON.chev + '</button>';
+  sheet('<div class="col"><span class="label">Exercice ' + (i + 1) + ' sur ' + n + '</span><h1 class="h1">' + esc(exoName(ex.name)) + '</h1></div><div class="list">'
+    + '<button type="button" class="item" data-act="exo" data-name="' + esc(ex.name) + '"><span class="grow" style="font-weight:500">Voir mon historique et mon record</span>' + ICON.chev + '</button>'
+    + (i > 0 ? item('ex-up', 'Monter dans la séance') : '') + (i < n - 1 ? item('ex-down', 'Descendre dans la séance') : '')
+    + item('ex-replace', 'Remplacer par un autre exercice')
+    + item('ex-measure', time ? 'Compter en répétitions' : 'Compter en secondes')
+    + item('ex-lest', lest ? 'Enlever le lest' : 'Ajouter un lest')
+    + item('del-exo', 'Retirer de la séance') + '</div>'
+    + '<div class="col" style="gap:8px"><span class="label">Repos après chaque série</span><div class="row" style="flex-wrap:wrap;gap:8px">'
+    + [45, 60, 90, 120, 150, 180].map((s) => '<button type="button" class="pill sm ' + (s === rest ? 'gold-btn' : 'glass') + '" data-act="ex-rest" data-i="' + i + '" data-s="' + s + '">' + clock(s) + '</button>').join('') + '</div></div>' + closeBtn);
 }
 
 function finishWorkout() {
@@ -373,7 +433,8 @@ function beep() {
 }
 function startRest() {
   try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (e) { /* ignore */ }
-  const total = state.settings.rest || 90;
+  const ex = curExo();
+  const total = ex ? restOf(ex.name) : (state.settings.rest || 90);
   state.active.rest = { end: Date.now() + total * 1000, total, rang: false };
 }
 function renderRest() {
@@ -415,7 +476,7 @@ function viewHistory() {
   const all = sorted();
   let h = '<div class="col" style="gap:2px"><span class="small mut">' + plural(all.length, 'séance enregistrée', 'séances enregistrées') + '</span><h1 class="h1">Historique</h1></div>';
   if (!all.length) return h + '<section class="glass card col" style="gap:12px"><span class="mut">Aucune séance pour le moment.</span><button type="button" class="pill gold-btn wide" data-act="pick-hevy">Importer depuis Hevy</button></section>';
-  h += '<section class="glass card list" style="padding:4px 16px">' + all.slice(0, ui.historyLimit).map((w) => '<button type="button" class="item" data-act="detail" data-id="' + esc(w.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(clean(w.title)) + '</span><span class="small mut">' + esc(summary(w)) + '</span></div><span class="small mut" style="white-space:nowrap">' + dateFr(w.start, new Date(w.start).getFullYear() !== new Date().getFullYear()) + '</span></button>').join('') + '</section>';
+  h += '<section class="glass card list" style="padding:4px 16px">' + all.slice(0, ui.historyLimit).map((w) => '<button type="button" class="item" data-act="detail" data-id="' + esc(w.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(titleOf(w)) + '</span><span class="small mut">' + esc(summary(w)) + '</span></div><span class="small mut" style="white-space:nowrap">' + dateFr(w.start, new Date(w.start).getFullYear() !== new Date().getFullYear()) + '</span></button>').join('') + '</section>';
   if (all.length > ui.historyLimit) h += '<button type="button" class="pill glass wide" data-act="more">Voir plus</button>';
   return h;
 }
@@ -423,7 +484,7 @@ function sheetDetail(id) {
   const w = state.workouts.find((x) => x.id === id);
   if (!w) return;
   const time = new Date(w.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  let h = '<div class="col"><span class="label">' + dateFr(w.start, true) + ' · ' + time + '</span><h1 class="h1">' + esc(clean(w.title)) + '</h1>'
+  let h = '<div class="col"><span class="label">' + dateFr(w.start, true) + ' · ' + time + '</span><h1 class="h1">' + esc(titleOf(w)) + '</h1>'
     + '<span class="small mut">' + esc(summary(w)) + ' · <span class="gold-text" style="font-weight:600">+' + xpOf(w) + ' XP</span>' + (w.prs ? ' · ' + plural(w.prs, 'record', 'records') : '') + '</span></div>'
     + '<div class="list">' + w.exercises.map((e) => '<button type="button" class="item" data-act="exo" data-name="' + esc(e.name) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(e.name)) + '</span><span class="small mut">' + esc(e.name === 'Running' ? e.sets.map((s) => setText(s) + ' · ' + pace(s.d, s.t)).join(', ') : e.sets.map(setText).join(', ')) + '</span></div>' + ICON.chev + '</button>').join('') + '</div>'
     + '<button type="button" class="pill glass wide" data-act="copy" data-id="' + esc(w.id) + '" style="color:var(--gold)">' + ICON.copy + 'Copier pour Claude</button>'
@@ -540,17 +601,36 @@ function sheetSettings() {
     + '<span class="small mut">Tes données restent sur ce téléphone. Exporte une sauvegarde de temps en temps pour ne rien perdre.</span></div>' + closeBtn);
 }
 
+// ui.pick dit à quoi sert le choix : { mode: 'insert', at } | { mode: 'replace', i } | { mode: 'edit' }
 function sheetPicker() {
+  const mine = new Set();
+  for (const r of routines()) for (const e of r.exercises) mine.add(e.name);
   const names = new Set(Object.keys(EXOS));
   for (const w of state.workouts) for (const e of w.exercises) names.add(e.name);
+  for (const n of mine) names.add(n);
   names.delete('Running');
+  mine.delete('Running');
   const q = norm(ui.pickerQuery);
-  const list = [...names].map((n) => ({ n, f: exoName(n) })).filter((x) => !q || norm(x.f).includes(q) || norm(x.n).includes(q)).sort((a, b) => a.f.localeCompare(b.f, 'fr'));
-  const items = list.map((x) => '<button type="button" class="item" data-act="add-exo" data-name="' + esc(x.n) + '"><span class="grow" style="font-weight:500">' + esc(x.f) + '</span></button>').join('');
+  const match = (n) => !q || norm(exoName(n)).includes(q) || norm(n).includes(q);
+  const byName = (x, y) => exoName(x).localeCompare(exoName(y), 'fr');
+  const row = (n) => '<button type="button" class="item" data-act="add-exo" data-name="' + esc(n) + '"><span class="grow" style="font-weight:500">' + esc(exoName(n)) + '</span><span class="small mut">' + (measureOf(n) === 'time' ? 'durée' : 'répétitions') + (lestOf(n) ? ' · lest' : '') + '</span></button>';
+  const a1 = [...mine].filter(match).sort(byName);
+  const a2 = [...names].filter((n) => !mine.has(n) && match(n)).sort(byName);
+  const exact = [...names].some((n) => norm(exoName(n)) === q || norm(n) === q);
+  let items = '';
+  if (a1.length) items += '<span class="label" style="padding:10px 0 4px">Tes exercices actuels</span>' + a1.map(row).join('');
+  if (a2.length) items += '<span class="label" style="padding:14px 0 4px">Tous les exercices</span>' + a2.map(row).join('');
+  // Créer son propre exercice : proposé en dernier, pour ne pas le toucher par erreur.
+  if (q && !exact) {
+    const typed = clean(ui.pickerQuery);
+    const made = typed.charAt(0).toUpperCase() + typed.slice(1);
+    items += '<span class="label" style="padding:14px 0 4px">Pas dans la liste ?</span><button type="button" class="item" data-act="add-exo" data-name="' + esc(made) + '"><span class="grow gold-text" style="font-weight:600">Créer « ' + esc(made) + ' »</span></button>';
+  }
   const old = $('picker-list');
   if (old) { old.innerHTML = items; return; }
-  sheet('<div class="row between"><h1 class="h1">Ajouter un exercice</h1><button type="button" class="pill sm glass" data-act="close2">Fermer</button></div>'
-    + '<input class="textin" id="picker-q" placeholder="Chercher un exercice" aria-label="Chercher un exercice" value="' + esc(ui.pickerQuery) + '">'
+  const title = ui.pick && ui.pick.mode === 'replace' ? 'Remplacer par' : 'Ajouter un exercice';
+  sheet('<div class="row between"><h1 class="h1">' + title + '</h1><button type="button" class="pill sm glass" data-act="close2">Fermer</button></div>'
+    + '<input class="textin" id="picker-q" placeholder="Chercher ou créer un exercice" aria-label="Chercher ou créer un exercice" value="' + esc(ui.pickerQuery) + '">'
     + '<div class="list" id="picker-list">' + items + '</div>', 2);
 }
 
@@ -589,6 +669,14 @@ async function exportBackup() {
   setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
 
+function moveExo(i, d) {
+  const a = state.active, j = i + d;
+  if (j < 0 || j >= a.exercises.length) return;
+  [a.exercises[i], a.exercises[j]] = [a.exercises[j], a.exercises[i]];
+  if (a.idx === i) a.idx = j; else if (a.idx === j) a.idx = i;
+  save(); render(); sheetExMenu(j);
+}
+
 // ---------- Actions ----------
 const curExo = () => state.active && state.active.exercises[state.active.idx];
 const edExo = (el) => ui.edit.draft.exercises[+el.dataset.e];
@@ -603,24 +691,72 @@ const ACTIONS = {
   routine: (el) => sheetRoutine(el.dataset.id),
   exo: (el) => sheetExo(el.dataset.name),
   start: (el) => startWorkout(el.dataset.id),
-  goto: (el) => { state.active.idx = +el.dataset.i; save(); render(); window.scrollTo(0, 0); },
-  check: (el) => {
-    const s = curExo().sets[+el.dataset.i];
-    s.done = !s.done;
-    if (s.done) startRest(); else state.active.rest = null;
+  goto: (el) => { const a = state.active; a.idx = +el.dataset.i; a.view = 'focus'; a.setIdx = firstTodo(a.exercises[a.idx]); save(); closeSheet(); ui.enter = true; render(); window.scrollTo(0, 0); },
+  list: () => { state.active.view = 'list'; save(); ui.enter = true; render(); window.scrollTo(0, 0); },
+  'sel-set': (el) => { state.active.setIdx = +el.dataset.i; save(); render(); },
+  step: (el) => { const s = curSet(), f = el.dataset.f; s[f] = Math.max(0, Math.round(((s[f] || 0) + (+el.dataset.d)) * 10) / 10); save(); render(); },
+  validate: () => {
+    const a = state.active, ex = curExo(), s = curSet();
+    const time = measureOf(ex.name) === 'time';
+    if (!(time ? s.t : s.r)) { toast(time ? 'Indique la durée' : 'Indique les répétitions'); return; }
+    s.done = true;
+    const goal = ex.goals && ex.goals[a.setIdx];
+    const beat = goal && (time ? s.t >= goal.t : s.r >= goal.r);
+    startRest();
+    const next = ex.sets.findIndex((x) => !x.done);
+    if (next >= 0) {
+      a.setIdx = next;
+      if (beat) toast('Objectif atteint');
+    } else {
+      let ni = a.exercises.findIndex((e, i) => i > a.idx && !exDone(e));
+      if (ni < 0) ni = a.exercises.findIndex((e) => !exDone(e));
+      if (ni >= 0) { a.idx = ni; a.setIdx = firstTodo(a.exercises[ni]); ui.enter = true; toast(beat ? 'Objectif atteint, exercice suivant' : 'Exercice terminé'); window.scrollTo(0, 0); }
+      else { a.view = 'list'; ui.enter = true; toast('Toutes les séries sont faites'); window.scrollTo(0, 0); }
+    }
     save(); render(); renderRest();
   },
-  'add-set': () => { const sets = curExo().sets; const last = sets[sets.length - 1] || {}; sets.push({ r: last.r || 0, w: last.w || 0, t: last.t || 0, done: false }); save(); render(); },
-  'del-set': () => { curExo().sets.pop(); save(); render(); },
-  'del-exo': () => { if (confirm('Retirer cet exercice de la séance ?')) { state.active.exercises.splice(state.active.idx, 1); save(); render(); } },
-  picker: () => { ui.pickerQuery = ''; sheetPicker(); },
+  unvalidate: () => { curSet().done = false; state.active.rest = null; save(); render(); renderRest(); },
+  'add-set': () => { const ex = curExo(); const last = ex.sets[ex.sets.length - 1] || {}; ex.sets.push({ r: last.r || 0, w: last.w || 0, t: last.t || 0, done: false }); if (ex.goals) ex.goals.push(null); state.active.setIdx = ex.sets.length - 1; save(); render(); },
+  'del-set': () => { const a = state.active, ex = curExo(); ex.sets.splice(a.setIdx, 1); if (ex.goals) ex.goals.splice(a.setIdx, 1); a.setIdx = Math.max(0, Math.min(a.setIdx, ex.sets.length - 1)); save(); render(); },
+  'ex-menu': (el) => sheetExMenu(+el.dataset.i),
+  'ex-up': (el) => moveExo(+el.dataset.i, -1),
+  'ex-down': (el) => moveExo(+el.dataset.i, 1),
+  'ex-replace': (el) => { ui.pick = { mode: 'replace', i: +el.dataset.i }; ui.pickerQuery = ''; sheetPicker(); },
+  'ex-measure': (el) => {
+    const i = +el.dataset.i, ex = state.active.exercises[i];
+    const to = measureOf(ex.name) === 'time' ? 'reps' : 'time';
+    setPref(ex.name, { measure: to });
+    for (const s of ex.sets) if (!s.done) { if (to === 'time') { s.t = s.t || 30; s.r = 0; } else { s.r = s.r || 8; s.t = 0; } }
+    ex.goals = ex.sets.map(() => null);
+    save(); render(); sheetExMenu(i);
+  },
+  'ex-lest': (el) => {
+    const i = +el.dataset.i, ex = state.active.exercises[i];
+    const on = !lestOf(ex.name);
+    setPref(ex.name, { lest: on });
+    if (!on) for (const s of ex.sets) if (!s.done) s.w = 0;
+    save(); render(); sheetExMenu(i);
+  },
+  'ex-rest': (el) => { const i = +el.dataset.i; setPref(state.active.exercises[i].name, { rest: +el.dataset.s }); sheetExMenu(i); },
+  'del-exo': (el) => {
+    const a = state.active, i = +el.dataset.i;
+    if (!confirm('Retirer cet exercice de la séance ?')) return;
+    a.exercises.splice(i, 1);
+    if (a.idx > i) a.idx -= 1;
+    a.idx = Math.max(0, Math.min(a.idx, a.exercises.length - 1));
+    if (!a.exercises.length) a.view = 'list'; else a.setIdx = firstTodo(a.exercises[a.idx]);
+    save(); closeSheet(); render();
+  },
+  picker: (el) => { const n = state.active.exercises.length; ui.pick = { mode: 'insert', at: el.dataset.at === undefined ? n : +el.dataset.at }; ui.pickerQuery = ''; sheetPicker(); },
   'add-exo': (el) => {
-    const name = el.dataset.name;
+    const name = el.dataset.name, p = ui.pick || {};
     closeSheet2();
-    if (ui.edit) { ui.edit.draft.exercises.push({ name, sets: defaultSets(name) }); sheetEditor(); const box = document.querySelector('#sheet .sheet > div'); box.scrollTop = box.scrollHeight; return; }
-    state.active.exercises.push({ name, sets: defaultSets(name, false) });
-    state.active.idx = state.active.exercises.length - 1;
-    save(); render(); window.scrollTo(0, 0);
+    if (p.mode === 'edit' && ui.edit) { ui.edit.draft.exercises.push({ name, sets: defaultSets(name) }); sheetEditor(); const box = document.querySelector('#sheet .sheet > div'); box.scrollTop = box.scrollHeight; return; }
+    const a = state.active;
+    const ex = buildExo(name, defaultSets(name), a.title);
+    if (p.mode === 'replace') { a.exercises[p.i] = ex; if (a.idx === p.i) a.setIdx = 0; closeSheet(); toast('Exercice remplacé'); }
+    else { a.exercises.splice(p.at, 0, ex); if (a.view === 'focus' && p.at <= a.idx) a.idx += 1; toast(exoName(name) + ' ajouté en position ' + (p.at + 1)); }
+    save(); render();
   },
   cancel: () => { if (confirm('Abandonner la séance ? Rien ne sera enregistré.')) { state.active = null; save(); ui.tab = 'home'; render(); renderRest(); } },
   finish: () => { finishWorkout(); renderRest(); },
@@ -638,7 +774,7 @@ const ACTIONS = {
   'ed-del-exo': (el) => { ui.edit.draft.exercises.splice(+el.dataset.e, 1); sheetEditor(); },
   'ed-up': (el) => { const l = ui.edit.draft.exercises, i = +el.dataset.e; if (i > 0) { [l[i - 1], l[i]] = [l[i], l[i - 1]]; sheetEditor(); } },
   'ed-down': (el) => { const l = ui.edit.draft.exercises, i = +el.dataset.e; if (i < l.length - 1) { [l[i + 1], l[i]] = [l[i], l[i + 1]]; sheetEditor(); } },
-  'ed-add-exo': () => { ui.pickerQuery = ''; sheetPicker(); },
+  'ed-add-exo': () => { ui.pick = { mode: 'edit' }; ui.pickerQuery = ''; sheetPicker(); },
   'ed-save': () => saveEditor(),
   'ed-del-routine': () => { if (confirm('Supprimer cette routine ? Tes séances passées restent dans l’historique.')) { state.routines = routines().filter((r) => r.id !== ui.edit.id); save(); closeSheet(); render(); } },
   'set-rest': (el) => { state.settings.rest = +el.dataset.s; save(); sheetSettings(); },
@@ -689,7 +825,7 @@ document.addEventListener('input', (ev) => {
   }
 });
 // Sélectionne le contenu d'une case quand on la touche, pour taper directement la nouvelle valeur.
-document.addEventListener('focusin', (ev) => { if (ev.target.matches && ev.target.matches('.field input')) setTimeout(() => ev.target.select(), 0); });
+document.addEventListener('focusin', (ev) => { if (ev.target.matches && ev.target.matches('.field input, .bignum, .midnum')) setTimeout(() => ev.target.select(), 0); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); renderRest(); } });
 
 function render() {
@@ -711,4 +847,6 @@ if (state.active) { ui.tab = 'workout'; keepAwake(); }
 render();
 renderRest();
 
-if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});
+// Le cache hors ligne ne s'active que sur la vraie adresse en ligne, pas pendant les tests sur le PC.
+const local = ['localhost', '127.0.0.1'].includes(location.hostname);
+if ('serviceWorker' in navigator && window.isSecureContext && !local) navigator.serviceWorker.register('sw.js').catch(() => {});
