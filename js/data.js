@@ -47,6 +47,13 @@ export const EXOS = {
   'Archer Push Up': { fr: 'Pompes archer', kind: 'reps' },
   'One Arm Push Up': { fr: 'Pompes à une main', kind: 'reps' },
   'Pull Up': { fr: 'Tractions', kind: 'reps' },
+  'Elevated Pike Push Up': { fr: 'Pike push-up pieds surélevés', kind: 'reps' },
+  'Wall Handstand Push Up Negative': { fr: 'Descente lente en équilibre', kind: 'reps' },
+  'Wall Handstand Push Up': { fr: 'Pompes en équilibre contre le mur', kind: 'reps' },
+  'Inverted Row (Feet Elevated)': { fr: 'Rowing inversé pieds surélevés', kind: 'reps' },
+  'Archer Row': { fr: 'Rowing inversé archer', kind: 'reps' },
+  'One Arm Inverted Row': { fr: 'Rowing inversé à un bras', kind: 'reps' },
+  'Dragon Flag': { fr: 'Dragon flag', kind: 'reps' },
   'Running': { fr: 'Course à pied', kind: 'run' },
 };
 
@@ -140,7 +147,8 @@ export const RANKS = [
 export const CATS = { push: 'Poussée', pull: 'Tirage', legs: 'Jambes', core: 'Gainage' };
 export const CAT = {
   'Triceps Dip': 'push', 'Dips Hold': 'push', 'Push Up': 'push', 'Decline Push Up': 'push', 'Diamond Push Up': 'push', 'Pike Pushup': 'push',
-  'Archer Push Up': 'push', 'One Arm Push Up': 'push', 'Seated Overhead Press (Dumbbell)': 'push', 'Seated Overhead Press (Barbell)': 'push',
+  'Archer Push Up': 'push', 'One Arm Push Up': 'push', 'Elevated Pike Push Up': 'push', 'Wall Handstand Push Up Negative': 'push', 'Wall Handstand Push Up': 'push',
+  'Inverted Row (Feet Elevated)': 'pull', 'Archer Row': 'pull', 'One Arm Inverted Row': 'pull', 'Dragon Flag': 'core', 'Seated Overhead Press (Dumbbell)': 'push', 'Seated Overhead Press (Barbell)': 'push',
   'Bench Press (Barbell)': 'push', 'Bench Press (Dumbbell)': 'push', 'Lateral Raise (Dumbbell)': 'push', 'Handstand Hold': 'push', 'Planche Lean': 'push',
   'Bent Over Row (Band)': 'pull', 'Bent Over Row (Dumbbell)': 'pull', 'Bent Over Row (Barbell)': 'pull', 'Dumbbell Row': 'pull', 'Inverted Row': 'pull',
   'Pull Up': 'pull', 'Hammer Curl (Dumbbell)': 'pull', 'Farmers Walk': 'pull',
@@ -151,8 +159,10 @@ export const CAT = {
   'L-Sit Hold': 'core', 'Pike Compression Hold': 'core',
 };
 
-// Arbres de progression : chaque palier se valide tout seul quand une séance atteint l'objectif.
-// sets × reps (ou secs), avec un lest minimum éventuel.
+// Arbres de progression : de vraies étapes de difficulté, toutes faisables à la maison avec la station de dips,
+// le banc, les haltères, le gilet lesté et les élastiques (pas de barre de traction).
+// Un palier se valide tout seul quand une séance atteint l'objectif : sets × reps (ou secs), lest minimum éventuel.
+// Pour la course : run = km, pace = secondes par km maximum.
 export const TREES = [
   { id: 'pompes', name: 'Pompes', nodes: [
     { exo: 'Push Up', label: 'Pompes classiques', sets: 3, reps: 12 },
@@ -164,9 +174,23 @@ export const TREES = [
   { id: 'dips', name: 'Dips', nodes: [
     { exo: 'Triceps Dip', label: 'Dips', sets: 3, reps: 10 },
     { exo: 'Triceps Dip', label: 'Dips avec 10 kg', sets: 3, reps: 8, lest: 10 },
+    { exo: 'Triceps Dip', label: 'Dips avec 15 kg', sets: 3, reps: 8, lest: 15 },
     { exo: 'Triceps Dip', label: 'Dips avec 20 kg', sets: 3, reps: 8, lest: 20 },
-    { exo: 'Triceps Dip', label: 'Dips avec 30 kg', sets: 3, reps: 6, lest: 30 },
-    { exo: 'Triceps Dip', label: 'Dips avec 40 kg', sets: 3, reps: 5, lest: 40 },
+    { exo: 'Triceps Dip', label: 'Dips avec 25 kg', sets: 3, reps: 6, lest: 25 },
+  ] },
+  { id: 'epaules', name: 'Épaules', nodes: [
+    { exo: 'Pike Pushup', label: 'Pike push-up', sets: 3, reps: 10 },
+    { exo: 'Elevated Pike Push Up', label: 'Pike push-up pieds surélevés', sets: 3, reps: 8 },
+    { exo: 'Handstand Hold', label: 'Équilibre contre le mur, 30 secondes', sets: 2, secs: 30 },
+    { exo: 'Wall Handstand Push Up Negative', label: 'Descente lente en équilibre', sets: 3, reps: 3 },
+    { exo: 'Wall Handstand Push Up', label: 'Pompes en équilibre contre le mur', sets: 3, reps: 5 },
+  ] },
+  { id: 'tirage', name: 'Tirage', nodes: [
+    { exo: 'Bent Over Row (Band)', label: 'Rowing à l’élastique', sets: 3, reps: 12 },
+    { exo: 'Inverted Row', label: 'Rowing inversé sous les barres', sets: 3, reps: 10 },
+    { exo: 'Inverted Row (Feet Elevated)', label: 'Rowing inversé pieds surélevés', sets: 3, reps: 8 },
+    { exo: 'Archer Row', label: 'Rowing inversé archer', sets: 3, reps: 6 },
+    { exo: 'One Arm Inverted Row', label: 'Rowing inversé à un bras', sets: 3, reps: 5 },
   ] },
   { id: 'jambes', name: 'Jambes', nodes: [
     { exo: 'Squat (Bodyweight)', label: 'Squats', sets: 3, reps: 20 },
@@ -175,19 +199,19 @@ export const TREES = [
     { exo: 'Pistol Squat', label: 'Pistol squat', sets: 3, reps: 5 },
     { exo: 'Pistol Squat', label: 'Pistol squat avec 10 kg', sets: 3, reps: 5, lest: 10 },
   ] },
-  { id: 'tirage', name: 'Tirage', nodes: [
-    { exo: 'Bent Over Row (Band)', label: 'Rowing à l’élastique', sets: 3, reps: 12 },
-    { exo: 'Inverted Row', label: 'Rowing inversé', sets: 3, reps: 8 },
-    { exo: 'Inverted Row', label: 'Rowing inversé, 12 répétitions', sets: 3, reps: 12 },
-    { exo: 'Pull Up', label: 'Tractions', sets: 3, reps: 5 },
-    { exo: 'Pull Up', label: 'Tractions, 10 répétitions', sets: 3, reps: 10 },
-  ] },
   { id: 'gainage', name: 'Gainage', nodes: [
     { exo: 'Hollow Rock', label: 'Hollow rock 30 secondes', sets: 2, secs: 30 },
-    { exo: 'Hollow Rock', label: 'Hollow rock 45 secondes', sets: 2, secs: 45 },
     { exo: 'Hollow Rock', label: 'Hollow rock 60 secondes', sets: 2, secs: 60 },
     { exo: 'Hanging Leg Raise', label: 'Relevés de jambes, 10 répétitions', sets: 3, reps: 10 },
     { exo: 'Hanging Leg Raise', label: 'Relevés de jambes, 15 répétitions', sets: 3, reps: 15 },
+    { exo: 'Dragon Flag', label: 'Dragon flag sur le banc', sets: 3, reps: 5 },
+  ] },
+  { id: 'course', name: 'Course', nodes: [
+    { run: 5, label: 'Courir 5 km' },
+    { run: 5, pace: 324, label: '5 km en moins de 27 minutes' },
+    { run: 10, label: 'Courir 10 km' },
+    { run: 10, pace: 330, label: '10 km en moins de 55 minutes' },
+    { run: 21, label: 'Semi-marathon (21 km)' },
   ] },
 ];
 
@@ -212,6 +236,14 @@ export const FICHES = {
   'Hanging Leg Raise': { muscles: 'Abdominaux, fléchisseurs de hanche', steps: ['Suspendu bras tendus, épaules engagées.', 'Monte les jambes devant toi sans te balancer.', 'Redescends lentement, sans élan.'], erreur: 'Se servir du balancement pour monter.' },
   'Hollow Rock': { muscles: 'Abdominaux profonds', steps: ['Allongé sur le dos, bas du dos plaqué au sol, bras derrière la tête.', 'Décolle les épaules et les jambes pour former une banane.', 'Balance doucement d’avant en arrière sans casser la forme.'], erreur: 'Laisser le bas du dos se décoller du sol.' },
   'Plank': { muscles: 'Abdominaux, gainage', steps: ['Avant-bras au sol, coudes sous les épaules.', 'Corps aligné, fesses et abdominaux serrés.', 'Respire normalement et tiens la position.'], erreur: 'Monter les fesses ou creuser le dos.' },
+  'Elevated Pike Push Up': { muscles: 'Épaules, triceps', steps: ['Pieds sur le banc, mains au sol, fesses en l’air, corps en V inversé.', 'Descends le sommet de la tête vers le sol, devant les mains.', 'Repousse jusqu’à tendre les bras, hanches toujours hautes.'], erreur: 'Aplatir le corps, ce qui transforme l’exercice en pompe déclinée.' },
+  'Handstand Hold': { muscles: 'Épaules, gainage, équilibre', steps: ['Mains au sol à une main du mur, monte les pieds contre le mur.', 'Bras tendus, pousse le sol pour grandir les épaules.', 'Serre les fesses et les abdominaux, respire calmement.'], erreur: 'Creuser le dos en banane au lieu de rester gainé.' },
+  'Wall Handstand Push Up Negative': { muscles: 'Épaules, triceps', steps: ['En équilibre contre le mur, bras tendus.', 'Descends le plus lentement possible, cinq secondes au moins, jusqu’à poser la tête.', 'Redescends les pieds, puis remonte en équilibre pour la répétition suivante.'], erreur: 'Se laisser tomber sur la tête : pose un coussin et garde le contrôle.' },
+  'Wall Handstand Push Up': { muscles: 'Épaules, triceps', steps: ['En équilibre contre le mur, mains un peu plus larges que les épaules.', 'Descends jusqu’à frôler le sol avec la tête, coudes vers l’arrière.', 'Repousse jusqu’à verrouiller les bras.'], erreur: 'Écarter les coudes sur les côtés, ce qui fatigue les épaules.' },
+  'Inverted Row (Feet Elevated)': { muscles: 'Dos, biceps', steps: ['Suspendu sous les barres de dips, pieds posés sur le banc.', 'Tire la poitrine jusqu’aux mains, corps droit comme une planche.', 'Redescends bras tendus en contrôlant.'], erreur: 'Laisser les hanches tomber.' },
+  'Archer Row': { muscles: 'Dos, biceps, un côté après l’autre', steps: ['Suspendu sous les barres, prise large.', 'Tire vers une main pendant que l’autre bras reste presque tendu.', 'Redescends, puis change de côté.'], erreur: 'Tirer autant avec le bras qui doit seulement accompagner.' },
+  'One Arm Inverted Row': { muscles: 'Dos, biceps, gainage', steps: ['Suspendu d’une seule main, pieds écartés pour la stabilité.', 'Tire la poitrine vers la main sans tourner le buste.', 'Redescends lentement, bras tendu en bas.'], erreur: 'Tourner tout le corps pour tricher.' },
+  'Dragon Flag': { muscles: 'Abdominaux, gainage complet', steps: ['Allongé sur le banc, attrape le banc derrière ta tête.', 'Monte tout le corps bien droit, en appui sur le haut du dos.', 'Redescends le corps d’un bloc, lentement, sans plier les hanches.'], erreur: 'Plier au niveau des hanches : commence par la descente seule.' },
   'Standing Calf Raise (Dumbbell)': { muscles: 'Mollets', steps: ['Debout, avant des pieds sur le step, talons dans le vide.', 'Monte le plus haut possible sur la pointe des pieds.', 'Redescends lentement sous le niveau du step.'], erreur: 'Rebondir en bas au lieu de contrôler.' },
 };
 

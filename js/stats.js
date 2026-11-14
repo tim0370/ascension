@@ -40,6 +40,17 @@ export function rankInfo() {
 
 // ---------- Arbres de progression ----------
 function nodeStatus(n) {
+  if (n.run) {
+    // Palier de course : une distance, avec parfois une allure maximum.
+    let ratio = 0, best = '';
+    for (const r of runs()) {
+      let x = Math.min(1, r.d / n.run);
+      if (x >= 1 && n.pace) x = r.t > 0 ? Math.min(1, n.pace / (r.t / r.d)) : 0;
+      else if (x < 1 && n.pace) x *= 0.9;
+      if (x > ratio) { ratio = x; best = fr(r.d) + ' km en ' + dur(r.t); }
+    }
+    return { ratio, best };
+  }
   const goal = n.secs || n.reps;
   let ratio = 0, best = '';
   for (const w of state.workouts) for (const e of w.exercises) {

@@ -2,7 +2,7 @@
 import { RANKS, TREES, CATS } from './data.js';
 import { state, save, fr, dateFr } from './store.js';
 import { rankInfo, testStatus, allTrees, treeStatus, balance, bodyLog, addWeight, delWeight } from './stats.js';
-import { addPhoto, listPhotos, deletePhoto } from './photos.js';
+import { addPhoto, listPhotos, deletePhoto, setPhotoDate, photoFiles } from './photos.js';
 import { $, esc, plural, toNum, ui, ACTIONS, ICON, rankSvg, toast, sheet, closeSheet, closeBtn, burst, chartSvg } from './ui.js';
 import { render } from './app.js';
 
@@ -56,11 +56,11 @@ function sheetTree(id) {
   const tree = TREES.find((t) => t.id === id);
   if (!tree) return;
   const st = treeStatus(tree);
-  const goalText = (n) => n.sets + ' × ' + (n.secs ? n.secs + ' s' : n.reps) + (n.lest ? ' avec ' + n.lest + ' kg' : '');
+  const goalText = (n) => (n.run ? n.label.charAt(0).toLowerCase() + n.label.slice(1) : n.sets + ' × ' + (n.secs ? n.secs + ' s' : n.reps) + (n.lest ? ' avec ' + n.lest + ' kg' : ''));
   let h = '<div class="col"><span class="label">' + st.done + ' palier' + (st.done > 1 ? 's' : '') + ' sur ' + st.nodes.length + '</span><h1 class="h1">' + esc(st.name) + '</h1></div><div class="tree">';
   for (const n of st.nodes) {
     const icon = n.state === 'done' ? ICON.check : (n.state === 'current' ? ICON.dot : ICON.lock);
-    h += '<button type="button" class="node ' + n.state + '" data-act="exo" data-name="' + esc(n.exo) + '"><span class="mark" style="' + (n.state === 'current' ? 'color:var(--violet)' : '') + '">' + icon + '</span>';
+    h += '<button type="button" class="node ' + n.state + '"' + (n.run ? ' data-tab="run"' : ' data-act="exo" data-name="' + esc(n.exo) + '"') + '><span class="mark" style="' + (n.state === 'current' ? 'color:var(--violet)' : '') + '">' + icon + '</span>';
     if (n.state === 'current') {
       h += '<div class="exo grow" style="border-color:rgba(132,104,232,0.6)"><div class="row between"><span style="font-weight:600">' + esc(n.label) + '</span><span class="tag">En cours</span></div>'
         + '<div class="bar"><div style="width:' + Math.round(n.ratio * 100) + '%"></div></div><span class="small mut">Objectif : ' + goalText(n) + (n.best ? ' · ton meilleur : ' + esc(n.best) : ' · pas encore essayé') + '</span></div>';
@@ -69,7 +69,7 @@ function sheetTree(id) {
     }
     h += '</button>';
   }
-  h += '</div><span class="small mut">Touche un palier pour voir comment faire l’exercice. Un palier se valide tout seul quand une séance atteint l’objectif.</span>' + closeBtn;
+  h += '</div><span class="small mut">Touche un palier pour voir comment faire l’exercice. Un palier se valide tout seul quand une séance atteint l’objectif, et un palier plus dur valide ceux d’avant.</span>' + closeBtn;
   sheet(h);
 }
 
@@ -130,18 +130,52 @@ function sheetBody() {
 async function sheetPhotos() {
   try { photos = await listPhotos(); } catch (e) { photos = []; toast('Les photos ne sont pas disponibles sur ce navigateur'); }
   let h = '<div class="col"><span class="label">' + plural(photos.length, 'photo', 'photos') + '</span><h1 class="h1">Photos de suivi</h1><span class="small mut">' + photoHint() + '</span></div>'
-    + '<button type="button" class="pill gold-btn wide" data-act="add-photo">Ajouter une photo</button>';
-  if (photos.length) h += '<div class="thumbs">' + photos.map((p) => '<button type="button" data-act="photo" data-id="' + p.id + '" aria-label="Photo du ' + dateFr(p.d, true) + '"><img src="' + p.url + '" alt=""><span>' + dateFr(p.d, true) + '</span></button>').join('') + '</div>';
-  h += '<span class="small mut">Astuce : même endroit, même lumière, même pose. Les photos ne sont pas incluses dans la sauvegarde exportée.</span>';
+    + '<button type="button" class="pill gold-btn wide" data-act="add-photo">Ajouter ou importer des photos</button>'
+    + '<span class="small mut">Tu peux en choisir plusieurs d’un coup, par exemple tes anciennes photos de Hevy enregistrées dans ta galerie. Chaque photo garde sa date d’origine, que tu peux corriger en la touchant.</span>';
+  if (photos.length) {
+    h += '<div class="thumbs">' + photos.map((p) => '<button type="button" data-act="photo" data-id="' + p.id + '" aria-label="Photo du ' + dateFr(p.d, true) + '"><img src="' + p.url + '" alt=""><span>' + dateFr(p.d, true) + '</span></button>').join('') + '</div>'
+      + '<button type="button" class="pill glass wide" data-act="export-photos">Exporter toutes mes photos</button>';
+  }
+  h += '<span class="small mut">Astuce : même endroit, même lumière, même pose. Les photos restent dans ton téléphone : exporte-les de temps en temps, elles ne sont pas dans la sauvegarde des séances.</span>';
   sheet(h + closeBtn);
 }
 
 function sheetPhoto(id) {
   const p = photos && photos.find((x) => x.id === id);
   if (!p) return;
-  sheet('<div class="row between"><div class="col"><span class="label">Photo</span><span class="h2">' + dateFr(p.d, true) + '</span></div><button type="button" class="pill sm glass" data-act="photos">Retour</button></div>'
+  const iso = new Date(p.d - new Date(p.d).getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  sheet('<div class="col"><span class="label">Photo</span><span class="h2">' + dateFr(p.d, true) + '</span></div>'
     + '<img src="' + p.url + '" alt="Photo de suivi du ' + dateFr(p.d, true) + '" style="width:100%;border-radius:20px;display:block">'
-    + '<button type="button" class="pill glass wide" data-act="del-photo" data-id="' + p.id + '" style="color:var(--mut)">Supprimer cette photo</button>', 1, 'full');
+    + '<label class="col" style="gap:6px"><span class="label">Date de la photo</span><input class="textin" type="date" id="photo-date" data-id="' + p.id + '" value="' + iso + '" max="' + new Date().toISOString().slice(0, 10) + '"></label>'
+    + '<div class="row"><button type="button" class="pill glass grow" data-act="del-photo" data-id="' + p.id + '" style="color:var(--mut)">Supprimer</button><button type="button" class="pill gold-btn grow" data-act="photos">Retour aux photos</button></div>', 1, 'full');
+}
+
+// Changement de date d'une photo (appelé par app.js quand la case change).
+export async function onPhotoDate(input) {
+  const t = Date.parse(input.value + 'T12:00:00');
+  if (isNaN(t)) return;
+  await setPhotoDate(input.dataset.id, t);
+  photos = await listPhotos();
+  render();
+  toast('Date modifiée');
+}
+
+async function exportPhotos() {
+  const files = await photoFiles();
+  if (!files.length) return;
+  try {
+    if (navigator.canShare && navigator.canShare({ files })) { await navigator.share({ files }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  // Sans le partage du téléphone : téléchargement un par un.
+  for (const f of files) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(f);
+    a.download = f.name;
+    a.click();
+    await new Promise((r) => setTimeout(r, 250));
+    URL.revokeObjectURL(a.href);
+  }
+  toast(plural(files.length, 'photo exportée', 'photos exportées'));
 }
 
 Object.assign(ACTIONS, {
@@ -160,13 +194,20 @@ Object.assign(ACTIONS, {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    input.multiple = true;
     input.onchange = async () => {
-      const f = input.files && input.files[0];
-      if (!f) return;
-      try { await addPhoto(f); photos = await listPhotos(); render(); sheetPhotos(); toast('Photo ajoutée'); } catch (e) { toast('Impossible d’ajouter cette photo'); }
+      const files = [...(input.files || [])];
+      if (!files.length) return;
+      toast(files.length > 1 ? 'Import de ' + files.length + ' photos…' : 'Ajout de la photo…');
+      let ok = 0;
+      for (const f of files) { try { await addPhoto(f); ok += 1; } catch (e) { /* image illisible : on passe à la suivante */ } }
+      photos = await listPhotos();
+      render(); sheetPhotos();
+      toast(ok ? plural(ok, 'photo ajoutée', 'photos ajoutées') + (ok < files.length ? ', ' + (files.length - ok) + ' illisible' + (files.length - ok > 1 ? 's' : '') : '') : 'Impossible d’ajouter ces photos');
     };
     input.click();
   },
+  'export-photos': () => { exportPhotos(); },
   'del-photo': async (el) => {
     if (!confirm('Supprimer définitivement cette photo ?')) return;
     await deletePhoto(el.dataset.id); photos = await listPhotos(); closeSheet(); render(); sheetPhotos();

@@ -8,7 +8,7 @@ import {
 import { rankInfo, heat } from './stats.js';
 import { $, esc, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf } from './ui.js';
 import { viewWorkout, nextRoutine, usualTime, tick, renderRest, keepAwake, onInput } from './seance.js';
-import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos } from './progress.js';
+import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate } from './progress.js';
 
 const DAY = 864e5;
 const midnight = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
@@ -83,6 +83,12 @@ function viewHome() {
 
   if (photoDue()) {
     h += '<section class="glass card row tap" role="button" tabindex="0" data-act="photos"><div class="col grow"><span class="label violet">Rappel</span><span class="h2">C’est le moment de ta photo</span><span class="small mut">Ta dernière photo de suivi a plus de deux semaines.</span></div>' + ICON.chev + '</section>';
+  }
+
+  // Rappel de sauvegarde : toutes les deux semaines, tant que rien n'a été exporté.
+  if (!state.installed) { state.installed = Date.now(); save(); }
+  if (has && Date.now() - (state.lastExport || state.installed) > 14 * DAY) {
+    h += '<section class="glass card row tap" role="button" tabindex="0" data-act="settings"><div class="col grow"><span class="label violet">Rappel</span><span class="h2">Pense à sauvegarder</span><span class="small mut">Tes séances n’existent que dans ce téléphone. Exporte une sauvegarde depuis les réglages.</span></div>' + ICON.chev + '</section>';
   }
 
   if (rs.length) {
@@ -247,6 +253,8 @@ function pickFile(accept, onText) {
 async function exportBackup() {
   const name = 'ascension-sauvegarde-' + new Date().toISOString().slice(0, 10) + '.json';
   const file = new File([exportJson()], name, { type: 'application/json' });
+  state.lastExport = Date.now();
+  save();
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
   } catch (e) { if (e && e.name === 'AbortError') return; }
@@ -260,7 +268,8 @@ async function exportBackup() {
 // ---------- Actions de ce fichier ----------
 Object.assign(ACTIONS, {
   settings: () => sheetSettings(),
-  close: () => closeSheet(),
+  // Pendant une modification, on demande avant de fermer pour ne pas perdre le travail par erreur.
+  close: () => { if (ui.edit && !confirm('Fermer sans enregistrer les modifications ?')) return; closeSheet(); },
   close2: () => closeSheet2(),
   level: () => sheetLevel(),
   week: (el) => sheetWeek(el.dataset.m ? +el.dataset.m : 0),
@@ -310,6 +319,27 @@ document.addEventListener('keydown', (ev) => {
   if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('[role=button]')) { ev.preventDefault(); ev.target.click(); }
 });
 document.addEventListener('input', (ev) => { onInput(ev.target); });
+document.addEventListener('change', (ev) => { if (ev.target.id === 'photo-date') onPhotoDate(ev.target); });
+
+// Tirer une fenêtre vers le bas la ferme (quand elle est en haut de son contenu, et hors modification).
+let drag = null;
+document.addEventListener('touchstart', (ev) => {
+  const box = ev.target.closest && ev.target.closest('.sheet > div');
+  drag = box && box.scrollTop <= 0 && !ui.edit && !ev.target.closest('input') ? { y: ev.touches[0].clientY, box, dy: 0 } : null;
+}, { passive: true });
+document.addEventListener('touchmove', (ev) => {
+  if (!drag) return;
+  drag.dy = ev.touches[0].clientY - drag.y;
+  if (drag.dy > 0) { drag.box.style.transition = 'none'; drag.box.style.transform = 'translateY(' + drag.dy + 'px)'; }
+}, { passive: true });
+document.addEventListener('touchend', () => {
+  if (!drag) return;
+  const { box, dy } = drag;
+  drag = null;
+  if (dy > 110) { if (box.closest('#sheet2')) closeSheet2(); else closeSheet(); return; }
+  box.style.transition = 'transform 0.25s';
+  box.style.transform = '';
+});
 // Sélectionne le contenu d'une case quand on la touche, pour taper directement la nouvelle valeur.
 document.addEventListener('focusin', (ev) => { if (ev.target.matches && ev.target.matches('.field input, .bignum, .midnum')) setTimeout(() => ev.target.select(), 0); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { keepAwake(); renderRest(); } });
@@ -323,4 +353,16 @@ loadPhotos().then(() => { if (ui.tab === 'home' && photoDue()) render(); });
 
 // Le cache hors ligne ne s'active que sur la vraie adresse en ligne, pas pendant les tests sur le PC.
 const local = ['localhost', '127.0.0.1'].includes(location.hostname);
-if ('serviceWorker' in navigator && window.isSecureContext && !local) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator && window.isSecureContext && !local) {
+  // Quand une nouvelle version vient d'être installée, on recharge tout de suite, sauf en pleine séance.
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!state.active && !$('sheet').firstElementChild) location.reload();
+      else toast('Mise à jour prête, elle s’installera à la prochaine ouverture');
+    });
+  }
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    // À chaque retour dans l'app, on regarde s'il y a une mise à jour.
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => {});
+}

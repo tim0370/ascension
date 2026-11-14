@@ -267,7 +267,7 @@ function sheetPicker() {
   const old = $('picker-list');
   if (old) { old.innerHTML = items; return; }
   const title = ui.pick && ui.pick.mode === 'replace' ? 'Remplacer par' : 'Ajouter un exercice';
-  sheet('<div class="row between"><h1 class="h1">' + title + '</h1><button type="button" class="pill sm glass" data-act="close2">Fermer</button></div>'
+  sheet('<h1 class="h1">' + title + '</h1>'
     + '<input class="textin" id="picker-q" placeholder="Chercher ou créer un exercice" aria-label="Chercher ou créer un exercice" value="' + esc(ui.pickerQuery) + '">'
     + '<div class="list" id="picker-list">' + items + '</div>', 2);
 }

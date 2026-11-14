@@ -69,7 +69,9 @@ export function toast(msg, gold) {
 export function sheet(html, layer, cls) {
   const box = $(layer === 2 ? 'sheet2' : 'sheet');
   const open = !!box.firstElementChild;
-  box.innerHTML = '<div class="sheet' + (cls ? ' ' + cls : '') + (open ? ' noanim' : '') + '"><div>' + html + '</div></div>';
+  // Une croix reste toujours visible en haut à droite ; on peut aussi tirer la fenêtre vers le bas (voir app.js).
+  const x = '<button type="button" class="sheet-x" data-act="' + (layer === 2 ? 'close2' : 'close') + '" aria-label="Fermer">' + ICON.x + '</button>';
+  box.innerHTML = '<div class="sheet' + (cls ? ' ' + cls : '') + (open ? ' noanim' : '') + '"><div>' + x + html + '</div></div>';
 }
 export function closeSheet() { $('sheet').innerHTML = ''; $('sheet2').innerHTML = ''; ui.edit = null; }
 export function closeSheet2() { $('sheet2').innerHTML = ''; }

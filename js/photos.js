@@ -38,11 +38,34 @@ function shrink(file) {
   });
 }
 
+// Ajoute une photo. La date retenue est celle du fichier (pour garder la bonne date quand on importe d'anciennes photos).
+let seq = 0;
 export async function addPhoto(file) {
   const blob = await shrink(file);
-  const d = Date.now();
-  await tx('readwrite', (s) => s.put({ id: 'p' + d, d, blob }));
+  const now = Date.now();
+  const d = file.lastModified && file.lastModified < now ? file.lastModified : now;
+  seq += 1;
+  await tx('readwrite', (s) => s.put({ id: 'p' + now + '-' + seq, d, blob }));
   return d;
+}
+
+// Change la date d'une photo (utile quand la date du fichier n'est pas la bonne).
+export async function setPhotoDate(id, d) {
+  const p = await tx('readonly', (s) => s.get(id));
+  if (!p) return;
+  p.d = d;
+  await tx('readwrite', (s) => s.put(p));
+}
+
+// Toutes les photos sous forme de fichiers, pour les exporter : ascension-photo-2026-11-14.jpg
+export async function photoFiles() {
+  const all = (await tx('readonly', (s) => s.getAll())) || [];
+  const seen = {};
+  return all.sort((a, b) => a.d - b.d).map((p) => {
+    const day = new Date(p.d).toISOString().slice(0, 10);
+    seen[day] = (seen[day] || 0) + 1;
+    return new File([p.blob], 'ascension-photo-' + day + (seen[day] > 1 ? '-' + seen[day] : '') + '.jpg', { type: 'image/jpeg' });
+  });
 }
 
 // Liste des photos, de la plus récente à la plus ancienne : [{ id, d, url }]
