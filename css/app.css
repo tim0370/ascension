@@ -15,7 +15,9 @@
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* touch-action évite le zoom quand on tape vite deux fois sur un bouton (plus et moins, valider). */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+html { color-scheme: dark; }
 html, body { margin: 0; background: var(--bg); }
 body {
   color: var(--txt);
@@ -27,7 +29,11 @@ body {
   overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
   font-variant-numeric: tabular-nums;
+  /* Comme une vraie app : pas de sélection de texte ni de menu au toucher long, sauf dans les cases à remplir. */
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
+input, textarea { -webkit-user-select: text; user-select: text; }
+body.locked { overflow: hidden; }
 /* Lueurs d'ambiance qui bougent lentement derrière le verre */
 body::before, body::after { content: ''; position: fixed; border-radius: 999px; pointer-events: none; z-index: 0; }
 body::before { right: -90px; top: -40px; width: 320px; height: 320px; background: rgba(124, 92, 224, 0.42); filter: blur(90px); animation: drift 16s ease-in-out infinite alternate; }
@@ -142,6 +148,19 @@ a { color: var(--gold); }
 .nav .fab:active { transform: scale(0.93); }
 
 /* ---------- Accueil ---------- */
+/* Bloc principal : la séance à faire, en violet lumineux */
+.cta { border-radius: 30px; padding: 22px 20px 20px; display: flex; flex-direction: column; gap: 16px;
+  background: linear-gradient(135deg, rgba(132, 104, 232, 0.38) 0%, rgba(132, 104, 232, 0.12) 55%, rgba(205, 170, 98, 0.10) 100%);
+  border: 1px solid rgba(160, 138, 245, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 20px 44px rgba(0, 0, 0, 0.4), 0 0 44px rgba(132, 104, 232, 0.22); }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tile { border-radius: 26px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-height: 168px; }
+.ring { position: relative; width: 76px; height: 76px; flex-shrink: 0; }
+.ring svg { width: 100%; height: 100%; }
+.ring span { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 19px; }
+.ico { width: 40px; height: 40px; flex-shrink: 0; border-radius: 13px; display: flex; align-items: center; justify-content: center; background: rgba(132, 104, 232, 0.16); color: var(--violet-soft); }
+.ico.gold { background: rgba(205, 170, 98, 0.14); color: var(--gold); }
+.ico svg { width: 20px; height: 20px; }
 .hero { border-radius: 32px; padding: 24px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
 .emblem { width: 168px; height: 168px; filter: drop-shadow(0 0 22px rgba(132, 104, 232, 0.45)); }
 .emblem .arc { transition: stroke-dashoffset 1.2s var(--ease); }
@@ -225,7 +244,7 @@ button.chip { height: 44px; min-width: 56px; font-size: 15px; }
 
 /* ---------- Fenêtres ---------- */
 .sheet { position: fixed; inset: 0; z-index: 10; background: rgba(5, 4, 9, 0.72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); display: flex; align-items: flex-end; justify-content: center; animation: fade 0.25s ease; }
-.sheet > div { position: relative; width: 100%; max-width: 480px; max-height: 88dvh; overflow-y: auto; border-radius: 30px 30px 0 0; padding: 30px 20px calc(env(safe-area-inset-bottom) + 22px) 20px; background: #13111A; border: 1px solid rgba(255, 255, 255, 0.10); border-bottom: none; display: flex; flex-direction: column; gap: 14px; animation: slideup 0.4s var(--ease); }
+.sheet > div { overscroll-behavior: contain; position: relative; width: 100%; max-width: 480px; max-height: 88dvh; overflow-y: auto; border-radius: 30px 30px 0 0; padding: 30px 20px calc(env(safe-area-inset-bottom) + 22px) 20px; background: #13111A; border: 1px solid rgba(255, 255, 255, 0.10); border-bottom: none; display: flex; flex-direction: column; gap: 14px; animation: slideup 0.4s var(--ease); }
 .sheet > div::before { content: ''; position: absolute; left: 50%; top: 10px; width: 40px; height: 4px; margin-left: -20px; border-radius: 999px; background: rgba(255, 255, 255, 0.22); }
 /* Croix de fermeture : reste collée en haut à droite même quand on fait défiler */
 .sheet-x { position: sticky; top: 0; z-index: 3; align-self: flex-end; flex-shrink: 0; width: 44px; height: 44px; margin: -16px -6px -58px 0; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: var(--soft); background: rgba(44, 40, 58, 0.94); border: 1px solid rgba(255, 255, 255, 0.16); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); }

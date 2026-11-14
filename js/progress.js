@@ -37,7 +37,7 @@ function sheetRank() {
   if (info.next) {
     h += '<span class="label violet">Examen du rang ' + info.next.letter + ' · ' + info.passed + ' sur ' + info.tests.length + '</span>';
     for (const t of info.tests) {
-      h += '<button type="button" class="exo" style="text-align:left;width:100%"' + (t.exo ? ' data-act="exo" data-name="' + esc(t.exo) + '"' : ' data-tab="run"') + '>'
+      h += '<button type="button" class="exo" style="text-align:left;width:100%"' + (t.exo ? ' data-act="exo" data-name="' + esc(t.exo) + '"' : ' data-act="run"') + '>'
         + '<div class="row between"><span style="font-weight:600">' + esc(t.label) + '</span>' + (t.done ? '<span class="tag gold">Réussie</span>' : '<span class="small mut">' + Math.round(t.ratio * 100) + ' %</span>') + '</div>'
         + '<div class="bar' + (t.done ? ' gold' : '') + '"><div style="width:' + Math.round(t.ratio * 100) + '%"></div></div><span class="small mut">' + esc(t.best) + '</span></button>';
     }
@@ -60,7 +60,7 @@ function sheetTree(id) {
   let h = '<div class="col"><span class="label">' + st.done + ' palier' + (st.done > 1 ? 's' : '') + ' sur ' + st.nodes.length + '</span><h1 class="h1">' + esc(st.name) + '</h1></div><div class="tree">';
   for (const n of st.nodes) {
     const icon = n.state === 'done' ? ICON.check : (n.state === 'current' ? ICON.dot : ICON.lock);
-    h += '<button type="button" class="node ' + n.state + '"' + (n.run ? ' data-tab="run"' : ' data-act="exo" data-name="' + esc(n.exo) + '"') + '><span class="mark" style="' + (n.state === 'current' ? 'color:var(--violet)' : '') + '">' + icon + '</span>';
+    h += '<button type="button" class="node ' + n.state + '"' + (n.run ? ' data-act="run"' : ' data-act="exo" data-name="' + esc(n.exo) + '"') + '><span class="mark" style="' + (n.state === 'current' ? 'color:var(--violet)' : '') + '">' + icon + '</span>';
     if (n.state === 'current') {
       h += '<div class="exo grow" style="border-color:rgba(132,104,232,0.6)"><div class="row between"><span style="font-weight:600">' + esc(n.label) + '</span><span class="tag">En cours</span></div>'
         + '<div class="bar"><div style="width:' + Math.round(n.ratio * 100) + '%"></div></div><span class="small mut">Objectif : ' + goalText(n) + (n.best ? ' · ton meilleur : ' + esc(n.best) : ' · pas encore essayé') + '</span></div>';

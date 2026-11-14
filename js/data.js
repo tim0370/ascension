@@ -233,6 +233,15 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 9, items: [
+    'Nouvel accueil : la séance à faire en grand, deux tuiles pour le rang et la course',
+    'Recherche libre dans l’historique : une séance, un exercice, un mois',
+    'La course n’est plus un onglet : elle est dans Séance et sur l’accueil',
+    'Les réglages sont dans la barre du bas',
+    'Plus de zoom par erreur quand tu tapes vite sur plus, moins ou valider',
+    'Deux appuis rapides ne valident plus deux séries d’un coup',
+    'La recherche d’exercice s’ouvre en plein écran, au-dessus du clavier',
+  ] },
   { v: 8, items: [
     'Chrono intégré pour les exercices en secondes, avec un bip à l’objectif',
     'Note sur chaque exercice, reprise automatiquement la fois suivante',

@@ -9,10 +9,10 @@ export const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
 export const toNum = (v) => parseFloat(String(v).replace(',', '.')) || 0;
 
 // Numéro de version affiché dans les réglages. À augmenter avec VERSION dans sw.js et NEWS dans data.js.
-export const VERSION = 8;
+export const VERSION = 9;
 
 // État de l'interface (pas enregistré). hFilter = filtre de l'historique. edit = brouillon en cours ; pick = à quoi sert le choix d'exercice.
-export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null, hFilter: 'all' };
+export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null, hQuery: '' };
 
 // Chaque fichier ajoute ici ses actions : ACTIONS['nom'] = (élément touché) => { ... }
 // Un bouton les déclenche avec l'attribut data-act="nom".
@@ -34,6 +34,10 @@ export const ICON = {
   check: svg('<path d="M6 12.5l4 4 8-9"/>'),
   lock: svg('<rect x="6" y="11" width="12" height="9" rx="2"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/>'),
   dot: svg('<circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>'),
+  bell: svg('<path d="M3 12h18M6 8v8M18 8v8M9 6v12M15 6v12"/>'),
+  run: svg('<circle cx="15" cy="5" r="2"/><path d="M5 21l3-5 4 1.500 1-5.500-4-1-2.500 3M13 12l3 2 3-1M12 17.500l2 3.500"/>'),
+  cam: svg('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.500"/>'),
+  save: svg('<path d="M12 4v10M8 10l4 4 4-4M5 19h14"/>'),
 };
 export const checkDark = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#17120A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
@@ -60,6 +64,14 @@ export function emblem(letter, ratio) {
     + '<text x="84" y="104" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="56" font-weight="700" fill="url(#gold2)">' + letter + '</text></svg>';
 }
 
+// Anneau de progression avec un texte au centre (tuiles de l'accueil).
+export function ring(ratio, label, gold) {
+  const C = 2 * Math.PI * 30;
+  return '<div class="ring"><svg aria-hidden="true" viewBox="0 0 72 72"><circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="6"/>'
+    + '<circle cx="36" cy="36" r="30" fill="none" stroke="' + (gold ? '#D8BD82' : '#8468E8') + '" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + (C * (1 - Math.max(0, Math.min(1, ratio)))).toFixed(1) + '" transform="rotate(-90 36 36)"/></svg>'
+    + '<span class="num">' + label + '</span></div>';
+}
+
 // ---------- Messages et fenêtres ----------
 export function toast(msg, gold) {
   $('toast').innerHTML = '<div class="toast glass' + (gold ? ' gold' : '') + '">' + esc(msg) + '</div>';
@@ -75,9 +87,10 @@ export function sheet(html, layer, cls) {
   // Une croix reste toujours visible en haut à droite ; on peut aussi tirer la fenêtre vers le bas (voir app.js).
   const x = '<button type="button" class="sheet-x" data-act="' + (layer === 2 ? 'close2' : 'close') + '" aria-label="Fermer">' + ICON.x + '</button>';
   box.innerHTML = '<div class="sheet' + (cls ? ' ' + cls : '') + (open ? ' noanim' : '') + '"><div>' + x + html + '</div></div>';
+  document.body.classList.add('locked'); // la page derrière ne défile plus
 }
-export function closeSheet() { $('sheet').innerHTML = ''; $('sheet2').innerHTML = ''; ui.edit = null; }
-export function closeSheet2() { $('sheet2').innerHTML = ''; }
+export function closeSheet() { $('sheet').innerHTML = ''; $('sheet2').innerHTML = ''; ui.edit = null; document.body.classList.remove('locked'); }
+export function closeSheet2() { $('sheet2').innerHTML = ''; if (!$('sheet').firstElementChild) document.body.classList.remove('locked'); }
 export const closeBtn = '<button type="button" class="pill gold-btn wide" data-act="close">Fermer</button>';
 
 // Petite explosion de points dorés, pour un record, un niveau ou un rang gagné.

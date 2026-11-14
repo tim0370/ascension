@@ -7,7 +7,7 @@ import {
 } from './store.js';
 import { NEWS } from './data.js';
 import { rankInfo, heat } from './stats.js';
-import { $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION } from './ui.js';
+import { $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg } from './ui.js';
 import { viewWorkout, nextRoutine, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate } from './progress.js';
 
@@ -27,9 +27,10 @@ function viewHome() {
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   const rs = runs();
   const t0 = midnight();
+  const tick = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#D8BD82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   let h = '<div class="row between"><div class="col" style="gap:2px"><span class="small mut">' + esc(today.charAt(0).toUpperCase() + today.slice(1)) + '</span><h1 class="h1">Ascension</h1></div>'
-    + '<button type="button" class="iconbtn glass" data-act="settings" aria-label="Réglages">' + ICON.gear + '</button></div>';
+    + (has ? '<button type="button" class="pill sm glass" data-act="week">' + plural(streak, 'semaine', 'semaines') + '</button>' : '') + '</div>';
 
   const t = totals();
   h += '<section class="glass hero hud tap" role="button" tabindex="0" data-act="level">' + emblem(info.rank.letter, lv.into / lv.need)
@@ -47,65 +48,79 @@ function viewHome() {
       + '<button type="button" class="pill gold-btn wide" data-act="pick-hevy">Importer depuis Hevy</button></section>';
   }
 
-  // La séance du jour
+  // Le bloc principal : la séance à faire
   if (state.active) {
-    h += '<section class="glass card hud row"><div class="col grow"><span class="label violet">Séance en cours</span><span class="h2">' + esc(state.active.label) + '</span>'
-      + '<span class="small mut">Commencée il y a ' + dur((Date.now() - state.active.start) / 1000) + '</span></div>'
-      + '<button type="button" class="pill gold-btn" data-tab="workout">Reprendre</button></section>';
+    const a = state.active;
+    const total = a.exercises.reduce((n, e) => n + e.sets.length, 0);
+    const done = a.exercises.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0);
+    h += '<section class="cta hud"><div class="col" style="gap:4px"><span class="label violet">Séance en cours</span><span class="h1">' + esc(a.label) + '</span>'
+      + '<span class="small" style="color:var(--soft)">' + done + ' sur ' + plural(total, 'série', 'séries') + ' · commencée il y a ' + dur((Date.now() - a.start) / 1000) + '</span></div>'
+      + '<div class="bar gold"><div style="width:' + (total ? Math.round((done / total) * 100) : 0) + '%"></div></div>'
+      + '<button type="button" class="pill gold-btn wide" data-tab="workout">Reprendre la séance</button></section>';
   } else {
     const doneToday = state.workouts.find((w) => w.start >= t0 && w.exercises.some((e) => e.name !== 'Running'));
     const ranToday = rs.some((r) => r.date >= t0);
-    if (new Date().getDay() === 0 && !ranToday) {
-      h += '<section class="glass card hud row"><div class="col grow"><span class="label violet">Dimanche</span><span class="h2">Course du dimanche</span>'
-        + '<span class="small mut">' + (rs.length ? 'La dernière : ' + fr(rs[0].d) + ' km en ' + dur(rs[0].t) : 'Note ta distance et ton temps') + '</span></div>'
-        + '<button type="button" class="pill gold-btn" data-tab="run">Noter</button></section>';
-    }
+    const sunday = new Date().getDay() === 0 && !ranToday;
     const r = nextRoutine();
+    if (sunday) {
+      h += '<section class="cta hud"><div class="col" style="gap:4px"><span class="label violet">Dimanche</span><span class="h1">Course du dimanche</span>'
+        + '<span class="small" style="color:var(--soft)">' + (rs.length ? 'La dernière : ' + fr(rs[0].d) + ' km en ' + dur(rs[0].t) : 'Note ta distance et ton temps') + '</span></div>'
+        + '<button type="button" class="pill gold-btn wide" data-act="run">Noter ma course</button></section>';
+    }
     if (r) {
-      h += '<section class="glass card hud row tap" role="button" tabindex="0" data-act="routine" data-id="' + esc(r.id) + '"><div class="col grow"><span class="label violet">' + (doneToday ? 'Séance faite aujourd’hui · la prochaine' : 'Ta prochaine séance') + '</span><span class="h2">' + esc(r.label) + '</span>'
-        + '<span class="small mut">' + plural(r.exercises.length, 'exercice', 'exercices') + ' · ' + usualTime(r) + '</span></div>'
-        + '<button type="button" class="pill gold-btn" data-act="start" data-id="' + esc(r.id) + '">Commencer</button></section>';
+      const names = r.exercises.slice(0, 4).map((e) => exoName(e.name)).join(' · ') + (r.exercises.length > 4 ? ' · +' + (r.exercises.length - 4) : '');
+      h += '<section class="' + (sunday ? 'glass card' : 'cta') + ' hud tap" role="button" tabindex="0" data-act="routine" data-id="' + esc(r.id) + '"' + (sunday ? ' style="display:flex;flex-direction:column;gap:14px"' : '') + '><div class="col" style="gap:4px"><span class="label violet">' + (doneToday ? 'Séance faite aujourd’hui · la prochaine' : 'Ta prochaine séance') + '</span>'
+        + '<span class="h1">' + esc(r.label) + '</span><span class="small" style="color:var(--soft)">' + plural(r.exercises.length, 'exercice', 'exercices') + ' · ' + usualTime(r) + '</span>'
+        + '<span class="small mut">' + esc(names) + '</span></div>'
+        + '<div class="row"><button type="button" class="pill glass" data-act="start" data-id="' + esc(r.id) + '" data-express="1">Express</button>'
+        + '<button type="button" class="pill gold-btn grow" data-act="start" data-id="' + esc(r.id) + '">Commencer</button></div></section>';
     }
   }
 
   if (has) {
     h += '<section class="glass card col tap" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span>'
-      + '<span class="row small mut" style="gap:4px">' + plural(streak, 'semaine', 'semaines') + ' d’affilée' + ICON.chev + '</span></div>'
+      + '<span class="row small mut" style="gap:4px">' + (wq.done ? 'Objectif atteint' : wq.cur + ' sur ' + wq.goal + ' séances') + ICON.chev + '</span></div>'
       + '<div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div>'
-      + '<div class="col" style="gap:6px"><div class="bar' + (wq.done ? ' gold' : '') + '"><div style="width:' + Math.round((wq.cur / wq.goal) * 100) + '%"></div></div>'
-      + '<span class="small mut">' + (wq.done ? 'Objectif de la semaine atteint : ' + wq.goal + ' séances' : wq.cur + ' sur ' + wq.goal + ' séances cette semaine') + '</span></div></section>';
+      + '<div class="bar' + (wq.done ? ' gold' : '') + '"><div style="width:' + Math.round((wq.cur / wq.goal) * 100) + '%"></div></div></section>';
+
+    // Deux tuiles : l'examen de rang et la course
+    h += '<div class="tiles">';
+    if (info.next) {
+      const todo = info.tests.find((x) => !x.done);
+      h += '<section class="glass tile tap" role="button" tabindex="0" data-act="rank"><span class="label violet">Examen rang ' + info.next.letter + '</span>'
+        + ring(info.passed / info.tests.length, info.passed + '/' + info.tests.length, true)
+        + '<span class="small mut">' + (todo ? esc(todo.label) : 'Tout est réussi') + '</span></section>';
+    } else {
+      h += '<section class="glass tile tap" role="button" tabindex="0" data-act="rank"><span class="label violet">Rang</span>' + rankSvg(info.rank.letter) + '<span class="small mut">Tu es au sommet</span></section>';
+    }
+    if (rs.length) {
+      const six = rs.slice(0, 6).reverse();
+      const max = Math.max(...six.map((x) => x.d));
+      h += '<section class="glass tile tap" role="button" tabindex="0" data-act="run"><span class="label">Dernière course</span>'
+        + '<div class="col" style="gap:2px"><span class="num" style="font-size:26px">' + fr(rs[0].d) + ' km</span><span class="small mut">' + dur(rs[0].t) + ' · ' + pace(rs[0].d, rs[0].t).replace(' par km', '/km') + '</span></div>'
+        + '<div class="bars" style="height:38px;margin-top:auto" role="img" aria-label="Distance des dernières courses">' + six.map((x, i) => '<div class="' + (i === six.length - 1 ? 'last' : '') + '" style="height:' + Math.max(5, Math.round((x.d / max) * 38)) + 'px"></div>').join('') + '</div></section>';
+    } else {
+      h += '<section class="glass tile tap" role="button" tabindex="0" data-act="run"><span class="label">Course</span><span class="h2">Aucune course</span><span class="small mut" style="margin-top:auto">Touche pour en noter une</span></section>';
+    }
+    h += '</div>';
   }
 
   if (quests.length) {
-    const doneCount = quests.filter((q) => q.done).length;
-    h += '<div class="sec"><span class="h2">Quêtes du jour</span><span class="small mut">' + doneCount + ' sur ' + quests.length + '</span></div>'
-      + '<section class="glass card list tap" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + quests.map((q) => '<div class="item"><span class="qmark' + (q.done ? ' done' : '') + '">' + (q.done ? '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#D8BD82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') + '</span>'
-      + '<div class="col grow" style="gap:1px"><span' + (q.done ? ' class="mut" style="text-decoration:line-through"' : '') + '>' + esc(q.label) + '</span>' + (q.done || !q.cur ? '' : '<span class="small mut">' + q.cur + ' sur ' + q.goal + '</span>') + '</div>'
-      + '<span class="gold-text small" style="font-weight:600">+' + q.xp + ' XP</span></div>').join('')
-      + '<div class="item"><span class="qmark' + (wq.done ? ' done' : '') + '">' + (wq.done ? '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#D8BD82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') + '</span>'
-      + '<div class="col grow" style="gap:1px"><span' + (wq.done ? ' class="mut" style="text-decoration:line-through"' : '') + '>' + esc(wq.label) + ' <span class="tag" style="margin-left:4px">Semaine</span></span>' + (wq.done ? '' : '<span class="small mut">' + wq.cur + ' sur ' + wq.goal + '</span>') + '</div>'
-      + '<span class="gold-text small" style="font-weight:600">+' + wq.xp + ' XP</span></div></section>';
+    const all = quests.concat([wq]);
+    const doneCount = all.filter((q) => q.done).length;
+    h += '<div class="sec"><span class="h2">Quêtes</span><span class="small mut">' + doneCount + ' sur ' + all.length + '</span></div>'
+      + '<section class="glass card list tap" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + all.map((q) => '<div class="item"><span class="qmark' + (q.done ? ' done' : '') + '">' + (q.done ? tick : '') + '</span>'
+      + '<div class="col grow" style="gap:1px"><span' + (q.done ? ' class="mut" style="text-decoration:line-through"' : '') + '>' + esc(q.label) + (q.id === 'week' ? ' <span class="tag" style="margin-left:4px">Semaine</span>' : '') + '</span>' + (q.done || !q.cur ? '' : '<span class="small mut">' + q.cur + ' sur ' + q.goal + '</span>') + '</div>'
+      + '<span class="gold-text small" style="font-weight:600">+' + q.xp + ' XP</span></div>').join('') + '</section>';
   }
-
-  if (has) h += rankTeaser(info);
 
   if (photoDue()) {
-    h += '<section class="glass card row tap" role="button" tabindex="0" data-act="photos"><div class="col grow"><span class="label violet">Rappel</span><span class="h2">C’est le moment de ta photo</span><span class="small mut">Ta dernière photo de suivi a plus de deux semaines.</span></div>' + ICON.chev + '</section>';
+    h += '<section class="glass card row tap" role="button" tabindex="0" data-act="photos"><span class="ico">' + ICON.cam + '</span><div class="col grow"><span class="h2">C’est le moment de ta photo</span><span class="small mut">La dernière a plus de deux semaines.</span></div>' + ICON.chev + '</section>';
   }
-
   // Rappel de sauvegarde : toutes les deux semaines, tant que rien n'a été exporté.
   if (!state.installed) { state.installed = Date.now(); save(); }
   if (has && Date.now() - (state.lastExport || state.installed) > 14 * DAY) {
-    h += '<section class="glass card row tap" role="button" tabindex="0" data-act="settings"><div class="col grow"><span class="label violet">Rappel</span><span class="h2">Pense à sauvegarder</span><span class="small mut">Tes séances n’existent que dans ce téléphone. Exporte une sauvegarde depuis les réglages.</span></div>' + ICON.chev + '</section>';
-  }
-
-  if (rs.length) {
-    const six = rs.slice(0, 6).reverse();
-    const max = Math.max(...six.map((x) => x.d));
-    h += '<section class="glass card row tap" role="button" tabindex="0" data-act="detail" data-id="' + esc(rs[0].id) + '" style="gap:16px"><div class="col grow"><span class="label">Dernière course</span>'
-      + '<span class="num" style="font-size:24px">' + fr(rs[0].d) + ' km</span>'
-      + '<span class="small mut">' + dur(rs[0].t) + ' · ' + pace(rs[0].d, rs[0].t) + '</span></div>'
-      + '<div class="bars" role="img" aria-label="Distance des dernières courses">' + six.map((x, i) => '<div class="' + (i === six.length - 1 ? 'last' : '') + '" style="height:' + Math.max(6, Math.round((x.d / max) * 60)) + 'px"></div>').join('') + '</div></section>';
+    h += '<section class="glass card row tap" role="button" tabindex="0" data-act="settings"><span class="ico gold">' + ICON.save + '</span><div class="col grow"><span class="h2">Pense à sauvegarder</span><span class="small mut">Tes séances n’existent que dans ce téléphone.</span></div>' + ICON.chev + '</section>';
   }
   return h;
 }
@@ -170,6 +185,32 @@ function summary(w) {
   return plural(w.exercises.length, 'exercice', 'exercices') + ' · ' + plural(sets, 'série', 'séries') + (w.end > w.start ? ' · ' + dur((w.end - w.start) / 1000) : '');
 }
 
+const isRun = (w) => w.exercises.some((e) => e.name === 'Running');
+
+// La liste des séances, filtrée par la recherche (nom de séance, exercice, mois…).
+function historyList() {
+  const q = norm(ui.hQuery || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const flat = (s) => norm(s).normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const monthOf = (w) => new Date(w.start).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  const shown = sorted().filter((w) => !q || flat(titleOf(w) + ' ' + w.title + ' ' + monthOf(w) + ' ' + w.exercises.map((e) => exoName(e.name) + ' ' + (e.note || '')).join(' ') + (isRun(w) ? ' course courir' : '') + (w.feel ? ' ' + w.feel : '')).includes(q));
+  if (!shown.length) return '<section class="glass card"><span class="mut">Aucune séance ne correspond à « ' + esc(ui.hQuery) + ' ».</span></section>';
+  // Bilan de chaque mois : nombre de séances, de séries et de kilomètres.
+  const recap = {};
+  for (const w of shown) { const r = recap[monthOf(w)] || (recap[monthOf(w)] = { n: 0, sets: 0, km: 0 }); r.n += 1; for (const e of w.exercises) for (const s of e.sets) { if (e.name === 'Running') r.km += s.d || 0; else r.sets += 1; } }
+  let h = (q ? '<span class="small mut">' + plural(shown.length, 'séance trouvée', 'séances trouvées') + '</span>' : '') + '<section class="glass card list" style="padding:4px 16px">';
+  let month = '';
+  for (const w of shown.slice(0, ui.historyLimit)) {
+    const m = monthOf(w);
+    if (m !== month) { month = m; const r = recap[m]; h += '<div class="row between month"><span class="label">' + esc(m) + '</span><span class="small mut">' + plural(r.n, 'séance', 'séances') + (r.sets ? ' · ' + r.sets + ' séries' : '') + (r.km ? ' · ' + fr(r.km, 1) + ' km' : '') + '</span></div>'; }
+    const run = isRun(w) && w.exercises.length === 1;
+    h += '<button type="button" class="item" data-act="detail" data-id="' + esc(w.id) + '"><span class="ico' + (run ? ' gold' : '') + '">' + (run ? ICON.run : ICON.bell) + '</span><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(titleOf(w)) + (w.prs ? ' <span class="gold-text small">· ' + plural(w.prs, 'record', 'records') + '</span>' : '') + '</span><span class="small mut">' + esc(summary(w)) + '</span></div>'
+      + '<span class="small mut" style="white-space:nowrap">' + new Date(w.start).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }) + '</span></button>';
+  }
+  h += '</section>';
+  if (shown.length > ui.historyLimit) h += '<button type="button" class="pill glass wide" data-act="more">Voir plus</button>';
+  return h;
+}
+
 function viewHistory() {
   const all = sorted();
   let h = '<div class="col" style="gap:2px"><span class="small mut">' + plural(all.length, 'séance enregistrée', 'séances enregistrées') + '</span><h1 class="h1">Historique</h1></div>';
@@ -180,31 +221,10 @@ function viewHistory() {
   const active = cols.reduce((n, c) => n + c.filter((d) => d.n).length, 0);
   h += '<section class="glass card hud col" style="gap:12px"><div class="row between"><span class="h2">Régularité</span><span class="small mut">' + plural(active, 'jour actif', 'jours actifs') + ' sur 18 semaines</span></div>'
     + '<div class="heat">' + cols.map((c) => '<div role="button" tabindex="0" data-act="week" data-m="' + c[0].start + '" aria-label="Semaine du ' + new Date(c[0].start).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + '">' + c.map((d) => '<i class="' + (d.future ? 'future' : (d.n > 1 ? 'n2' : (d.n ? 'n1' : ''))) + (d.today ? ' today' : '') + '"></i>').join('') + '</div>').join('') + '</div>'
-    + '<span class="small mut">Chaque colonne est une semaine, du lundi au dimanche. Touche une colonne pour voir ses séances.</span></section>';
+    + '<span class="small mut">Chaque colonne est une semaine. Touche une colonne pour voir ses séances.</span></section>';
 
-  // Filtres : tout, chaque routine, la course.
-  const isRun = (w) => w.exercises.length === 1 && w.exercises[0].name === 'Running';
-  const filters = [['all', 'Tout']].concat(routines().map((r) => [norm(r.title), r.label])).concat([['run', 'Course']]);
-  if (!filters.some((f) => f[0] === ui.hFilter)) ui.hFilter = 'all';
-  h += '<div class="row" style="overflow-x:auto;gap:8px;margin:0 -18px;padding:0 18px">' + filters.map((f) => '<button type="button" class="pill sm ' + (ui.hFilter === f[0] ? 'gold-btn' : 'glass') + '" data-act="h-filter" data-f="' + esc(f[0]) + '">' + esc(f[1]) + '</button>').join('') + '</div>';
-  const shown = all.filter((w) => ui.hFilter === 'all' || (ui.hFilter === 'run' ? isRun(w) : norm(w.title) === ui.hFilter));
-  // Bilan de chaque mois : nombre de séances et de séries.
-  const recap = {};
-  const monthOf = (w) => new Date(w.start).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-  for (const w of shown) { const r = recap[monthOf(w)] || (recap[monthOf(w)] = { n: 0, sets: 0, km: 0 }); r.n += 1; for (const e of w.exercises) for (const s of e.sets) { if (e.name === 'Running') r.km += s.d || 0; else r.sets += 1; } }
-
-  if (!shown.length) return h + '<section class="glass card"><span class="mut">Aucune séance pour ce filtre.</span></section>';
-  h += '<section class="glass card list" style="padding:4px 16px">';
-  let month = '';
-  for (const w of shown.slice(0, ui.historyLimit)) {
-    const m = monthOf(w);
-    if (m !== month) { month = m; const r = recap[m]; h += '<div class="row between month"><span class="label">' + esc(m) + '</span><span class="small mut">' + plural(r.n, 'séance', 'séances') + (r.sets ? ' · ' + r.sets + ' séries' : '') + (r.km ? ' · ' + fr(r.km, 1) + ' km' : '') + '</span></div>'; }
-    h += '<button type="button" class="item" data-act="detail" data-id="' + esc(w.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(titleOf(w)) + (w.prs ? ' <span class="gold-text small">· ' + plural(w.prs, 'record', 'records') + '</span>' : '') + '</span><span class="small mut">' + esc(summary(w)) + '</span></div>'
-      + '<span class="small mut" style="white-space:nowrap">' + new Date(w.start).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }) + '</span></button>';
-  }
-  h += '</section>';
-  if (shown.length > ui.historyLimit) h += '<button type="button" class="pill glass wide" data-act="more">Voir plus</button>';
-  return h;
+  h += '<input class="textin" id="h-search" type="search" placeholder="Chercher une séance, un exercice, un mois" aria-label="Chercher dans l’historique" value="' + esc(ui.hQuery || '') + '">';
+  return h + '<div id="h-list" class="col" style="gap:16px">' + historyList() + '</div>';
 }
 
 export function sheetDetail(id) {
@@ -221,29 +241,27 @@ export function sheetDetail(id) {
     + '<div class="row"><button type="button" class="pill glass grow" data-act="edit-workout" data-id="' + esc(w.id) + '">Modifier</button><button type="button" class="pill glass grow" data-act="delete" data-id="' + esc(w.id) + '" style="color:var(--mut)">Supprimer</button></div>' + closeBtn);
 }
 
-// ---------- Course ----------
-function viewRun() {
+// ---------- Course (une fenêtre, plus un onglet) ----------
+function sheetRun() {
   const rs = runs();
-  let h = '<div class="col" style="gap:2px"><span class="small mut">' + plural(rs.length, 'course', 'courses') + '</span><h1 class="h1">Course</h1></div>';
-  h += '<section class="glass card hud col" style="gap:12px"><h2 class="h2">Ajouter une course</h2>'
+  const todayIso = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  let h = '<div class="col"><span class="label">' + plural(rs.length, 'course', 'courses') + '</span><h1 class="h1">Course à pied</h1></div>';
+  h += '<div class="exo"><span class="label violet">Noter une course</span>'
     + '<div class="row"><label class="field grow" style="height:52px"><input id="run-d" inputmode="decimal" placeholder="0" aria-label="Distance en kilomètres"><span class="unit">km</span></label>'
     + '<label class="field grow" style="height:52px"><input id="run-m" inputmode="numeric" placeholder="0" aria-label="Minutes"><span class="unit">min</span></label>'
     + '<label class="field grow" style="height:52px"><input id="run-s" inputmode="numeric" placeholder="0" aria-label="Secondes"><span class="unit">s</span></label></div>'
-    + '<label class="row" style="gap:10px"><span class="small mut">Jour de la course</span><input class="textin grow" type="date" id="run-date" value="' + new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) + '" max="' + new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) + '" style="height:46px"></label>'
-    + '<button type="button" class="pill gold-btn wide" data-act="add-run">Enregistrer</button></section>';
+    + '<label class="row" style="gap:10px"><span class="small mut">Jour</span><input class="textin grow" type="date" id="run-date" value="' + todayIso + '" max="' + todayIso + '" style="height:46px"></label>'
+    + '<button type="button" class="pill gold-btn wide" data-act="add-run">Enregistrer</button></div>';
   if (rs.length) {
     const longest = rs.reduce((a, b) => (b.d > a.d ? b : a));
     const timed = rs.filter((x) => x.d >= 3 && x.t > 0);
     const fastest = timed.length ? timed.reduce((a, b) => (b.t / b.d < a.t / a.d ? b : a)) : null;
-    h += '<div class="row" style="align-items:stretch"><section class="glass card col grow tap" role="button" tabindex="0" data-act="detail" data-id="' + esc(longest.id) + '"><span class="label">Plus longue</span><span class="h2 gold-text">' + fr(longest.d) + ' km</span><span class="small mut">' + dateFr(longest.date, true) + '</span></section>'
-      + (fastest ? '<section class="glass card col grow tap" role="button" tabindex="0" data-act="detail" data-id="' + esc(fastest.id) + '"><span class="label">Meilleure allure</span><span class="h2 gold-text">' + pace(fastest.d, fastest.t) + '</span><span class="small mut">' + fr(fastest.d) + ' km · ' + dateFr(fastest.date, true) + '</span></section>' : '') + '</div>';
-    const ten = rs.slice(0, 10).reverse();
-    const max = Math.max(...ten.map((x) => x.d));
-    h += '<section class="glass card col" style="gap:14px"><span class="label">10 dernières courses</span><div class="bars" style="height:90px;justify-content:space-between">'
-      + ten.map((x, i) => '<button type="button" data-act="detail" data-id="' + esc(x.id) + '" aria-label="' + fr(x.d) + ' km, ' + dateFr(x.date) + '" style="display:flex;align-items:flex-end;height:90px;padding:0 4px"><span style="display:block;width:14px;border-radius:7px;height:' + Math.max(8, Math.round((x.d / max) * 90)) + 'px;background:' + (i === ten.length - 1 ? 'linear-gradient(180deg,#A08AF5,#6F55D8)' : 'rgba(255,255,255,0.16)') + '"></span></button>').join('') + '</div></section>';
-    h += '<section class="glass card list" style="padding:4px 16px">' + rs.slice(0, 20).map((x) => '<button type="button" class="item" data-act="detail" data-id="' + esc(x.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + fr(x.d) + ' km</span><span class="small mut">' + dur(x.t) + ' · ' + pace(x.d, x.t) + '</span></div><span class="small mut">' + dateFr(x.date) + '</span>' + ICON.chev + '</button>').join('') + '</section>';
+    h += '<div class="row" style="align-items:stretch"><button type="button" class="exo grow" style="text-align:left" data-act="detail" data-id="' + esc(longest.id) + '"><span class="label">Plus longue</span><span class="h2 gold-text">' + fr(longest.d) + ' km</span><span class="small mut">' + dateFr(longest.date, true) + '</span></button>'
+      + (fastest ? '<button type="button" class="exo grow" style="text-align:left" data-act="detail" data-id="' + esc(fastest.id) + '"><span class="label">Meilleure allure</span><span class="h2 gold-text">' + pace(fastest.d, fastest.t) + '</span><span class="small mut">' + fr(fastest.d) + ' km · ' + dateFr(fastest.date, true) + '</span></button>' : '') + '</div>';
+    if (rs.length >= 2) h += '<div class="exo"><span class="label">Distance de tes dernières courses</span>' + chartSvg(rs.slice(0, 16).reverse().map((x) => x.d), ' km') + '</div>';
+    h += '<span class="label">Dernières courses</span><div class="list">' + rs.slice(0, 15).map((x) => '<button type="button" class="item" data-act="detail" data-id="' + esc(x.id) + '"><span class="ico gold">' + ICON.run + '</span><div class="col grow" style="gap:2px"><span style="font-weight:600">' + fr(x.d) + ' km</span><span class="small mut">' + dur(x.t) + ' · ' + pace(x.d, x.t) + '</span></div><span class="small mut">' + dateFr(x.date) + '</span></button>').join('') + '</div>';
   }
-  return h;
+  sheet(h + closeBtn);
 }
 
 // ---------- Réglages et fichiers ----------
@@ -309,6 +327,7 @@ Object.assign(ACTIONS, {
   level: () => sheetLevel(),
   week: (el) => sheetWeek(el.dataset.m ? +el.dataset.m : 0),
   quests: () => sheetQuests(),
+  run: () => sheetRun(),
   copy: (el) => { const w = state.workouts.find((x) => x.id === el.dataset.id); if (w) copyText(workoutText(w)); },
   detail: (el) => sheetDetail(el.dataset.id),
   delete: (el) => { if (confirm('Supprimer définitivement cette séance ?')) { state.workouts = state.workouts.filter((x) => x.id !== el.dataset.id); save(); closeSheet(); render(); } },
@@ -316,7 +335,6 @@ Object.assign(ACTIONS, {
   'set-rest': (el) => { state.settings.rest = +el.dataset.s; save(); sheetSettings(); },
   'set-goal': (el) => { state.settings.weekGoal = +el.dataset.n; save(); render(); sheetSettings(); },
   'toggle-sound': () => { state.settings.sound = state.settings.sound === false; save(); sheetSettings(); },
-  'h-filter': (el) => { ui.hFilter = el.dataset.f; ui.historyLimit = 40; render(); },
   news: () => sheetNews(),
   update: async () => {
     if (!('serviceWorker' in navigator) || local) { toast('Mise à jour indisponible ici'); return; }
@@ -344,13 +362,13 @@ Object.assign(ACTIONS, {
     const today = new Date(now - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
     const end = !isNaN(day) && $('run-date').value !== today && day < now ? day + t * 1000 : now;
     state.workouts.push({ id: 'r' + now, title: 'Course', start: end - t * 1000, end, exercises: [{ name: 'Running', sets: [{ d, t, done: true }] }] });
-    save(); render(); toast('Course enregistrée, +' + (Math.round(d * 20) + 50) + ' XP');
+    save(); render(); sheetRun(); toast('Course enregistrée, +' + (Math.round(d * 20) + 50) + ' XP');
   },
 });
 
 // ---------- Affichage général ----------
 export function render() {
-  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory, run: viewRun };
+  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory };
   // L'animation d'arrivée ne joue que quand on change d'écran, pas à chaque série cochée.
   $('app').classList.toggle('enter', ui.enter);
   ui.enter = false;
@@ -377,7 +395,11 @@ document.addEventListener('click', (ev) => {
 document.addEventListener('keydown', (ev) => {
   if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('[role=button]')) { ev.preventDefault(); ev.target.click(); }
 });
-document.addEventListener('input', (ev) => { onInput(ev.target); });
+document.addEventListener('input', (ev) => {
+  // Recherche dans l'historique : on ne redessine que la liste, pour garder le clavier ouvert.
+  if (ev.target.id === 'h-search') { ui.hQuery = ev.target.value; ui.historyLimit = 40; $('h-list').innerHTML = historyList(); return; }
+  onInput(ev.target);
+});
 document.addEventListener('change', (ev) => { if (ev.target.id === 'photo-date') onPhotoDate(ev.target); });
 
 // Tirer une fenêtre vers le bas la ferme (quand elle est en haut de son contenu, et hors modification).
