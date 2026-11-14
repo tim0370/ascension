@@ -1,7 +1,7 @@
 // Service worker : garde l'app disponible hors ligne (ne fonctionne qu'en https).
 // Change le numéro de version à chaque mise à jour pour que les téléphones récupèrent les nouveaux fichiers.
-const VERSION = 'ascension-5';
-const FILES = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/store.js', 'js/data.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png'];
+const VERSION = 'ascension-6';
+const FILES = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/ui.js', 'js/seance.js', 'js/progress.js', 'js/stats.js', 'js/photos.js', 'js/store.js', 'js/data.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));

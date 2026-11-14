@@ -1,7 +1,7 @@
 // Données de l'app : sauvegarde dans le téléphone (localStorage), XP, import Hevy, export.
 // Une séance : { id, title, start, end, prs, exercises: [{ name, sets: [{ r, w, t, d, done }] }] }
 //   r = répétitions, w = charge (kg), t = durée (secondes), d = distance (km). start/end en millisecondes.
-import { EXOS, RANKS, ROUTINES, ALIAS } from './data.js';
+import { EXOS, ROUTINES, ALIAS } from './data.js';
 
 const KEY = 'ascension.v1';
 
@@ -225,9 +225,7 @@ export function levelInfo(xp) {
   let level = 1, rest = xp;
   while (rest >= 200 + 50 * level) { rest -= 200 + 50 * level; level += 1; }
   const need = 200 + 50 * level;
-  let rank = RANKS[0];
-  for (const r of RANKS) if (level >= r.min) rank = r;
-  return { level, into: rest, need, rank };
+  return { level, into: rest, need }; // le rang, lui, vient des épreuves (stats.js)
 }
 
 // Semaines d'affilée avec au moins une séance (la semaine en cours ne casse pas la série).
@@ -391,7 +389,7 @@ export function importHevy(text) {
 }
 
 // ---------- Sauvegarde complète ----------
-export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines, prefs: state.prefs }); }
+export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines, prefs: state.prefs, body: state.body, rankSeen: state.rankSeen }); }
 export function importJson(text) {
   const data = JSON.parse(text);
   if (!data || data.app !== 'ascension' || !Array.isArray(data.workouts)) throw new Error("Ce fichier n'est pas une sauvegarde de l'app.");
@@ -402,6 +400,7 @@ export function importJson(text) {
   if (data.quests) state.quests = Object.assign({}, data.quests, state.quests);
   if (data.routines && !state.routines) { state.routines = data.routines; for (const r of state.routines) canon(r); }
   if (data.prefs) state.prefs = Object.assign({}, data.prefs, state.prefs);
+  if (data.body && !(state.body && state.body.length)) state.body = data.body;
   save();
   return { added };
 }
