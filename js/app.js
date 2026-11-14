@@ -339,12 +339,12 @@ Object.assign(ACTIONS, {
   update: async () => {
     if (!('serviceWorker' in navigator) || local) { toast('Mise à jour indisponible ici'); return; }
     toast('Recherche d’une mise à jour…');
-    try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg) await reg.update();
-      // Si rien de neuf n'arrive dans les secondes qui suivent, c'est que la version est la bonne.
-      setTimeout(() => { if (!(reg && (reg.installing || reg.waiting))) toast('Tu as la dernière version (' + VERSION + ')'); }, 3500);
-    } catch (e) { toast('Pas de réseau pour vérifier'); }
+    const v = await onlineVersion();
+    if (!v) { toast('Pas de réseau pour vérifier'); return; }
+    if (v <= VERSION) { toast('Tu as la dernière version (' + VERSION + ')'); return; }
+    closeSheet();
+    toast('Installation de la version ' + v + '…');
+    forceUpdate();
   },
   'pick-hevy': () => pickFile('.csv,text/csv,text/comma-separated-values', (text) => {
     try { const r = importHevy(text); closeSheet(); ui.enter = true; render(); toast(r.added + ' séances importées' + (r.skipped ? ', ' + r.skipped + ' déjà là' : '')); } catch (e) { toast(e.message); }
@@ -432,17 +432,47 @@ render();
 renderRest();
 loadPhotos().then(() => { if (ui.tab === 'home' && photoDue()) render(); });
 
-// Le cache hors ligne ne s'active que sur la vraie adresse en ligne, pas pendant les tests sur le PC.
+// ---------- Mises à jour ----------
+// L'app est gardée dans le téléphone (voir sw.js). Pour ne jamais rester bloqué sur une ancienne version :
+// 1. à chaque ouverture et à chaque retour dans l'app, on demande au site quel est son numéro de version ;
+// 2. s'il est plus récent, on télécharge la nouvelle version et l'app se recharge toute seule (sauf en pleine séance) ;
+// 3. le bouton « Mettre à jour » des réglages fait la même chose de force.
+
+// Numéro de version en ligne (0 si pas de réseau). Le paramètre "fresh" contourne tous les caches.
+async function onlineVersion() {
+  try {
+    const text = await (await fetch('sw.js?fresh=' + Date.now(), { cache: 'no-store' })).text();
+    const m = /ascension-(\d+)/.exec(text);
+    return m ? +m[1] : 0;
+  } catch (e) { return 0; }
+}
+
+// Efface la copie gardée dans le téléphone et recharge depuis le site. Les séances ne sont pas touchées.
+async function forceUpdate() {
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for (const r of regs) await r.unregister();
+    for (const k of await caches.keys()) await caches.delete(k);
+  } catch (e) { /* on recharge quand même */ }
+  location.replace('./?maj=' + Date.now());
+}
+
+let checking = false;
+async function checkUpdate() {
+  if (checking || state.active) return; // jamais en pleine séance
+  checking = true;
+  const v = await onlineVersion();
+  checking = false;
+  if (v <= VERSION || state.active || $('sheet').firstElementChild) return;
+  // Une seule tentative automatique par ouverture, pour ne pas tourner en rond si le site n'est pas encore à jour.
+  if (sessionStorage.getItem('maj') === String(v)) return;
+  sessionStorage.setItem('maj', String(v));
+  toast('Mise à jour vers la version ' + v + '…');
+  forceUpdate();
+}
+
 if ('serviceWorker' in navigator && window.isSecureContext && !local) {
-  // Quand une nouvelle version vient d'être installée, on recharge tout de suite, sauf en pleine séance.
-  if (navigator.serviceWorker.controller) {
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!state.active && !$('sheet').firstElementChild) location.reload();
-      else toast('Mise à jour prête, elle s’installera à la prochaine ouverture');
-    });
-  }
-  navigator.serviceWorker.register('sw.js').then((reg) => {
-    // À chaque retour dans l'app, on regarde s'il y a une mise à jour.
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
-  }).catch(() => {});
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+  setTimeout(checkUpdate, 1500);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 }

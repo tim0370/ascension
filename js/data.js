@@ -233,6 +233,15 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 10, items: [
+    'Mises à jour fiables : l’app vérifie elle-même s’il y a une nouvelle version à chaque ouverture',
+    'Bouton « Mettre à jour » dans les réglages, qui force le téléchargement',
+    'Nouvel accueil : la séance à faire en grand, deux tuiles pour le rang et la course',
+    'Recherche libre dans l’historique : une séance, un exercice, un mois',
+    'La course n’est plus un onglet : elle est dans Séance et sur l’accueil',
+    'Les réglages sont dans la barre du bas',
+    'Plus de zoom par erreur ni de double validation quand tu tapes vite',
+  ] },
   { v: 9, items: [
     'Nouvel accueil : la séance à faire en grand, deux tuiles pour le rang et la course',
     'Recherche libre dans l’historique : une séance, un exercice, un mois',
