@@ -161,6 +161,7 @@ export const CAT = {
 
 // Arbres de progression : de vraies étapes de difficulté, toutes faisables à la maison avec la station de dips,
 // le banc, les haltères, le gilet lesté et les élastiques (pas de barre de traction).
+// L'utilisateur n'a voulu garder que trois arbres : pompes, dips et course.
 // Un palier se valide tout seul quand une séance atteint l'objectif : sets × reps (ou secs), lest minimum éventuel.
 // Pour la course : run = km, pace = secondes par km maximum.
 export const TREES = [
@@ -177,34 +178,6 @@ export const TREES = [
     { exo: 'Triceps Dip', label: 'Dips avec 15 kg', sets: 3, reps: 8, lest: 15 },
     { exo: 'Triceps Dip', label: 'Dips avec 20 kg', sets: 3, reps: 8, lest: 20 },
     { exo: 'Triceps Dip', label: 'Dips avec 25 kg', sets: 3, reps: 6, lest: 25 },
-  ] },
-  { id: 'epaules', name: 'Épaules', nodes: [
-    { exo: 'Pike Pushup', label: 'Pike push-up', sets: 3, reps: 10 },
-    { exo: 'Elevated Pike Push Up', label: 'Pike push-up pieds surélevés', sets: 3, reps: 8 },
-    { exo: 'Handstand Hold', label: 'Équilibre contre le mur, 30 secondes', sets: 2, secs: 30 },
-    { exo: 'Wall Handstand Push Up Negative', label: 'Descente lente en équilibre', sets: 3, reps: 3 },
-    { exo: 'Wall Handstand Push Up', label: 'Pompes en équilibre contre le mur', sets: 3, reps: 5 },
-  ] },
-  { id: 'tirage', name: 'Tirage', nodes: [
-    { exo: 'Bent Over Row (Band)', label: 'Rowing à l’élastique', sets: 3, reps: 12 },
-    { exo: 'Inverted Row', label: 'Rowing inversé sous les barres', sets: 3, reps: 10 },
-    { exo: 'Inverted Row (Feet Elevated)', label: 'Rowing inversé pieds surélevés', sets: 3, reps: 8 },
-    { exo: 'Archer Row', label: 'Rowing inversé archer', sets: 3, reps: 6 },
-    { exo: 'One Arm Inverted Row', label: 'Rowing inversé à un bras', sets: 3, reps: 5 },
-  ] },
-  { id: 'jambes', name: 'Jambes', nodes: [
-    { exo: 'Squat (Bodyweight)', label: 'Squats', sets: 3, reps: 20 },
-    { exo: 'Reverse Lunge', label: 'Fentes arrière', sets: 3, reps: 12 },
-    { exo: 'Assisted Pistol Squats', label: 'Pistol squat assisté', sets: 3, reps: 5 },
-    { exo: 'Pistol Squat', label: 'Pistol squat', sets: 3, reps: 5 },
-    { exo: 'Pistol Squat', label: 'Pistol squat avec 10 kg', sets: 3, reps: 5, lest: 10 },
-  ] },
-  { id: 'gainage', name: 'Gainage', nodes: [
-    { exo: 'Hollow Rock', label: 'Hollow rock 30 secondes', sets: 2, secs: 30 },
-    { exo: 'Hollow Rock', label: 'Hollow rock 60 secondes', sets: 2, secs: 60 },
-    { exo: 'Hanging Leg Raise', label: 'Relevés de jambes, 10 répétitions', sets: 3, reps: 10 },
-    { exo: 'Hanging Leg Raise', label: 'Relevés de jambes, 15 répétitions', sets: 3, reps: 15 },
-    { exo: 'Dragon Flag', label: 'Dragon flag sur le banc', sets: 3, reps: 5 },
   ] },
   { id: 'course', name: 'Course', nodes: [
     { run: 5, label: 'Courir 5 km' },
@@ -255,4 +228,23 @@ export const WARMUP = [
   { name: 'Pompes lentes', secs: 40, tip: 'Trois secondes pour descendre, sans forcer.' },
   { name: 'Planche sur les mains', secs: 30, tip: 'Pousse le sol, écarte les omoplates.' },
   { name: 'Fentes alternées', secs: 40, tip: 'Un pas en arrière, puis l’autre jambe.' },
+];
+
+// Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
+// À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
+export const NEWS = [
+  { v: 8, items: [
+    'Chrono intégré pour les exercices en secondes, avec un bip à l’objectif',
+    'Note sur chaque exercice, reprise automatiquement la fois suivante',
+    'Ressenti en fin de séance : facile, bien ou dur',
+    'Image de ta séance à partager',
+    'Objectif de séances par semaine, avec une quête à 150 XP',
+    'Tableau de tes records dans l’onglet Progrès',
+    'Filtres et bilan de chaque mois dans l’historique',
+    'Date et heure modifiables pour une séance ou une course',
+    'Dupliquer une routine',
+    'Alerte s’il reste des séries quand tu termines',
+    'Son du repos réglable, numéro de version et bouton de mise à jour dans les réglages',
+    'Arbres de progression réduits à trois : pompes, dips et course',
+  ] },
 ];

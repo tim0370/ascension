@@ -8,8 +8,11 @@ export const clean = (s) => String(s).replace(/\s+/g, ' ').trim();
 export const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
 export const toNum = (v) => parseFloat(String(v).replace(',', '.')) || 0;
 
-// État de l'interface (pas enregistré). edit = brouillon en cours ; pick = à quoi sert le choix d'exercice.
-export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null };
+// Numéro de version affiché dans les réglages. À augmenter avec VERSION dans sw.js et NEWS dans data.js.
+export const VERSION = 8;
+
+// État de l'interface (pas enregistré). hFilter = filtre de l'historique. edit = brouillon en cours ; pick = à quoi sert le choix d'exercice.
+export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null, hFilter: 'all' };
 
 // Chaque fichier ajoute ici ses actions : ACTIONS['nom'] = (élément touché) => { ... }
 // Un bouton les déclenche avec l'attribut data-act="nom".

@@ -311,9 +311,10 @@ export function workoutText(w) {
     if (e.name === 'Running') {
       for (const s of e.sets) lines.push((i + 1) + '. Course à pied : ' + fr(s.d) + ' km en ' + dur(s.t || 0) + ' (' + pace(s.d, s.t) + ')');
     } else {
-      lines.push((i + 1) + '. ' + exoName(e.name) + ' : ' + e.sets.map(setText).join(', '));
+      lines.push((i + 1) + '. ' + exoName(e.name) + ' : ' + e.sets.map(setText).join(', ') + (e.note ? ' (note : ' + e.note + ')' : ''));
     }
   });
+  if (w.feel) lines.push('Ressenti : ' + w.feel);
   return lines.join('\n');
 }
 
@@ -403,4 +404,19 @@ export function importJson(text) {
   if (data.body && !(state.body && state.body.length)) state.body = data.body;
   save();
   return { added };
+}
+
+// ---------- Objectif de la semaine ----------
+export function weekGoal() { return state.settings.weekGoal || 4; }
+// Quête de la semaine : atteindre son objectif de séances (courses comprises) rapporte 150 XP.
+export function weekQuest() {
+  const now = new Date();
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)).getTime();
+  const cur = state.workouts.filter((w) => w.start >= monday).length;
+  const goal = weekGoal();
+  const key = 'w' + monday;
+  state.quests = state.quests || {};
+  const done = !!state.quests[key] || cur >= goal;
+  if (done && !state.quests[key]) { state.quests[key] = { week: 150 }; save(); }
+  return { id: 'week', label: goal + ' séances cette semaine', xp: 150, cur: Math.min(cur, goal), goal, done, unit: 'séances' };
 }

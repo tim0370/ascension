@@ -63,6 +63,8 @@ function buildExo(name, sets, title) {
     sets: sets.map((s, i) => { const p = (prev && prev[i]) || s; return { r: time ? 0 : (p.r || s.r || 0), w: p.w || s.w || 0, t: time ? (p.t || s.t || 0) : 0, done: false }; }),
     goals: sets.map((s, i) => { const p = prev && (prev[i] || prev[prev.length - 1]); if (!p) return null; if (time) return p.t ? { t: p.t + 5 } : null; return p.r ? { r: p.r + 1 } : null; }),
     prev: prev ? prev.map(setText).join(', ') : '',
+    // La note laissée la dernière fois sur cet exercice revient toute seule.
+    note: (() => { const w = sorted().find((x) => x.exercises.some((e) => e.name === name && e.note)); return w ? w.exercises.find((e) => e.name === name && e.note).note : ''; })(),
   };
 }
 
@@ -155,7 +157,8 @@ function viewFocus(a) {
     + '<span class="num" id="elapsed" style="font-size:20px;color:var(--soft)">' + clock((Date.now() - a.start) / 1000) + '</span>'
     + '<button type="button" class="iconbtn" data-act="ex-menu" data-i="' + a.idx + '" aria-label="Options de l’exercice">' + ICON.more + '</button></div>';
   h += '<div class="col" style="gap:4px"><span class="label violet">Exercice ' + (a.idx + 1) + ' sur ' + n + '</span><h1 class="h1" style="font-size:30px">' + esc(exoName(ex.name)) + '</h1>'
-    + '<span class="small mut">' + (ex.prev ? 'La dernière fois : ' + esc(ex.prev) : 'Première fois sur cet exercice') + '</span></div>';
+    + '<span class="small mut">' + (ex.prev ? 'La dernière fois : ' + esc(ex.prev) : 'Première fois sur cet exercice') + '</span>'
+    + (ex.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(ex.note) + '</span>' : '') + '</div>';
   h += '<div class="chips">' + ex.sets.map((x, k) => '<button type="button" class="chip' + (x.done ? ' done' : '') + (k === a.setIdx ? ' sel' : '') + (x.pr ? ' pr' : '') + '" data-act="sel-set" data-i="' + k + '" aria-label="Série ' + (k + 1) + '">' + chipLabel(ex.name, x) + '</button>').join('') + '</div>';
   if (s) {
     const f = time ? 't' : 'r';
@@ -170,6 +173,10 @@ function viewFocus(a) {
       h += '<div class="hair"></div><div class="row" style="gap:10px"><button type="button" class="stepbtn sm" data-act="step" data-f="w" data-d="-1" aria-label="Moins de lest">' + ICON.minus + '</button>'
         + '<div class="col grow" style="align-items:center;gap:0"><input class="midnum" inputmode="decimal" data-f="w" data-i="' + a.setIdx + '" value="' + (s.w ? fr(s.w, 1) : 0) + '" aria-label="Lest en kilos"><span class="small mut">kg de lest</span></div>'
         + '<button type="button" class="stepbtn sm" data-act="step" data-f="w" data-d="1" aria-label="Plus de lest">' + ICON.plus + '</button></div>';
+    }
+    // Chrono intégré pour les exercices en secondes : il remplit la durée tout seul.
+    if (time && !s.done) {
+      h += '<button type="button" class="pill glass wide' + (a.chrono ? ' on' : '') + '" data-act="chrono">' + (a.chrono ? 'Arrêter le chrono' : 'Lancer le chrono') + '</button>';
     }
     h += (s.done
       ? '<button type="button" class="pill glass wide big" data-act="unvalidate" style="color:var(--gold)">Série validée · annuler</button>'
@@ -199,6 +206,7 @@ function sheetExMenu(i) {
     + item('ex-measure', time ? 'Compter en répétitions' : 'Compter en secondes')
     + item('ex-lest', lest ? 'Enlever le lest' : 'Ajouter un lest')
     + item('del-exo', 'Retirer de la séance') + '</div>'
+    + '<label class="col" style="gap:8px"><span class="label">Note pour cet exercice</span><input class="textin" id="ex-note" data-i="' + i + '" placeholder="Par exemple : prise large, banc au cran 3" value="' + esc(ex.note || '') + '"></label>'
     + '<div class="col" style="gap:8px"><span class="label">Repos après chaque série</span><div class="row" style="flex-wrap:wrap;gap:8px">'
     + [45, 60, 90, 120, 150, 180].map((s) => '<button type="button" class="pill sm ' + (s === rest ? 'gold-btn' : 'glass') + '" data-act="ex-rest" data-i="' + i + '" data-s="' + s + '">' + clock(s) + '</button>').join('') + '</div></div>' + closeBtn);
 }
@@ -289,7 +297,8 @@ function openEditor(type, id) {
   } else {
     const w = state.workouts.find((x) => x.id === id);
     if (!w) return;
-    draft = { label: clean(w.title), exercises: JSON.parse(JSON.stringify(w.exercises)) };
+    const local = new Date(w.start - new Date(w.start).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    draft = { label: clean(w.title), exercises: JSON.parse(JSON.stringify(w.exercises)), when: local };
   }
   ui.edit = { type, id, draft };
   sheetEditor();
@@ -301,7 +310,8 @@ function sheetEditor() {
   const scroll = box ? box.scrollTop : 0;
   const n = draft.exercises.length;
   let h = '<div class="col"><span class="label">' + (type === 'routine' ? (id ? 'Modifier la routine' : 'Nouvelle routine') : 'Modifier la séance') + '</span>'
-    + '<input class="textin" id="edit-label" placeholder="Nom" aria-label="Nom" value="' + esc(draft.label) + '" style="margin-top:6px"></div>';
+    + '<input class="textin" id="edit-label" placeholder="Nom" aria-label="Nom" value="' + esc(draft.label) + '" style="margin-top:6px">'
+    + (type === 'workout' ? '<label class="col" style="gap:6px;margin-top:8px"><span class="label">Date et heure</span><input class="textin" type="datetime-local" id="edit-date" value="' + esc(draft.when) + '"></label>' : '') + '</div>';
   draft.exercises.forEach((e, ei) => {
     const kind = e.name === 'Running' ? 'run' : kindOf(e.name);
     const two = kind === 'weight' || kind === 'run';
@@ -324,7 +334,7 @@ function sheetEditor() {
   });
   h += '<button type="button" class="pill glass wide" data-act="ed-add-exo">Ajouter un exercice</button>'
     + '<div class="row"><button type="button" class="pill glass grow" data-act="close" style="color:var(--mut)">Annuler</button><button type="button" class="pill gold-btn grow" data-act="ed-save">Enregistrer</button></div>';
-  if (type === 'routine' && id) h += '<button type="button" class="pill sm glass wide" data-act="ed-del-routine" style="color:var(--mut)">Supprimer cette routine</button>';
+  if (type === 'routine' && id) h += '<div class="row"><button type="button" class="pill sm glass grow" data-act="ed-dup">Dupliquer</button><button type="button" class="pill sm glass grow" data-act="ed-del-routine" style="color:var(--mut)">Supprimer</button></div>';
   sheet(h);
   document.querySelector('#sheet .sheet > div').scrollTop = scroll;
 }
@@ -343,9 +353,12 @@ function saveEditor() {
   }
   const w = state.workouts.find((x) => x.id === id);
   const exercises = draft.exercises
-    .map((e) => ({ name: e.name, sets: e.sets.filter((s) => s.r || s.t || s.d || s.w).map((s) => { const o = { done: true }; for (const k of ['r', 'w', 't', 'd']) if (s[k]) o[k] = s[k]; return o; }) }))
+    .map((e) => { const x = { name: e.name, sets: e.sets.filter((s) => s.r || s.t || s.d || s.w).map((s) => { const o = { done: true }; for (const k of ['r', 'w', 't', 'd']) if (s[k]) o[k] = s[k]; return o; }) }; if (e.note) x.note = e.note; return x; })
     .filter((e) => e.sets.length);
   if (!exercises.length) { toast('Il faut au moins une série'); return; }
+  // Nouvelle date : on déplace la séance en gardant sa durée.
+  const when = Date.parse(draft.when);
+  if (!isNaN(when) && when !== w.start && when <= Date.now()) { const len = Math.max(0, w.end - w.start); w.start = when; w.end = when + len; }
   w.title = label;
   w.exercises = exercises;
   w.prs = countPrs(w);
@@ -356,9 +369,12 @@ function saveEditor() {
 function finishWorkout() {
   const a = state.active;
   const exercises = a.exercises
-    .map((e) => ({ name: e.name, sets: e.sets.filter((s) => s.done && (s.r || s.t)).map((s) => { const o = { done: true }; if (s.r) o.r = s.r; if (s.w) o.w = s.w; if (s.t) o.t = s.t; return o; }) }))
+    .map((e) => { const o = { name: e.name, sets: e.sets.filter((s) => s.done && (s.r || s.t)).map((s) => { const x = { done: true }; if (s.r) x.r = s.r; if (s.w) x.w = s.w; if (s.t) x.t = s.t; return x; }) }; if (e.note && clean(e.note)) o.note = clean(e.note); return o; })
     .filter((e) => e.sets.length);
   if (!exercises.length) { toast('Valide au moins une série avant de terminer'); return; }
+  const left = a.exercises.reduce((n, e) => n + e.sets.filter((s) => !s.done).length, 0);
+  if (left && !confirm('Il reste ' + plural(left, 'série non validée', 'séries non validées') + '. Terminer quand même ?')) return;
+  delete a.chrono;
   const xpBefore = totalXp();
   const qBefore = new Set(dailyQuests().filter((q) => q.done).map((q) => q.id));
   const w = { id: 'a' + a.start, title: a.title, start: a.start, end: Date.now(), exercises };
@@ -380,6 +396,58 @@ function finishWorkout() {
   render();
   top();
   sheetSummary(w, a.label, xpBefore, qNew);
+}
+
+// Ressenti de la séance : trois boutons, celui choisi passe en or.
+export function feelPills(w) {
+  return ['Facile', 'Bien', 'Dur'].map((f) => '<button type="button" class="pill sm grow ' + (w.feel === f ? 'gold-btn' : 'glass') + '" data-act="feel" data-id="' + esc(w.id) + '" data-v="' + f + '">' + f + '</button>').join('');
+}
+
+// Image de la séance à partager (dessinée dans le téléphone, rien n'est envoyé ailleurs).
+async function shareImage(w) {
+  const W = 1080, H = 1350;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = '#08070C'; g.fillRect(0, 0, W, H);
+  const glow = g.createRadialGradient(820, 180, 0, 820, 180, 700);
+  glow.addColorStop(0, 'rgba(124,92,224,0.55)'); glow.addColorStop(1, 'rgba(124,92,224,0)');
+  g.fillStyle = glow; g.fillRect(0, 0, W, H);
+  const gold = g.createLinearGradient(0, 0, 0, H);
+  gold.addColorStop(0, '#F4E6BC'); gold.addColorStop(0.5, '#CDAA62'); gold.addColorStop(1, '#A07C3C');
+  const text = (t, x, y, font, color, align) => { g.font = font; g.fillStyle = color; g.textAlign = align || 'left'; g.fillText(t, x, y); };
+  let sets = 0, reps = 0;
+  for (const e of w.exercises) for (const s of e.sets) { sets += 1; reps += s.r || 0; }
+  const r = routines().find((x) => norm(x.title) === norm(w.title));
+  text('ASCENSION', 80, 130, '600 34px "Space Grotesk", sans-serif', '#B9A8F5');
+  text(dateFr(w.start, true), W - 80, 130, '500 34px Inter, sans-serif', '#A29DB0', 'right');
+  text(r ? r.label : clean(w.title), 80, 260, '700 84px "Space Grotesk", sans-serif', '#F4F2F8');
+  text('+' + xpOf(w) + ' XP', 80, 400, '700 120px "Space Grotesk", sans-serif', gold);
+  const stats = [[dur((w.end - w.start) / 1000), 'durée'], [String(sets), 'séries'], [String(reps), 'répétitions']];
+  if (w.prs) stats.push([String(w.prs), w.prs > 1 ? 'records' : 'record']);
+  stats.forEach((st, i) => { const x = 80 + i * ((W - 160) / stats.length); text(st[0], x, 520, '700 56px "Space Grotesk", sans-serif', '#F4F2F8'); text(st[1], x, 566, '500 30px Inter, sans-serif', '#A29DB0'); });
+  g.fillStyle = 'rgba(255,255,255,0.10)'; g.fillRect(80, 620, W - 160, 2);
+  let y = 700;
+  for (const e of w.exercises.slice(0, 9)) {
+    text(exoName(e.name), 80, y, '600 38px Inter, sans-serif', '#F4F2F8');
+    let line = e.sets.map(setText).join(', ');
+    g.font = '500 32px Inter, sans-serif';
+    while (g.measureText(line).width > 520 && line.length > 4) line = line.slice(0, -2);
+    text(line, W - 80, y, '500 32px Inter, sans-serif', e.sets.some((s) => s.pr) ? '#D8BD82' : '#A29DB0', 'right');
+    y += 68;
+  }
+  if (w.exercises.length > 9) text('et ' + (w.exercises.length - 9) + ' de plus', 80, y, '500 30px Inter, sans-serif', '#8D889C');
+  const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
+  const file = new File([blob], 'ascension-seance-' + new Date(w.start).toISOString().slice(0, 10) + '.png', { type: 'image/png' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(file);
+  link.download = file.name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+  toast('Image enregistrée');
 }
 
 function sheetSummary(w, label, xpBefore, qNew) {
@@ -419,7 +487,9 @@ function sheetSummary(w, label, xpBefore, qNew) {
   h += '<span class="label">' + (prev ? 'Par rapport à la dernière fois' : 'Ta séance') + '</span><div class="list">'
     + lines.map((l) => '<button type="button" class="item" data-act="exo" data-name="' + esc(l.name) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(l.name)) + '</span><span class="small mut">' + esc(l.text) + '</span></div>'
       + (l.delta ? '<span class="small ' + (l.up ? 'gold-text' : 'mut') + '" style="font-weight:600;white-space:nowrap">' + l.delta + '</span>' : '') + '</button>').join('') + '</div>';
-  h += '<button type="button" class="pill glass wide" data-act="copy" data-id="' + esc(w.id) + '" style="color:var(--gold)">' + ICON.copy + 'Copier pour Claude</button>' + closeBtn;
+  h += '<div class="col" style="gap:8px"><span class="label">Comment c’était ?</span><div class="row" id="feel-row">' + feelPills(w) + '</div></div>';
+  h += '<div class="row"><button type="button" class="pill glass grow" data-act="share" data-id="' + esc(w.id) + '">Partager en image</button>'
+    + '<button type="button" class="pill glass grow" data-act="copy" data-id="' + esc(w.id) + '" style="color:var(--gold)">' + ICON.copy + 'Pour Claude</button></div>' + closeBtn;
   sheet(h, 1, 'full');
 
   // Le compteur d'XP grimpe et la barre de niveau se remplit.
@@ -439,7 +509,7 @@ function sheetSummary(w, label, xpBefore, qNew) {
 let audio = null;
 function beep() {
   try {
-    if (!audio) return;
+    if (!audio || state.settings.sound === false) return;
     [0, 0.25, 0.5].forEach((d) => {
       const o = audio.createOscillator(), g = audio.createGain();
       o.frequency.value = 880; o.connect(g); g.connect(audio.destination);
@@ -469,6 +539,18 @@ export function tick() {
     const left = Math.ceil((a.warm.end - Date.now()) / 1000);
     const el = $('warm-time');
     if (left <= 0) { beep(); warmNext(); } else if (el) el.textContent = left;
+  }
+  // Chrono d'un exercice en secondes : la durée monte toute seule, avec un bip à l'objectif.
+  if (a && a.chrono) {
+    const s = curSet();
+    if (!s || s.done) { delete a.chrono; }
+    else {
+      s.t = Math.floor((Date.now() - a.chrono.t0) / 1000);
+      const big = document.querySelector('.bignum');
+      if (big && document.activeElement !== big) big.value = s.t;
+      const goal = curExo().goals && curExo().goals[a.setIdx];
+      if (goal && goal.t && s.t >= goal.t && !a.chrono.rang) { a.chrono.rang = true; beep(); toast('Objectif atteint, tiens encore si tu peux'); }
+    }
   }
   renderRest();
 }
@@ -514,6 +596,8 @@ export async function keepAwake() {
 export function onInput(t) {
   if (t.id === 'picker-q') { ui.pickerQuery = t.value; sheetPicker(); return true; }
   if (t.id === 'edit-label' && ui.edit) { ui.edit.draft.label = t.value; return true; }
+  if (t.id === 'edit-date' && ui.edit) { ui.edit.draft.when = t.value; return true; }
+  if (t.id === 'ex-note' && state.active) { state.active.exercises[+t.dataset.i].note = t.value; save(); return true; }
   if (t.dataset.ef && ui.edit) {
     const s = ui.edit.draft.exercises[+t.dataset.e].sets[+t.dataset.i];
     if (t.dataset.ef === 'clock') {
@@ -543,6 +627,7 @@ Object.assign(ACTIONS, {
   validate: () => {
     const a = state.active, ex = curExo(), s = curSet();
     const time = measureOf(ex.name) === 'time';
+    delete a.chrono;
     if (!(time ? s.t : s.r)) { toast(time ? 'Indique la durée' : 'Indique les répétitions'); return; }
     s.done = true;
     const amt = (x) => x.r || x.t || 0;
@@ -611,6 +696,26 @@ Object.assign(ACTIONS, {
   finish: () => { finishWorkout(); renderRest(); },
   'rest-more': () => { state.active.rest.end += 15000; state.active.rest.total += 15; save(); renderRest(); },
   'rest-skip': () => { state.active.rest = null; save(); renderRest(); },
+  chrono: () => {
+    const a = state.active;
+    wakeAudio();
+    if (a.chrono) delete a.chrono; else { curSet().t = 0; a.chrono = { t0: Date.now() }; a.rest = null; }
+    save(); render(); renderRest();
+  },
+  feel: (el) => {
+    const w = state.workouts.find((x) => x.id === el.dataset.id);
+    if (!w) return;
+    w.feel = w.feel === el.dataset.v ? '' : el.dataset.v;
+    save();
+    const row = $('feel-row');
+    if (row) row.innerHTML = feelPills(w);
+  },
+  share: (el) => { const w = state.workouts.find((x) => x.id === el.dataset.id); if (w) shareImage(w); },
+  'ed-dup': () => {
+    const d = ui.edit.draft;
+    routines().push({ id: 'rt' + Date.now(), title: clean(d.label) + ' (copie)', label: clean(d.label) + ' (copie)', exercises: d.exercises.map((e) => ({ name: e.name, sets: e.sets.map((s) => ({ r: s.r || 0, w: s.w || 0, t: s.t || 0 })) })) });
+    save(); closeSheet(); render(); toast('Routine dupliquée');
+  },
   'new-routine': () => openEditor('routine', null),
   'edit-routine': (el) => openEditor('routine', el.dataset.id),
   'edit-workout': (el) => openEditor('workout', el.dataset.id),

@@ -1,6 +1,6 @@
 // Onglet Progression : examens de rang, arbres de progression, équilibre du corps, poids et photos.
 import { RANKS, TREES, CATS } from './data.js';
-import { state, save, fr, dateFr } from './store.js';
+import { state, save, fr, dateFr, routines, exoHistory, exoName, setText } from './store.js';
 import { rankInfo, testStatus, allTrees, treeStatus, balance, bodyLog, addWeight, delWeight } from './stats.js';
 import { addPhoto, listPhotos, deletePhoto, setPhotoDate, photoFiles } from './photos.js';
 import { $, esc, plural, toNum, ui, ACTIONS, ICON, rankSvg, toast, sheet, closeSheet, closeBtn, burst, chartSvg } from './ui.js';
@@ -84,6 +84,16 @@ export function viewProgress() {
     h += '<section class="glass card col tap" role="button" tabindex="0" data-act="tree" data-id="' + t.id + '" style="gap:12px"><div class="row between"><span class="h2">' + esc(t.name) + '</span><span class="row small mut" style="gap:4px">' + t.done + ' sur ' + t.nodes.length + ICON.chev + '</span></div>'
       + '<div class="dots">' + t.nodes.map((n, i) => (i ? '<b class="' + (n.state === 'done' ? 'done' : '') + '"></b>' : '') + '<i class="' + n.state + '"></i>').join('') + '</div>'
       + '<span class="small mut">' + (t.current ? 'En cours : ' + esc(t.current.label.charAt(0).toLowerCase() + t.current.label.slice(1)) : 'Arbre terminé') + '</span></section>';
+  }
+
+  // Tableau des records : la meilleure série de chaque exercice de tes routines actuelles.
+  const mine = [];
+  for (const r of routines()) for (const e of r.exercises) if (!mine.includes(e.name)) mine.push(e.name);
+  const rows = mine.map((n) => ({ n, h: exoHistory(n) })).filter((x) => x.h.most);
+  if (rows.length) {
+    h += '<div class="sec"><span class="h2">Mes records</span><span class="small mut">' + plural(rows.length, 'exercice', 'exercices') + '</span></div><section class="glass card list" style="padding:4px 16px">'
+      + rows.map((x) => '<button type="button" class="item" data-act="exo" data-name="' + esc(x.n) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(x.n)) + '</span><span class="small mut">' + dateFr(x.h.most.date, true) + '</span></div>'
+        + '<div class="col" style="gap:2px;align-items:flex-end"><span class="gold-text" style="font-weight:600">' + esc(setText(x.h.most.set)) + '</span>' + (x.h.heavy && x.h.heavy.set !== x.h.most.set ? '<span class="small mut">' + esc(setText(x.h.heavy.set)) + '</span>' : '') + '</div></button>').join('') + '</section>';
   }
 
   const b = balance();

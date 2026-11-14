@@ -3,20 +3,23 @@
 import {
   state, save, exoName, sorted, runs, xpOf, totalXp, levelInfo, weekStreak,
   fr, dur, clock, pace, dateFr, setText, workoutText, importHevy, exportJson, importJson,
-  dailyQuests, weekDays, totals, xpBreakdown,
+  dailyQuests, weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines,
 } from './store.js';
+import { NEWS } from './data.js';
 import { rankInfo, heat } from './stats.js';
-import { $, esc, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf } from './ui.js';
-import { viewWorkout, nextRoutine, usualTime, tick, renderRest, keepAwake, onInput } from './seance.js';
+import { $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION } from './ui.js';
+import { viewWorkout, nextRoutine, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate } from './progress.js';
 
 const DAY = 864e5;
+const local = ['localhost', '127.0.0.1'].includes(location.hostname); // tests sur le PC
 const midnight = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
 
 // ---------- Accueil ----------
 function viewHome() {
   const has = state.workouts.length > 0;
   const quests = has ? dailyQuests() : []; // avant le calcul d'XP : une quête réussie rapporte tout de suite
+  const wq = has ? weekQuest() : null;
   const xp = totalXp();
   const lv = levelInfo(xp);
   const info = rankInfo();
@@ -68,7 +71,9 @@ function viewHome() {
   if (has) {
     h += '<section class="glass card col tap" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span>'
       + '<span class="row small mut" style="gap:4px">' + plural(streak, 'semaine', 'semaines') + ' d’affilée' + ICON.chev + '</span></div>'
-      + '<div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>';
+      + '<div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div>'
+      + '<div class="col" style="gap:6px"><div class="bar' + (wq.done ? ' gold' : '') + '"><div style="width:' + Math.round((wq.cur / wq.goal) * 100) + '%"></div></div>'
+      + '<span class="small mut">' + (wq.done ? 'Objectif de la semaine atteint : ' + wq.goal + ' séances' : wq.cur + ' sur ' + wq.goal + ' séances cette semaine') + '</span></div></section>';
   }
 
   if (quests.length) {
@@ -76,7 +81,10 @@ function viewHome() {
     h += '<div class="sec"><span class="h2">Quêtes du jour</span><span class="small mut">' + doneCount + ' sur ' + quests.length + '</span></div>'
       + '<section class="glass card list tap" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + quests.map((q) => '<div class="item"><span class="qmark' + (q.done ? ' done' : '') + '">' + (q.done ? '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#D8BD82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') + '</span>'
       + '<div class="col grow" style="gap:1px"><span' + (q.done ? ' class="mut" style="text-decoration:line-through"' : '') + '>' + esc(q.label) + '</span>' + (q.done || !q.cur ? '' : '<span class="small mut">' + q.cur + ' sur ' + q.goal + '</span>') + '</div>'
-      + '<span class="gold-text small" style="font-weight:600">+' + q.xp + ' XP</span></div>').join('') + '</section>';
+      + '<span class="gold-text small" style="font-weight:600">+' + q.xp + ' XP</span></div>').join('')
+      + '<div class="item"><span class="qmark' + (wq.done ? ' done' : '') + '">' + (wq.done ? '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#D8BD82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') + '</span>'
+      + '<div class="col grow" style="gap:1px"><span' + (wq.done ? ' class="mut" style="text-decoration:line-through"' : '') + '>' + esc(wq.label) + ' <span class="tag" style="margin-left:4px">Semaine</span></span>' + (wq.done ? '' : '<span class="small mut">' + wq.cur + ' sur ' + wq.goal + '</span>') + '</div>'
+      + '<span class="gold-text small" style="font-weight:600">+' + wq.xp + ' XP</span></div></section>';
   }
 
   if (has) h += rankTeaser(info);
@@ -146,12 +154,12 @@ function sheetWeek(monday) {
 
 function sheetQuests() {
   let h = '<div class="col"><span class="label">Se cochent toutes seules</span><h1 class="h1">Quêtes du jour</h1></div>';
-  for (const q of dailyQuests()) {
+  for (const q of dailyQuests().concat([weekQuest()])) {
     h += '<div class="exo"><div class="row between"><span style="font-weight:600">' + esc(q.label) + '</span><span class="gold-text" style="font-weight:600">+' + q.xp + ' XP</span></div>'
       + '<div class="bar' + (q.done ? ' gold' : '') + '"><div style="width:' + Math.round((q.cur / q.goal) * 100) + '%"></div></div>'
       + '<span class="small mut">' + (q.done ? 'Réussie' : q.cur + ' sur ' + q.goal + ' ' + q.unit) + '</span></div>';
   }
-  sheet(h + '<span class="small mut">Trois nouvelles quêtes chaque jour, tirées de tes exercices actuels. Elles se valident quand tu termines ta séance ou enregistres ta course, et l’XP s’ajoute tout de suite.</span>' + closeBtn);
+  sheet(h + '<span class="small mut">Trois nouvelles quêtes chaque jour, tirées de tes exercices actuels, plus une quête pour la semaine. Elles se valident quand tu termines ta séance ou enregistres ta course, et l’XP s’ajoute tout de suite. Tu règles ton objectif de la semaine dans les réglages.</span>' + closeBtn);
 }
 
 // ---------- Historique ----------
@@ -174,16 +182,28 @@ function viewHistory() {
     + '<div class="heat">' + cols.map((c) => '<div role="button" tabindex="0" data-act="week" data-m="' + c[0].start + '" aria-label="Semaine du ' + new Date(c[0].start).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + '">' + c.map((d) => '<i class="' + (d.future ? 'future' : (d.n > 1 ? 'n2' : (d.n ? 'n1' : ''))) + (d.today ? ' today' : '') + '"></i>').join('') + '</div>').join('') + '</div>'
     + '<span class="small mut">Chaque colonne est une semaine, du lundi au dimanche. Touche une colonne pour voir ses séances.</span></section>';
 
+  // Filtres : tout, chaque routine, la course.
+  const isRun = (w) => w.exercises.length === 1 && w.exercises[0].name === 'Running';
+  const filters = [['all', 'Tout']].concat(routines().map((r) => [norm(r.title), r.label])).concat([['run', 'Course']]);
+  if (!filters.some((f) => f[0] === ui.hFilter)) ui.hFilter = 'all';
+  h += '<div class="row" style="overflow-x:auto;gap:8px;margin:0 -18px;padding:0 18px">' + filters.map((f) => '<button type="button" class="pill sm ' + (ui.hFilter === f[0] ? 'gold-btn' : 'glass') + '" data-act="h-filter" data-f="' + esc(f[0]) + '">' + esc(f[1]) + '</button>').join('') + '</div>';
+  const shown = all.filter((w) => ui.hFilter === 'all' || (ui.hFilter === 'run' ? isRun(w) : norm(w.title) === ui.hFilter));
+  // Bilan de chaque mois : nombre de séances et de séries.
+  const recap = {};
+  const monthOf = (w) => new Date(w.start).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+  for (const w of shown) { const r = recap[monthOf(w)] || (recap[monthOf(w)] = { n: 0, sets: 0, km: 0 }); r.n += 1; for (const e of w.exercises) for (const s of e.sets) { if (e.name === 'Running') r.km += s.d || 0; else r.sets += 1; } }
+
+  if (!shown.length) return h + '<section class="glass card"><span class="mut">Aucune séance pour ce filtre.</span></section>';
   h += '<section class="glass card list" style="padding:4px 16px">';
   let month = '';
-  for (const w of all.slice(0, ui.historyLimit)) {
-    const m = new Date(w.start).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-    if (m !== month) { month = m; h += '<span class="label month">' + esc(m) + '</span>'; }
+  for (const w of shown.slice(0, ui.historyLimit)) {
+    const m = monthOf(w);
+    if (m !== month) { month = m; const r = recap[m]; h += '<div class="row between month"><span class="label">' + esc(m) + '</span><span class="small mut">' + plural(r.n, 'séance', 'séances') + (r.sets ? ' · ' + r.sets + ' séries' : '') + (r.km ? ' · ' + fr(r.km, 1) + ' km' : '') + '</span></div>'; }
     h += '<button type="button" class="item" data-act="detail" data-id="' + esc(w.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(titleOf(w)) + (w.prs ? ' <span class="gold-text small">· ' + plural(w.prs, 'record', 'records') + '</span>' : '') + '</span><span class="small mut">' + esc(summary(w)) + '</span></div>'
       + '<span class="small mut" style="white-space:nowrap">' + new Date(w.start).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }) + '</span></button>';
   }
   h += '</section>';
-  if (all.length > ui.historyLimit) h += '<button type="button" class="pill glass wide" data-act="more">Voir plus</button>';
+  if (shown.length > ui.historyLimit) h += '<button type="button" class="pill glass wide" data-act="more">Voir plus</button>';
   return h;
 }
 
@@ -194,8 +214,10 @@ export function sheetDetail(id) {
   sheet('<div class="col"><span class="label">' + dateFr(w.start, true) + ' · ' + time + '</span><h1 class="h1">' + esc(titleOf(w)) + '</h1>'
     + '<span class="small mut">' + esc(summary(w)) + ' · <span class="gold-text" style="font-weight:600">+' + xpOf(w) + ' XP</span>' + (w.prs ? ' · ' + plural(w.prs, 'record', 'records') : '') + '</span></div>'
     + '<div class="list">' + w.exercises.map((e) => '<button type="button" class="item" data-act="exo" data-name="' + esc(e.name) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(e.name)) + (e.sets.some((x) => x.pr) ? ' <span class="gold-text small">· record</span>' : '') + '</span><span class="small mut">'
-      + esc(e.name === 'Running' ? e.sets.map((s) => setText(s) + ' · ' + pace(s.d, s.t)).join(', ') : e.sets.map(setText).join(', ')) + '</span></div>' + ICON.chev + '</button>').join('') + '</div>'
-    + '<button type="button" class="pill glass wide" data-act="copy" data-id="' + esc(w.id) + '" style="color:var(--gold)">' + ICON.copy + 'Copier pour Claude</button>'
+      + esc(e.name === 'Running' ? e.sets.map((s) => setText(s) + ' · ' + pace(s.d, s.t)).join(', ') : e.sets.map(setText).join(', ')) + '</span>' + (e.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(e.note) + '</span>' : '') + '</div>' + ICON.chev + '</button>').join('') + '</div>'
+    + '<div class="col" style="gap:8px"><span class="label">Ressenti</span><div class="row" id="feel-row">' + feelPills(w) + '</div></div>'
+    + '<div class="row"><button type="button" class="pill glass grow" data-act="share" data-id="' + esc(w.id) + '">Partager en image</button>'
+    + '<button type="button" class="pill glass grow" data-act="copy" data-id="' + esc(w.id) + '" style="color:var(--gold)">' + ICON.copy + 'Pour Claude</button></div>'
     + '<div class="row"><button type="button" class="pill glass grow" data-act="edit-workout" data-id="' + esc(w.id) + '">Modifier</button><button type="button" class="pill glass grow" data-act="delete" data-id="' + esc(w.id) + '" style="color:var(--mut)">Supprimer</button></div>' + closeBtn);
 }
 
@@ -207,6 +229,7 @@ function viewRun() {
     + '<div class="row"><label class="field grow" style="height:52px"><input id="run-d" inputmode="decimal" placeholder="0" aria-label="Distance en kilomètres"><span class="unit">km</span></label>'
     + '<label class="field grow" style="height:52px"><input id="run-m" inputmode="numeric" placeholder="0" aria-label="Minutes"><span class="unit">min</span></label>'
     + '<label class="field grow" style="height:52px"><input id="run-s" inputmode="numeric" placeholder="0" aria-label="Secondes"><span class="unit">s</span></label></div>'
+    + '<label class="row" style="gap:10px"><span class="small mut">Jour de la course</span><input class="textin grow" type="date" id="run-date" value="' + new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) + '" max="' + new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) + '" style="height:46px"></label>'
     + '<button type="button" class="pill gold-btn wide" data-act="add-run">Enregistrer</button></section>';
   if (rs.length) {
     const longest = rs.reduce((a, b) => (b.d > a.d ? b : a));
@@ -229,11 +252,23 @@ function sheetSettings() {
   sheet('<h1 class="h1">Réglages</h1>'
     + '<div class="col" style="gap:8px"><span class="label">Temps de repos par défaut</span><div class="row" style="flex-wrap:wrap;gap:8px">'
     + [60, 90, 120, 150, 180].map((s) => '<button type="button" class="pill sm ' + (s === rest ? 'gold-btn' : 'glass') + '" data-act="set-rest" data-s="' + s + '">' + clock(s) + '</button>').join('') + '</div>'
-    + '<span class="small mut">Tu peux aussi régler un repos différent pour chaque exercice pendant la séance.</span></div>'
+    + '<span class="small mut">Tu peux aussi régler un repos différent pour chaque exercice pendant la séance.</span>'
+    + '<button type="button" class="pill sm glass wide' + (state.settings.sound === false ? '' : ' on') + '" data-act="toggle-sound">' + (state.settings.sound === false ? 'Bip de fin de repos : non' : 'Bip de fin de repos : oui') + '</button></div>'
+    + '<div class="col" style="gap:8px"><span class="label">Objectif de séances par semaine</span><div class="row" style="flex-wrap:wrap;gap:8px">'
+    + [2, 3, 4, 5, 6].map((n) => '<button type="button" class="pill sm ' + (n === weekGoal() ? 'gold-btn' : 'glass') + '" data-act="set-goal" data-n="' + n + '">' + n + '</button>').join('') + '</div>'
+    + '<span class="small mut">Les courses comptent. L’atteindre valide la quête de la semaine (+150 XP).</span></div>'
     + '<div class="col" style="gap:8px"><span class="label">Hevy</span><button type="button" class="pill glass wide" data-act="pick-hevy">Importer mon historique Hevy</button>'
     + '<span class="small mut">Dans Hevy : Profil, Réglages, Exporter les données. Choisis ensuite le fichier workouts.csv ici.</span></div>'
     + '<div class="col" style="gap:8px"><span class="label">Sauvegarde</span><div class="row"><button type="button" class="pill glass grow" data-act="export">Exporter</button><button type="button" class="pill glass grow" data-act="pick-backup">Restaurer</button></div>'
-    + '<span class="small mut">Tes données restent sur ce téléphone. Exporte une sauvegarde de temps en temps pour ne rien perdre.</span></div>' + closeBtn);
+    + '<span class="small mut">Tes données restent sur ce téléphone. Exporte une sauvegarde de temps en temps pour ne rien perdre.</span></div>'
+    + '<div class="col" style="gap:8px"><span class="label">Version ' + VERSION + '</span><div class="row"><button type="button" class="pill glass grow" data-act="news">Nouveautés</button><button type="button" class="pill glass grow" data-act="update">Mettre à jour</button></div></div>' + closeBtn);
+}
+
+// Liste des nouveautés de la version : montrée une fois après chaque mise à jour, et depuis les réglages.
+function sheetNews() {
+  const n = NEWS[0];
+  sheet('<div class="col"><span class="label violet">Version ' + n.v + '</span><h1 class="h1">Nouveautés</h1></div><div class="list">'
+    + n.items.map((t) => '<div class="item"><span class="qmark done"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#D8BD82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="grow">' + esc(t) + '</span></div>').join('') + '</div>' + closeBtn);
 }
 
 function pickFile(accept, onText) {
@@ -279,6 +314,20 @@ Object.assign(ACTIONS, {
   delete: (el) => { if (confirm('Supprimer définitivement cette séance ?')) { state.workouts = state.workouts.filter((x) => x.id !== el.dataset.id); save(); closeSheet(); render(); } },
   more: () => { ui.historyLimit += 40; render(); },
   'set-rest': (el) => { state.settings.rest = +el.dataset.s; save(); sheetSettings(); },
+  'set-goal': (el) => { state.settings.weekGoal = +el.dataset.n; save(); render(); sheetSettings(); },
+  'toggle-sound': () => { state.settings.sound = state.settings.sound === false; save(); sheetSettings(); },
+  'h-filter': (el) => { ui.hFilter = el.dataset.f; ui.historyLimit = 40; render(); },
+  news: () => sheetNews(),
+  update: async () => {
+    if (!('serviceWorker' in navigator) || local) { toast('Mise à jour indisponible ici'); return; }
+    toast('Recherche d’une mise à jour…');
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) await reg.update();
+      // Si rien de neuf n'arrive dans les secondes qui suivent, c'est que la version est la bonne.
+      setTimeout(() => { if (!(reg && (reg.installing || reg.waiting))) toast('Tu as la dernière version (' + VERSION + ')'); }, 3500);
+    } catch (e) { toast('Pas de réseau pour vérifier'); }
+  },
   'pick-hevy': () => pickFile('.csv,text/csv,text/comma-separated-values', (text) => {
     try { const r = importHevy(text); closeSheet(); ui.enter = true; render(); toast(r.added + ' séances importées' + (r.skipped ? ', ' + r.skipped + ' déjà là' : '')); } catch (e) { toast(e.message); }
   }),
@@ -290,7 +339,11 @@ Object.assign(ACTIONS, {
     const d = toNum($('run-d').value), t = Math.round(toNum($('run-m').value) * 60 + toNum($('run-s').value));
     if (d <= 0 || t <= 0) { toast('Indique la distance et la durée'); return; }
     const now = Date.now();
-    state.workouts.push({ id: 'r' + now, title: 'Course', start: now - t * 1000, end: now, exercises: [{ name: 'Running', sets: [{ d, t, done: true }] }] });
+    // Aujourd'hui : la course vient de finir. Un autre jour : on la place à midi ce jour-là.
+    const day = Date.parse($('run-date').value + 'T12:00:00');
+    const today = new Date(now - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const end = !isNaN(day) && $('run-date').value !== today && day < now ? day + t * 1000 : now;
+    state.workouts.push({ id: 'r' + now, title: 'Course', start: end - t * 1000, end, exercises: [{ name: 'Running', sets: [{ d, t, done: true }] }] });
     save(); render(); toast('Course enregistrée, +' + (Math.round(d * 20) + 50) + ' XP');
   },
 });
@@ -305,6 +358,12 @@ export function render() {
   document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === ui.tab));
   // Un rang gagné se fête sur l'accueil, quand aucune autre fenêtre n'est ouverte.
   if (ui.tab === 'home' && state.workouts.length && !$('sheet').firstElementChild) checkRankUp(rankInfo());
+  // Après une mise à jour, on montre une fois ce qui a changé.
+  if (ui.tab === 'home' && state.seenVersion !== VERSION && !$('sheet').firstElementChild && !state.active) {
+    const first = state.seenVersion === undefined && !state.workouts.length;
+    state.seenVersion = VERSION; save();
+    if (!first) sheetNews();
+  }
 }
 
 document.addEventListener('click', (ev) => {
@@ -352,7 +411,6 @@ renderRest();
 loadPhotos().then(() => { if (ui.tab === 'home' && photoDue()) render(); });
 
 // Le cache hors ligne ne s'active que sur la vraie adresse en ligne, pas pendant les tests sur le PC.
-const local = ['localhost', '127.0.0.1'].includes(location.hostname);
 if ('serviceWorker' in navigator && window.isSecureContext && !local) {
   // Quand une nouvelle version vient d'être installée, on recharge tout de suite, sauf en pleine séance.
   if (navigator.serviceWorker.controller) {

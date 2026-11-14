@@ -1,7 +1,7 @@
 // Service worker : garde l'app dans le téléphone pour qu'elle s'ouvre tout de suite, même sans réseau.
 // À chaque mise à jour : augmenter VERSION. Le téléphone télécharge alors tous les fichiers d'un coup,
 // puis l'app se recharge toute seule sur la nouvelle version.
-const VERSION = 'ascension-7';
+const VERSION = 'ascension-8';
 const FILES = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/ui.js', 'js/seance.js', 'js/progress.js', 'js/stats.js', 'js/photos.js', 'js/store.js', 'js/data.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
