@@ -9,7 +9,8 @@ import { NEWS } from './data.js';
 import { rankInfo, heat, bodyLog } from './stats.js';
 import { beep, wakeAudio, initSound, soundError } from './sound.js';
 import { $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg } from './ui.js';
-import { viewWorkout, nextRoutine, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
+import { viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
+import { progCard } from './programme.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
 
 const DAY = 864e5;
@@ -62,20 +63,12 @@ function viewHome() {
     const doneToday = state.workouts.find((w) => w.start >= t0 && w.exercises.some((e) => e.name !== 'Running'));
     const ranToday = rs.some((r) => r.date >= t0);
     const sunday = new Date().getDay() === 0 && !ranToday;
-    const r = nextRoutine();
     if (sunday) {
       h += '<section class="cta hud"><div class="col" style="gap:4px"><span class="label violet">Dimanche</span><span class="h1">Course du dimanche</span>'
         + '<span class="small" style="color:var(--soft)">' + (rs.length ? 'La dernière : ' + fr(rs[0].d) + ' km en ' + dur(rs[0].t) : 'Note ta distance et ton temps') + '</span></div>'
         + '<button type="button" class="pill gold-btn wide" data-act="run">Noter ma course</button></section>';
     }
-    if (r) {
-      const names = r.exercises.slice(0, 4).map((e) => exoName(e.name)).join(' · ') + (r.exercises.length > 4 ? ' · +' + (r.exercises.length - 4) : '');
-      h += '<section class="' + (sunday ? 'glass card' : 'cta') + ' hud tap" role="button" tabindex="0" data-act="routine" data-id="' + esc(r.id) + '"' + (sunday ? ' style="display:flex;flex-direction:column;gap:14px"' : '') + '><div class="col" style="gap:4px"><span class="label violet">' + (doneToday ? 'Séance faite aujourd’hui · la prochaine' : 'Ta prochaine séance') + '</span>'
-        + '<span class="h1">' + esc(r.label) + '</span><span class="small" style="color:var(--soft)">' + plural(r.exercises.length, 'exercice', 'exercices') + ' · ' + usualTime(r) + '</span>'
-        + '<span class="small mut">' + esc(names) + '</span></div>'
-        + '<div class="row"><button type="button" class="pill glass" data-act="start" data-id="' + esc(r.id) + '" data-express="1">Express</button>'
-        + '<button type="button" class="pill gold-btn grow" data-act="start" data-id="' + esc(r.id) + '">Commencer</button></div></section>';
-    }
+    h += progCard(!sunday, !!doneToday);
   }
 
   if (has) {

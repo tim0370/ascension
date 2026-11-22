@@ -416,6 +416,13 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 14, items: [
+    'Programme guidé : l’app choisit ta séance du jour (pompes et épaules, jambes et gainage, dips et dos, complet), à tour de rôle',
+    'Cycles de 4 semaines : 3 semaines où ça monte, puis une semaine de re-test pour mettre à jour tes lettres',
+    'Séance d’environ 45 min, en version courte ou en grosse séance quand tu as l’énergie',
+    'Les exercices principaux passent tout seuls à leur version plus dure quand tu atteins le cap',
+    'Tes routines Full Body A et B restent dans « Mes routines », en secours',
+  ] },
   { v: 13, items: [
     'Nouveau bip, plus doux : deux notes de clochette au lieu de trois bips secs',
     'Plus de bip en retard : si tu étais sur une autre app à la fin du repos, l’app ne sonne plus quand tu reviens',

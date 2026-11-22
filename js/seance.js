@@ -2,6 +2,7 @@
 // repos, choix et fiche d'un exercice, modification d'une routine ou d'une séance passée, bilan de fin.
 import { EXOS, FICHES, WARMUP, GROUPES } from './data.js';
 import { figure } from './anim.js';
+import { progCard, progDone, progPlan } from './programme.js';
 import { beep, wakeAudio } from './sound.js';
 import {
   state, save, exoName, lastSets, kindOf, sorted, xpOf, totalXp, levelInfo, countPrs, isRecord,
@@ -31,7 +32,7 @@ export function nextRoutine() {
 // Durée habituelle d'une routine, d'après la dernière fois.
 export function usualTime(r) {
   const last = sorted().find((w) => norm(w.title) === norm(r.title) && w.end > w.start);
-  return last ? 'environ ' + dur(Math.round((last.end - last.start) / 300000) * 300) : plural(r.exercises.reduce((n, e) => n + e.sets.length, 0), 'série', 'séries');
+  return last && last.end - last.start >= 300000 ? 'environ ' + dur(Math.round((last.end - last.start) / 300000) * 300) : plural(r.exercises.reduce((n, e) => n + e.sets.length, 0), 'série', 'séries');
 }
 
 export function sheetRoutine(id) {
@@ -62,7 +63,7 @@ function buildExo(name, sets, title) {
   const time = measureOf(name) === 'time';
   return {
     name,
-    sets: sets.map((s, i) => { const p = (prev && prev[i]) || s; return { r: time ? 0 : (p.r || s.r || 0), w: p.w || s.w || 0, t: time ? (p.t || s.t || 0) : 0, done: false }; }),
+    sets: sets.map((s, i) => { const p = (prev && (prev[i] || prev[prev.length - 1])) || s; return { r: time ? 0 : (p.r || s.r || 0), w: p.w || s.w || 0, t: time ? (p.t || s.t || 0) : 0, done: false }; }),
     goals: sets.map((s, i) => { const p = prev && (prev[i] || prev[prev.length - 1]); if (!p) return null; if (time) return p.t ? { t: p.t + 5 } : null; return p.r ? { r: p.r + 1 } : null; }),
     prev: prev ? prev.map(setText).join(', ') : '',
     // La note laissée la dernière fois sur cet exercice revient toute seule.
@@ -90,14 +91,35 @@ export function startWorkout(id, opts) {
   top();
 }
 
+// Démarre une séance préparée par le programme guidé (programme.js).
+export function startPlan(p) {
+  const a = { title: p.title, label: p.label, routineId: null, start: Date.now(), view: 'list', idx: 0, setIdx: 0, rest: null, prog: p.prog,
+    exercises: p.exercises.map((e) => buildExo(e.name, e.sets, p.title)) };
+  // Re-test : au poids du corps, et sans objectif affiché (c'est ton max du jour).
+  if (p.test) { a.test = true; for (const e of a.exercises) { for (const x of e.sets) x.w = 0; e.goals = e.goals.map(() => null); } }
+  if (p.express) a.express = true;
+  if (p.prog && p.prog.week === 3 && !p.test) a.tip = 'Semaine 3 : dernière série des exercices principaux au maximum.';
+  if (p.test) a.tip = 'Re-test : une seule série par exercice, au maximum. 3 minutes de repos entre chaque.';
+  if (state.settings.warm) a.warm = { i: 0, end: Date.now() + WARMUP[0].secs * 1000 };
+  state.active = a;
+  save();
+  closeSheet();
+  ui.tab = 'workout';
+  ui.enter = true;
+  keepAwake();
+  render();
+  top();
+}
+
 // ---------- Écrans de séance ----------
 export function viewWorkout() {
   const a = state.active;
   if (!a) {
-    let h = '<div class="col" style="gap:2px"><span class="small mut">Choisis ta séance</span><h1 class="h1">Séance</h1></div>';
-    const next = nextRoutine();
+    let h = '<div class="col" style="gap:2px"><span class="small mut">Ton programme guidé</span><h1 class="h1">Séance</h1></div>';
+    h += progCard(true);
+    h += '<span class="label" style="margin-top:6px">Mes routines</span>';
     for (const r of routines()) {
-      const main = next && next.id === r.id;
+      const main = false;
       const names = r.exercises.slice(0, 4).map((e) => exoName(e.name)).join(' · ') + (r.exercises.length > 4 ? ' · +' + (r.exercises.length - 4) : '');
       h += '<section class="' + (main ? 'cta' : 'glass card') + ' hud tap" role="button" tabindex="0" data-act="routine" data-id="' + esc(r.id) + '" style="display:flex;flex-direction:column;gap:14px"><div class="col" style="gap:4px">'
         + (main ? '<span class="label violet">À faire maintenant</span>' : '') + '<span class="h1" style="font-size:24px">' + esc(r.label) + '</span>'
@@ -133,7 +155,8 @@ function viewList(a) {
   let h = '<div class="row between"><div class="col" style="gap:2px"><span class="small mut">Séance en cours</span><h1 class="h1">' + esc(a.label) + '</h1></div>'
     + '<span class="num" id="elapsed" style="font-size:22px;color:var(--soft)">' + clock((Date.now() - a.start) / 1000) + '</span></div>';
   h += '<section class="glass card hud col" style="gap:10px"><div class="row between"><span class="h2">' + done + ' sur ' + plural(total, 'série', 'séries') + '</span><span class="gold-text num" style="font-size:17px">+' + (done * 10) + ' XP</span></div>'
-    + '<div class="bar gold"><div style="width:' + (total ? Math.round((done / total) * 100) : 0) + '%"></div></div></section>';
+    + '<div class="bar gold"><div style="width:' + (total ? Math.round((done / total) * 100) : 0) + '%"></div></div>'
+    + (a.tip ? '<span class="small" style="color:var(--violet-soft)">' + esc(a.tip) + '</span>' : '') + '</section>';
   a.exercises.forEach((e, i) => {
     const d = exDone(e);
     const w = Math.max(0, ...e.sets.map((s) => s.w || 0));
@@ -410,8 +433,10 @@ function finishWorkout() {
   const xpBefore = totalXp();
   const qBefore = new Set(dailyQuests().filter((q) => q.done).map((q) => q.id));
   const w = { id: 'a' + a.start, title: a.title, start: a.start, end: Date.now(), exercises };
+  if (a.prog) w.prog = a.prog;
   state.workouts.push(w);
   w.prs = countPrs(w);
+  const progMsg = progDone(w);
   // Si tu as ajouté ou retiré des exercices ou des séries, on propose de garder ce changement (pas en express).
   const routine = !a.express && a.routineId && routines().find((r) => r.id === a.routineId);
   if (routine) {
@@ -428,6 +453,7 @@ function finishWorkout() {
   render();
   top();
   sheetSummary(w, a.label, xpBefore, qNew);
+  if (progMsg) toast(progMsg);
 }
 
 // Ressenti de la séance : trois boutons, celui choisi passe en or.
@@ -542,7 +568,7 @@ function sheetSummary(w, label, xpBefore, qNew) {
 function startRest() {
   wakeAudio();
   const ex = curExo();
-  const total = ex ? restOf(ex.name) : (state.settings.rest || 90);
+  const total = state.active.test ? 180 : (ex ? restOf(ex.name) : (state.settings.rest || 90));
   state.active.rest = { end: Date.now() + total * 1000, total, rang: false };
 }
 
@@ -631,6 +657,11 @@ export function onInput(t) {
 // ---------- Actions ----------
 const edExo = (el) => ui.edit.draft.exercises[+el.dataset.e];
 Object.assign(ACTIONS, {
+  'prog-start': (el) => {
+    if (state.active) { toast('Une séance est déjà en cours'); return; }
+    startPlan(progPlan(el.dataset.type, el.dataset.mode || ''));
+    ui.progMode = '';
+  },
   routine: (el) => sheetRoutine(el.dataset.id),
   exo: (el) => sheetExo(el.dataset.name),
   start: (el) => startWorkout(el.dataset.id, { express: !!el.dataset.express }),
