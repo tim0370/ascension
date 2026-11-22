@@ -416,6 +416,10 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 12, items: [
+    'Le bip est refait : il passe par un vrai lecteur audio, plus fiable sur iPhone, et sonne même en mode silencieux',
+    'Nouveau réglage « Bip discret » si tu veux garder ta musique pendant la séance',
+  ] },
   { v: 11, items: [
     'Ascension 2, première étape : tes 5 qualités (force, explosivité, vitesse, endurance, maîtrise du corps), notées de E à Z',
     'Nouvelle carte de rang dans Progrès, avec l’étoile de tes qualités : ton rang est maintenant la moyenne de tes 5 lettres',

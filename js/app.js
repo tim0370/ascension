@@ -7,7 +7,7 @@ import {
 } from './store.js';
 import { NEWS } from './data.js';
 import { rankInfo, heat, bodyLog } from './stats.js';
-import { beep, wakeAudio, initSound } from './sound.js';
+import { beep, wakeAudio, initSound, soundError } from './sound.js';
 import { $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg } from './ui.js';
 import { viewWorkout, nextRoutine, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
@@ -271,9 +271,9 @@ function sheetSettings() {
     + '</div>'
     + '<div class="col" style="gap:8px"><span class="label">Son</span>'
     + '<button type="button" class="pill sm glass wide' + (state.settings.sound === false ? '' : ' on') + '" data-act="toggle-sound">' + (state.settings.sound === false ? 'Bip de fin de repos : non' : 'Bip de fin de repos : oui') + '</button>'
-    + '<button type="button" class="pill sm glass wide' + (state.settings.soundSilent === false ? '' : ' on') + '" data-act="toggle-silent">' + (state.settings.soundSilent === false ? 'Bip en mode silencieux : non' : 'Bip en mode silencieux : oui') + '</button>'
+    + '<button type="button" class="pill sm glass wide' + (state.settings.soundSilent === false ? ' on' : '') + '" data-act="toggle-silent">' + (state.settings.soundSilent === false ? 'Bip discret (garde la musique) : oui' : 'Bip discret (garde la musique) : non') + '</button>'
     + '<button type="button" class="pill sm glass wide" data-act="test-sound">Tester le son</button>'
-    + '<span class="small mut">Le bip sonne même si ton iPhone est en silencieux. Si ta musique se coupe à chaque bip, mets « mode silencieux : non ». Le son ne marche que si l’app est ouverte à l’écran.</span></div>'
+    + '<span class="small mut">Le bip sonne même si ton iPhone est en silencieux ; le volume se règle avec les boutons sur le côté. Si ta musique se coupe à chaque bip, mets « Bip discret : oui » (il ne sonne alors plus en silencieux). Le son ne marche que si l’app est ouverte à l’écran.</span></div>'
     + '<div class="col" style="gap:8px"><span class="label">Toi</span><div class="row">'
     + '<label class="field grow" style="height:52px"><input id="set-age" inputmode="numeric" placeholder="Âge" aria-label="Ton âge" value="' + (state.settings.age || '') + '"><span class="unit">ans</span></label>'
     + '<button type="button" class="pill glass grow" data-act="body" style="height:52px">' + (bodyLog().length ? 'Poids : ' + fr(bodyLog()[0].kg, 1) + ' kg' : 'Noter mon poids') + '</button></div>'
@@ -342,7 +342,13 @@ Object.assign(ACTIONS, {
   'set-goal': (el) => { state.settings.weekGoal = +el.dataset.n; save(); render(); sheetSettings(); },
   'toggle-sound': () => { state.settings.sound = state.settings.sound === false; save(); sheetSettings(); },
   'toggle-silent': () => { state.settings.soundSilent = state.settings.soundSilent === false; save(); wakeAudio(); sheetSettings(); },
-  'test-sound': () => { wakeAudio(); beep(true); toast('Bip envoyé : tu l’entends ?'); },
+  'test-sound': () => {
+    beep(true).then((how) => {
+      if (how === 'aucun') toast('Le téléphone bloque le son (' + (soundError() || 'inconnu') + ')');
+      else if (how === 'discret') toast('Bip discret envoyé : coupé si l’iPhone est en silencieux');
+      else toast('Bip envoyé : monte le volume si tu ne l’entends pas');
+    });
+  },
   news: () => sheetNews(),
   update: async () => {
     if (!('serviceWorker' in navigator) || local) { toast('Mise à jour indisponible ici'); return; }
