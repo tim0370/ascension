@@ -3,6 +3,7 @@
 import { EXOS, FICHES, WARMUP, GROUPES } from './data.js';
 import { figure } from './anim.js';
 import { progCard, progDone, progPlan } from './programme.js';
+import { camOk } from './camera.js';
 import { dailyQuests, feats } from './quetes.js';
 import { beep, wakeAudio } from './sound.js';
 import {
@@ -224,6 +225,9 @@ function viewFocus(a) {
     // Chrono intégré pour les exercices en secondes : il remplit la durée tout seul.
     if (time && !s.done) {
       h += '<button type="button" class="pill glass wide' + (a.chrono ? ' on' : '') + '" data-act="chrono">' + (a.chrono ? 'Arrêter le chrono' : 'Lancer le chrono') + '</button>';
+    }
+    if (!time && !s.done && camOk(ex.name)) {
+      h += '<button type="button" class="pill glass wide" data-act="cam">' + ICON.camera + 'Compter avec la caméra</button>';
     }
     h += (s.done
       ? '<button type="button" class="pill glass wide big" data-act="unvalidate" style="color:var(--gold)">Série validée · annuler</button>'

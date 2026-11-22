@@ -10,7 +10,7 @@ export const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
 export const toNum = (v) => parseFloat(String(v).replace(',', '.')) || 0;
 
 // Numéro de version affiché dans les réglages. À augmenter avec VERSION dans sw.js et NEWS dans data.js.
-export const VERSION = 17;
+export const VERSION = 18;
 
 // État de l'interface (pas enregistré). hFilter = filtre de l'historique. edit = brouillon en cours ; pick = à quoi sert le choix d'exercice.
 export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null, hQuery: '' };
@@ -32,6 +32,7 @@ export const ICON = {
   more: svg('<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'),
   plus: svg('<path d="M12 5v14M5 12h14"/>', 'width="22" height="22"'),
   minus: svg('<path d="M5 12h14"/>', 'width="22" height="22"'),
+  camera: svg('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>', 'width="18" height="18"'),
   check: svg('<path d="M6 12.5l4 4 8-9"/>'),
   lock: svg('<rect x="6" y="11" width="12" height="9" rx="2"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/>'),
   dot: svg('<circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/>'),

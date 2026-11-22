@@ -416,6 +416,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 18, items: [
+    'Compteur de pompes par la caméra (essai) : pose le téléphone sous ta poitrine, il compte et annonce chaque répétition',
+    'Le bouton « Compter avec la caméra » apparaît sur les exercices de pompes pendant la séance',
+    'Rien n’est filmé ni gardé : l’app mesure seulement la lumière, sur ton téléphone',
+  ] },
   { v: 17, items: [
     'Course avec le GPS : chrono, distance et allure en direct, sans rien noter à la main',
     'Un lièvre à battre : il court à l’allure que tu choisis, tu vois ton avance ou ton retard',
