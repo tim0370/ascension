@@ -1,5 +1,6 @@
 // Briques communes à tous les écrans : petits outils, icônes, fenêtres, messages, graphiques.
 import { routines, setText, dur } from './store.js';
+import { skin } from './quetes.js';
 
 export const $ = (id) => document.getElementById(id);
 export const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -9,7 +10,7 @@ export const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
 export const toNum = (v) => parseFloat(String(v).replace(',', '.')) || 0;
 
 // Numéro de version affiché dans les réglages. À augmenter avec VERSION dans sw.js et NEWS dans data.js.
-export const VERSION = 15;
+export const VERSION = 16;
 
 // État de l'interface (pas enregistré). hFilter = filtre de l'historique. edit = brouillon en cours ; pick = à quoi sert le choix d'exercice.
 export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null, hQuery: '' };
@@ -38,24 +39,34 @@ export const ICON = {
   run: svg('<circle cx="15" cy="5" r="2"/><path d="M5 21l3-5 4 1.500 1-5.500-4-1-2.500 3M13 12l3 2 3-1M12 17.500l2 3.500"/>'),
   cam: svg('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.500"/>'),
   save: svg('<path d="M12 4v10M8 10l4 4 4-4M5 19h14"/>'),
+  flame: '<svg aria-hidden="true" viewBox="0 0 24 24"><defs><linearGradient id="fl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD27A"/><stop offset="0.6" stop-color="#FF8A3D"/><stop offset="1" stop-color="#FF4D4D"/></linearGradient></defs><path d="M12 2.5c.6 3.2 4.8 5.6 4.8 10.4A4.8 4.8 0 0 1 12 21.5 4.8 4.8 0 0 1 7.2 16.7c0-2.3 1.1-3.6 2.3-4.9.2 1.4.9 2.4 2 2.8-.6-3.9.2-8 .5-12.1z" fill="url(#fl)"/><path d="M12 13.5c.4 1.6 2.2 2.5 2.2 4.4a2.2 2.2 0 0 1-4.4 0c0-1.5 1.3-2.4 2.2-4.4z" fill="#FFE9B8"/></svg>',
+  medal: svg('<path d="M8 3h8l-2 6h-4z"/><circle cx="12" cy="15" r="5.5"/><path d="M12 12.5l.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z" fill="currentColor" stroke="none"/>'),
+  bolt: svg('<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>'),
+  target: svg('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.8" fill="currentColor"/>'),
+  stack: svg('<path d="M4 17l8 4 8-4M4 12l8 4 8-4M12 3l8 4-8 4-8-4z"/>'),
+  star: svg('<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z"/>'),
+  swords: svg('<path d="M4 4l9 9M4 4h4M4 4v4M20 4l-9 9M20 4h-4M20 4v4M7 15l-3 3 2 2 3-3M17 15l3 3-2 2-3-3"/>'),
 };
 export const checkDark = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24"><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#17120A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
-const GOLD_DEF = '<defs><linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F4E6BC"/><stop offset="0.55" stop-color="#CDAA62"/><stop offset="1" stop-color="#8F6D33"/></linearGradient></defs>';
+// Dégradé de l'emblème : or par défaut, ou la couleur gagnée avec un haut fait (« Mon profil »).
+export const goldDef = (id, k) => { const c = k || skin(); return '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + c.a + '"/><stop offset="0.55" stop-color="' + c.b + '"/><stop offset="1" stop-color="' + c.c + '"/></linearGradient></defs>'; };
 
 // Badge de rang (hexagone). small = version miniature pour les listes.
-export function rankSvg(letter, small) {
-  return '<svg class="rank" role="img" aria-label="Rang ' + letter + '" viewBox="0 0 72 80"' + (small ? ' style="width:34px;height:38px"' : '') + '>' + GOLD_DEF
-    + '<polygon points="36,3 68,21 68,59 36,77 4,59 4,21" fill="rgba(10,9,15,0.55)" stroke="url(#gold)" stroke-width="' + (small ? 4 : 2) + '"/>'
+let gid = 0;
+export function rankSvg(letter, small, k, cls) {
+  const id = 'g' + (++gid);
+  return '<svg class="' + (cls || 'rank') + '" role="img" aria-label="Rang ' + letter + '" viewBox="0 0 72 80"' + (small ? ' style="width:34px;height:38px"' : '') + '>' + goldDef(id, k)
+    + '<polygon points="36,3 68,21 68,59 36,77 4,59 4,21" fill="rgba(13,10,24,0.7)" stroke="url(#' + id + ')" stroke-width="' + (small ? 4 : 2.5) + '"/>'
     + (small ? '' : '<polygon points="36,11 61,25 61,55 36,69 11,55 11,25" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>')
-    + '<text x="36" y="' + (small ? 53 : 50) + '" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="' + (small ? 38 : 30) + '" font-weight="700" fill="url(#gold)">' + letter + '</text></svg>';
+    + '<text x="36" y="' + (small ? 53 : 50) + '" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="' + (small ? 38 : 30) + '" font-weight="700" fill="url(#' + id + ')">' + letter + '</text></svg>';
 }
 
 // Emblème de l'accueil : le badge de rang entouré d'un anneau qui montre l'avancée vers le niveau suivant.
 export function emblem(letter, ratio) {
   const C = 2 * Math.PI * 76;
   return '<svg class="emblem" role="img" aria-label="Rang ' + letter + ', ' + Math.round(ratio * 100) + ' pour cent du niveau" viewBox="0 0 168 168">'
-    + '<defs><linearGradient id="gold2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F4E6BC"/><stop offset="0.55" stop-color="#CDAA62"/><stop offset="1" stop-color="#8F6D33"/></linearGradient>'
+    + goldDef('gold2').replace('</defs>', '')
     + '<linearGradient id="vio" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9A8F5"/><stop offset="1" stop-color="#6F55D8"/></linearGradient></defs>'
     + '<circle cx="84" cy="84" r="76" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="5"/>'
     + '<circle class="arc" cx="84" cy="84" r="76" fill="none" stroke="url(#vio)" stroke-width="5" stroke-linecap="round" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + (C * (1 - ratio)).toFixed(1) + '" transform="rotate(-90 84 84)"/>'
@@ -92,6 +103,31 @@ export function sheet(html, layer, cls) {
 export function closeSheet() { $('sheet').innerHTML = ''; $('sheet2').innerHTML = ''; ui.edit = null; document.body.classList.remove('locked'); }
 export function closeSheet2() { $('sheet2').innerHTML = ''; if (!$('sheet').firstElementChild) document.body.classList.remove('locked'); }
 export const closeBtn = '<button type="button" class="pill gold-btn wide" data-act="close">Fermer</button>';
+
+// « +10 XP » qui s'envole depuis un bouton (récompense visible à chaque série).
+export function xpFly(el, text) {
+  try {
+    const r = el.getBoundingClientRect();
+    const f = document.createElement('div');
+    f.className = 'xpfly';
+    f.textContent = text;
+    f.style.left = (r.left + r.width / 2) + 'px';
+    f.style.top = (r.top - 6) + 'px';
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 1200);
+  } catch (e) { /* rien */ }
+}
+
+// Grand écran « niveau supérieur » : se ferme au toucher ou tout seul.
+export function levelUp(level, sub) {
+  const box = document.createElement('div');
+  box.className = 'levelup';
+  box.innerHTML = '<div><span class="label" style="color:var(--violet-soft)">Niveau supérieur</span><span class="big gold-text">Niveau ' + level + '</span><span class="small mut">' + esc(sub || 'Continue comme ça') + '</span></div>';
+  box.addEventListener('click', () => box.remove());
+  document.body.appendChild(box);
+  burst();
+  setTimeout(() => box.remove(), 2600);
+}
 
 // Petite explosion de points dorés, pour un record, un niveau ou un rang gagné.
 export function burst() {

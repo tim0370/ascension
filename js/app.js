@@ -3,14 +3,16 @@
 import {
   state, save, exoName, sorted, runs, xpOf, totalXp, levelInfo, weekStreak,
   fr, dur, clock, pace, dateFr, setText, workoutText, importHevy, exportJson, importJson,
-  dailyQuests, weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines,
+  weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines,
 } from './store.js';
 import { NEWS } from './data.js';
 import { rankInfo, heat, bodyLog } from './stats.js';
 import { beep, wakeAudio, initSound, soundError } from './sound.js';
-import { $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg } from './ui.js';
+import { $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst } from './ui.js';
 import { viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
 import { progCard } from './programme.js';
+import { dailyQuests, streak, feats, myTitle, titles, skins, SKINS } from './quetes.js';
+import { bossCard } from './boss.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
 
 const DAY = 864e5;
@@ -18,31 +20,39 @@ const local = ['localhost', '127.0.0.1'].includes(location.hostname); // tests s
 const midnight = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
 
 // ---------- Accueil ----------
+// Ordre : qui tu es (niveau, flamme), la séance du jour, le boss, rang et hauts faits, quêtes, semaine.
+const QICO = { volume: 'stack', record: 'target', seance: 'bolt', rare: 'star' };
+const qCat = (q) => (q.rare ? 'rare' : q.id.startsWith('v-') ? 'volume' : q.id.startsWith('r-') ? 'record' : 'seance');
+export function questRow(q) {
+  const cat = qCat(q);
+  return '<div class="quest' + (q.done ? ' done' : '') + (q.rare ? ' rare' : '') + '"><span class="qico ' + (q.done ? 'done' : cat) + '">' + (q.done ? ICON.check : ICON[QICO[cat]]) + '</span>'
+    + '<div class="col grow" style="gap:0">' + (q.rare ? '<span class="label" style="color:var(--gold);letter-spacing:1.4px">Quête rare</span>' : '')
+    + '<span class="qlabel" style="font-weight:600">' + esc(q.label) + '</span>'
+    + (q.done ? '<span class="small" style="color:var(--vert)">Réussie</span>' : '<div class="bar"><div style="width:' + Math.round((q.cur / q.goal) * 100) + '%"></div></div><span class="small mut" style="margin-top:4px">' + q.cur + ' sur ' + q.goal + ' ' + esc(q.unit) + '</span>') + '</div>'
+    + '<span class="xptag ' + (q.done ? 'mut' : 'gold-text') + '">+' + q.xp + '</span></div>';
+}
+
+function flamePill(st) {
+  return '<button type="button" class="flame' + (st.n ? '' : ' off') + (st.danger ? ' danger' : '') + '" data-act="flame" aria-label="Série de ' + st.n + ' jours">' + ICON.flame + st.n + '</button>';
+}
+
 function viewHome() {
   const has = state.workouts.length > 0;
   const quests = has ? dailyQuests() : []; // avant le calcul d'XP : une quête réussie rapporte tout de suite
+  const fx = feats(); // hauts faits (et ceux qui viennent d'être réussis)
   const wq = has ? weekQuest() : null;
   const xp = totalXp();
   const lv = levelInfo(xp);
   const info = rankInfo();
-  const streak = weekStreak();
-  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-  const rs = runs();
+  const st = streak();
   const t0 = midnight();
-  const tick = '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#D8BD82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const title = myTitle();
+  if (fx.fresh.length) setTimeout(() => { burst(); toast('Haut fait : ' + fx.fresh[0].label, true); }, 600);
 
-  let h = '<div class="row between"><div class="col" style="gap:2px"><span class="small mut">' + esc(today.charAt(0).toUpperCase() + today.slice(1)) + '</span><h1 class="h1">Ascension</h1></div>'
-    + (has ? '<button type="button" class="pill sm glass" data-act="week">' + plural(streak, 'semaine', 'semaines') + '</button>' : '') + '</div>';
-
-  const t = totals();
-  h += '<section class="glass hero hud tap" role="button" tabindex="0" data-act="level">' + emblem(info.rank.letter, lv.into / lv.need)
-    + '<div class="col center" style="gap:6px"><span class="gold-text" style="font-size:11px;font-weight:600;letter-spacing:2.4px">RANG ' + info.rank.letter + ' · ' + esc(info.rank.name.toUpperCase()) + '</span>'
-    + '<span class="big">Niveau ' + lv.level + '</span>'
-    + '<span class="small mut">' + lv.into.toLocaleString('fr-FR') + ' sur ' + lv.need.toLocaleString('fr-FR') + ' XP · encore ' + (lv.need - lv.into) + ' pour le niveau ' + (lv.level + 1) + '</span></div>'
-    + '<div class="hair" style="width:100%"></div><div class="stats3">'
-    + '<div><span class="num" style="font-size:20px">' + t.sessions + '</span><span class="small mut">séances</span></div>'
-    + '<div><span class="num" style="font-size:20px">' + t.sets.toLocaleString('fr-FR') + '</span><span class="small mut">séries</span></div>'
-    + '<div><span class="num" style="font-size:20px">' + fr(t.km, 0) + ' km</span><span class="small mut">courus</span></div></div></section>';
+  let h = '<div class="topbar"><button type="button" class="emb tap" data-act="profile" aria-label="Mon profil">' + rankSvg(info.rank.letter, false, null, 'emb') + '</button>'
+    + '<button type="button" class="who tap" data-act="level"><span class="label violet">' + (title ? esc(title) : 'Rang ' + info.rank.letter + ' · ' + esc(info.rank.name)) + '</span>'
+    + '<span class="h2">Niveau ' + lv.level + '</span><div class="bar thin" style="width:100%"><div style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></div></div></button>'
+    + flamePill(st) + '</div>';
 
   if (!has) {
     h += '<section class="glass card col" style="gap:12px"><h2 class="h2">Récupère ton historique</h2>'
@@ -50,51 +60,45 @@ function viewHome() {
       + '<button type="button" class="pill gold-btn wide" data-act="pick-hevy">Importer depuis Hevy</button></section>';
   }
 
-  // Le bloc principal : la séance à faire
+  // Le bloc principal : la séance en cours, ou celle du programme
   if (state.active) {
     const a = state.active;
     const total = a.exercises.reduce((n, e) => n + e.sets.length, 0);
     const done = a.exercises.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0);
     h += '<section class="cta hud"><div class="col" style="gap:4px"><span class="label violet">Séance en cours</span><span class="h1">' + esc(a.label) + '</span>'
       + '<span class="small" style="color:var(--soft)">' + done + ' sur ' + plural(total, 'série', 'séries') + ' · commencée il y a ' + dur((Date.now() - a.start) / 1000) + '</span></div>'
-      + '<div class="bar gold"><div style="width:' + (total ? Math.round((done / total) * 100) : 0) + '%"></div></div>'
+      + '<div class="seg">' + a.exercises.map((e) => '<i class="' + (e.sets.length && e.sets.every((x) => x.done) ? 'on' : '') + '"></i>').join('') + '</div>'
       + '<button type="button" class="pill gold-btn wide" data-tab="workout">Reprendre la séance</button></section>';
   } else {
-    const doneToday = state.workouts.find((w) => w.start >= t0 && w.exercises.some((e) => e.name !== 'Running'));
+    const doneToday = state.workouts.find((w) => w.start >= t0 && !w.boss && w.exercises.some((e) => e.name !== 'Running'));
     h += progCard(true, !!doneToday);
+  }
+
+  if (has) {
+    h += bossCard();
+    // Deux tuiles : le rang (étoile des 5 qualités) et les hauts faits
+    const got = fx.list.filter((f) => f.done).length;
+    const next = fx.list.filter((f) => !f.done).sort((a, b) => b.cur / b.goal - a.cur / a.goal)[0];
+    h += '<div class="tiles">'
+      + '<section class="glass tile tap" role="button" tabindex="0" data-act="rank"><span class="label violet">Rang ' + info.rank.letter + '</span>'
+      + '<div class="minirad">' + radarSvg(info.q, true) + '</div>'
+      + '<span class="small mut">' + info.q.map((x) => x.letter).join(' ') + (info.next ? ' · ' + Math.round(info.ratio * 100) + ' % vers ' + info.next.letter : '') + '</span></section>'
+      + '<section class="glass tile tap" role="button" tabindex="0" data-act="feats"><span class="label" style="color:var(--gold)">Hauts faits</span>'
+      + '<div class="row" style="gap:10px"><span class="medal" style="background:linear-gradient(160deg,#F3DFA8,#B8913F);color:#24190A;border:none">' + ICON.medal + '</span><span class="num" style="font-size:28px">' + got + '<span class="mut" style="font-size:16px"> / ' + fx.list.length + '</span></span></div>'
+      + (next ? '<div class="col" style="gap:6px;margin-top:auto"><span class="small" style="font-weight:600">' + esc(next.desc) + '</span><div class="bar thin gold"><div style="width:' + Math.round((next.cur / next.goal) * 100) + '%"></div></div></div>' : '<span class="small mut" style="margin-top:auto">Tout est débloqué</span>')
+      + '</section></div>';
+  }
+
+  if (quests.length) {
+    const doneCount = quests.filter((q) => q.done).length;
+    h += '<div class="sechead"><span class="h2">Quêtes du jour</span><span class="small mut">' + doneCount + ' sur ' + quests.length + '</span></div>'
+      + '<section class="glass card tap" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + quests.map(questRow).join('') + '</section>';
   }
 
   if (has) {
     h += '<section class="glass card col tap" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span>'
       + '<span class="row small mut" style="gap:4px">' + (wq.done ? 'Objectif atteint' : wq.cur + ' sur ' + wq.goal + ' séances') + ICON.chev + '</span></div>'
-      + '<div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div>'
-      + '<div class="bar' + (wq.done ? ' gold' : '') + '"><div style="width:' + Math.round((wq.cur / wq.goal) * 100) + '%"></div></div></section>';
-
-    // Deux tuiles : le rang et la course
-    h += '<div class="tiles">';
-    // Tuile du rang : l'étoile des 5 qualités en petit et l'avancée vers le rang suivant.
-    h += '<section class="glass tile tap" role="button" tabindex="0" data-act="rank"><span class="label violet">Rang ' + info.rank.letter + '</span>'
-      + '<div class="minirad">' + radarSvg(info.q, true) + '</div>'
-      + '<span class="small mut">' + info.q.map((x) => x.letter).join(' ') + (info.next ? ' · ' + Math.round(info.ratio * 100) + ' % vers ' + info.next.letter : '') + '</span></section>';
-    if (rs.length) {
-      const six = rs.slice(0, 6).reverse();
-      const max = Math.max(...six.map((x) => x.d));
-      h += '<section class="glass tile tap" role="button" tabindex="0" data-act="run"><span class="label">Dernière course</span>'
-        + '<div class="col" style="gap:2px"><span class="num" style="font-size:26px">' + fr(rs[0].d) + ' km</span><span class="small mut">' + dur(rs[0].t) + ' · ' + pace(rs[0].d, rs[0].t).replace(' par km', '/km') + '</span></div>'
-        + '<div class="bars" style="height:38px;margin-top:auto" role="img" aria-label="Distance des dernières courses">' + six.map((x, i) => '<div class="' + (i === six.length - 1 ? 'last' : '') + '" style="height:' + Math.max(5, Math.round((x.d / max) * 38)) + 'px"></div>').join('') + '</div></section>';
-    } else {
-      h += '<section class="glass tile tap" role="button" tabindex="0" data-act="run"><span class="label">Course</span><span class="h2">Aucune course</span><span class="small mut" style="margin-top:auto">Touche pour en noter une</span></section>';
-    }
-    h += '</div>';
-  }
-
-  if (quests.length) {
-    const all = quests.concat([wq]);
-    const doneCount = all.filter((q) => q.done).length;
-    h += '<div class="sec"><span class="h2">Quêtes</span><span class="small mut">' + doneCount + ' sur ' + all.length + '</span></div>'
-      + '<section class="glass card list tap" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + all.map((q) => '<div class="item"><span class="qmark' + (q.done ? ' done' : '') + '">' + (q.done ? tick : '') + '</span>'
-      + '<div class="col grow" style="gap:1px"><span' + (q.done ? ' class="mut" style="text-decoration:line-through"' : '') + '>' + esc(q.label) + (q.id === 'week' ? ' <span class="tag" style="margin-left:4px">Semaine</span>' : '') + '</span>' + (q.done || !q.cur ? '' : '<span class="small mut">' + q.cur + ' sur ' + q.goal + '</span>') + '</div>'
-      + '<span class="gold-text small" style="font-weight:600">+' + q.xp + ' XP</span></div>').join('') + '</section>';
+      + '<div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>';
   }
 
   if (photoDue()) {
@@ -123,8 +127,10 @@ function sheetLevel() {
     + line('Séances terminées', b.sessions + ' séances × 50 XP', b.sessions * 50)
     + line('Course à pied', fr(b.km, 1) + ' km × 20 XP', Math.round(b.km * 20))
     + line('Records battus', b.prs + ' × 25 XP', b.prs * 25)
-    + line('Quêtes du jour', plural(b.quests, 'quête réussie', 'quêtes réussies'), b.questXp) + '</div>'
-    + '<span class="small mut">Le niveau monte avec l’XP. Le rang, lui, se gagne en réussissant des épreuves.</span>' + closeBtn);
+    + line('Quêtes du jour', plural(b.quests, 'quête réussie', 'quêtes réussies'), b.questXp)
+    + line('Boss vaincus', state.workouts.filter((w) => w.boss && w.boss.win).length + ' × 300 XP', state.workouts.filter((w) => w.boss && w.boss.win).length * 300)
+    + line('Hauts faits', Object.keys(state.feats || {}).length + ' × 100 XP', Object.keys(state.feats || {}).length * 100) + '</div>'
+    + '<span class="small mut">Le niveau monte avec l’XP. Le rang, lui, vient de tes 5 qualités.</span>' + closeBtn);
 }
 
 // Séances de la semaine en cours (ou d'une autre semaine si on donne son lundi).
@@ -151,13 +157,57 @@ function sheetWeek(monday) {
 }
 
 function sheetQuests() {
-  let h = '<div class="col"><span class="label">Se cochent toutes seules</span><h1 class="h1">Quêtes du jour</h1></div>';
-  for (const q of dailyQuests().concat([weekQuest()])) {
-    h += '<div class="exo"><div class="row between"><span style="font-weight:600">' + esc(q.label) + '</span><span class="gold-text" style="font-weight:600">+' + q.xp + ' XP</span></div>'
-      + '<div class="bar' + (q.done ? ' gold' : '') + '"><div style="width:' + Math.round((q.cur / q.goal) * 100) + '%"></div></div>'
-      + '<span class="small mut">' + (q.done ? 'Réussie' : q.cur + ' sur ' + q.goal + ' ' + q.unit) + '</span></div>';
+  let h = '<div class="col"><span class="label">Changent chaque jour à minuit</span><h1 class="h1">Quêtes du jour</h1></div>'
+    + '<section class="glass card" style="padding:4px 16px">' + dailyQuests().map(questRow).join('') + '</section>'
+    + '<div class="col" style="gap:8px">' + dailyQuests().map((q) => '<div class="row" style="align-items:flex-start;gap:10px"><span class="errdot"></span><span class="small mut"><b style="color:var(--soft)">' + esc(q.label) + '</b> · ' + esc(q.hint) + '</span></div>').join('') + '</div>'
+    + '<span class="small mut">Trois défis par jour, calés sur tes records : un de volume, un de record, un pendant la séance. Environ un jour sur quatre, une quête rare rapporte beaucoup plus. Ce qui se fait tout seul (faire ta séance) n’est plus une quête.</span>';
+  sheet(h + closeBtn);
+}
+
+// La flamme : jours d'entraînement d'affilée, un jour de repos permis.
+function sheetFlame() {
+  const st = streak();
+  const days = weekDays();
+  let h = '<div class="col center" style="gap:8px"><span class="flame-big">' + ICON.flame + '</span><span class="big">' + plural(st.n, 'jour', 'jours') + '</span>'
+    + '<span class="small mut">' + (st.todayDone ? 'Fait aujourd’hui, la flamme tient.' : st.danger ? 'Entraîne-toi aujourd’hui, sinon la flamme s’éteint.' : st.n ? 'Une séance aujourd’hui la fait grandir.' : 'Une séance pour l’allumer.') + '</span></div>'
+    + '<section class="glass card"><div class="week">' + days.map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>'
+    + '<div class="stats3 glass card"><div><span class="num" style="font-size:22px">' + st.n + '</span><span class="small mut">en cours</span></div><div><span class="num" style="font-size:22px">' + st.best + '</span><span class="small mut">record</span></div><div><span class="num" style="font-size:22px">' + weekGoal() + '</span><span class="small mut">objectif semaine</span></div></div>'
+    + '<span class="small mut">Chaque jour où tu t’entraînes (séance, course ou boss) ajoute un jour à ta flamme. Tu as droit à un jour de repos : elle s’éteint seulement après deux jours de suite sans rien. Hauts faits : 7 jours, puis 30 jours.</span>';
+  sheet(h + closeBtn);
+}
+
+// Hauts faits : la liste, groupée, avec la récompense de chacun.
+function sheetFeats() {
+  const fx = feats();
+  const got = fx.list.filter((f) => f.done).length;
+  let h = '<div class="col"><span class="label" style="color:var(--gold)">' + got + ' sur ' + fx.list.length + ' · +100 XP chacun</span><h1 class="h1">Hauts faits</h1><span class="small mut">Des défis durs, qui se gagnent une seule fois. Chacun débloque un titre ou une couleur d’emblème.</span></div>';
+  const groups = [...new Set(fx.list.map((f) => f.group))];
+  for (const g of groups) {
+    h += '<span class="label">' + esc(g) + '</span><section class="glass card" style="padding:2px 16px">';
+    for (const f of fx.list.filter((x) => x.group === g)) {
+      const rw = f.reward.title ? 'Titre « ' + f.reward.title + ' »' : 'Couleur ' + SKINS[f.reward.skin].name;
+      h += '<div class="feat' + (f.done ? ' done' : '') + '"><span class="medal">' + (f.done ? ICON.medal : ICON.lock) + '</span><div class="col grow" style="gap:3px"><span style="font-weight:600">' + esc(f.label) + '</span><span class="small mut">' + esc(f.desc) + '</span>'
+        + (f.done ? '<span class="small" style="color:var(--gold)">' + esc(rw) + ' · réussi le ' + new Date(f.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + '</span>' : '<div class="bar thin gold" style="margin-top:4px"><div style="width:' + Math.round((f.cur / f.goal) * 100) + '%"></div></div><span class="small dim">' + f.cur + ' sur ' + f.goal + ' · ' + esc(rw) + '</span>') + '</div></div>';
+    }
+    h += '</section>';
   }
-  sheet(h + '<span class="small mut">Trois nouvelles quêtes chaque jour, tirées de tes exercices actuels, plus une quête pour la semaine. Elles se valident quand tu termines ta séance ou enregistres ta course, et l’XP s’ajoute tout de suite. Tu règles ton objectif de la semaine dans les réglages.</span>' + closeBtn);
+  h += '<button type="button" class="pill glass wide" data-act="profile">Choisir mon titre et ma couleur</button>';
+  sheet(h + closeBtn, 1, 'full');
+}
+
+// Mon profil : titre affiché sous le niveau, couleur de l'emblème.
+function sheetProfile() {
+  const info = rankInfo();
+  const ts = titles(), ks = skins();
+  const cur = state.settings.title || 'Aucun', ck = ks.includes(state.settings.skin) ? state.settings.skin : 'or';
+  let h = '<div class="col center" style="gap:8px">' + rankSvg(info.rank.letter, false, null, 'emblem-sm') + '<h1 class="h1">Mon profil</h1><span class="small mut">' + (myTitle() ? esc(myTitle()) : 'Pas de titre') + ' · rang ' + info.rank.letter + '</span></div>'
+    + '<span class="label">Couleur de l’emblème</span><div class="skins">'
+    + Object.keys(SKINS).map((k) => { const on = ks.includes(k); return '<button type="button" class="skin' + (k === ck ? ' on' : '') + (on ? '' : ' lock') + '" data-act="' + (on ? 'set-skin' : 'feats') + '" data-k="' + k + '">' + rankSvg(info.rank.letter, false, SKINS[k], 'x') + esc(SKINS[k].name) + '</button>'; }).join('')
+    + '</div><span class="small mut">Les couleurs grisées se gagnent avec les hauts faits.</span>'
+    + '<span class="label">Titre</span><div class="row" style="flex-wrap:wrap;gap:8px">'
+    + ts.map((t) => '<button type="button" class="pill sm ' + (t === cur ? 'gold-btn' : 'glass') + '" data-act="set-title" data-t="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>'
+    + (ts.length < 2 ? '<span class="small mut">Pas encore de titre : réussis un haut fait pour en gagner un.</span>' : '');
+  sheet(h + closeBtn);
 }
 
 // ---------- Historique ----------
@@ -319,6 +369,11 @@ Object.assign(ACTIONS, {
   level: () => sheetLevel(),
   week: (el) => sheetWeek(el.dataset.m ? +el.dataset.m : 0),
   quests: () => sheetQuests(),
+  flame: () => sheetFlame(),
+  feats: () => sheetFeats(),
+  profile: () => sheetProfile(),
+  'set-skin': (el) => { state.settings.skin = el.dataset.k; save(); sheetProfile(); render(); },
+  'set-title': (el) => { state.settings.title = el.dataset.t === 'Aucun' ? '' : el.dataset.t; save(); sheetProfile(); render(); },
   run: () => sheetRun(),
   copy: (el) => { const w = state.workouts.find((x) => x.id === el.dataset.id); if (w) copyText(workoutText(w)); },
   detail: (el) => sheetDetail(el.dataset.id),

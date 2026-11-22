@@ -103,67 +103,19 @@ export function xpOf(w) {
   for (const e of w.exercises) for (const s of e.sets) {
     if (e.name === 'Running') km += s.d || 0; else sets += 1;
   }
-  return sets * 10 + Math.round(km * 20) + 50 + (w.prs || 0) * 25;
+  return sets * 10 + Math.round(km * 20) + 50 + (w.prs || 0) * 25 + (w.boss && w.boss.win ? 300 : 0);
 }
 
 export function totalXp() {
   let n = state.workouts.reduce((k, w) => k + xpOf(w), 0);
   for (const day of Object.values(state.quests || {})) for (const xp of Object.values(day)) n += xp;
+  n += Object.keys(state.feats || {}).length * 100; // hauts faits
   return n;
 }
 
-// ---------- Quêtes du jour ----------
-// Uniquement des exercices des routines actuelles. "test" reçoit les chiffres de la journée.
-const PUSH = ['Push Up', 'Push Up (Weighted)', 'Decline Push Up', 'Diamond Push Up', 'Pike Pushup'];
-const DIPS = ['Triceps Dip', 'Triceps Dip (Weighted)'];
-// key = le chiffre de la journée à regarder, goal = l'objectif à atteindre, unit = l'unité affichée.
-const QUESTS = {
-  seance: { label: 'Terminer une séance', xp: 60, key: 'sessions', goal: 1, unit: 'séance' },
-  course: { label: 'Courir 5 km', xp: 60, key: 'km', goal: 5, unit: 'km' },
-  series: { label: 'Valider 15 séries', xp: 40, key: 'sets', goal: 15, unit: 'séries' },
-  pompes: { label: '40 pompes au total', xp: 40, key: 'push', goal: 40, unit: 'pompes' },
-  dips: { label: '20 dips au total', xp: 40, key: 'dips', goal: 20, unit: 'dips' },
-  gainage: { label: '60 secondes de hollow rock', xp: 30, key: 'hollow', goal: 60, unit: 's' },
-  record: { label: 'Battre un record', xp: 50, key: 'prs', goal: 1, unit: 'record' },
-};
+// Les quêtes du jour sont dans quetes.js (state.quests garde l'XP gagnée, jour par jour).
 
 function dayKey(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-
-export function dailyQuests() {
-  const now = new Date();
-  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const s = { sessions: 0, sets: 0, push: 0, dips: 0, hollow: 0, prs: 0, km: 0 };
-  for (const w of state.workouts) {
-    if (w.start < midnight) continue;
-    s.prs += w.prs || 0;
-    let lifted = false;
-    for (const e of w.exercises) for (const x of e.sets) {
-      if (e.name === 'Running') { s.km += x.d || 0; continue; }
-      lifted = true;
-      s.sets += 1;
-      if (PUSH.includes(e.name)) s.push += x.r || 0;
-      if (DIPS.includes(e.name)) s.dips += x.r || 0;
-      if (e.name === 'Hollow Rock') s.hollow += x.t || 0;
-    }
-    if (lifted) s.sessions += 1;
-  }
-  // Trois quêtes par jour : la course le dimanche, sinon la séance, plus deux qui tournent.
-  const extra = ['series', 'pompes', 'dips', 'gainage', 'record'];
-  const seed = Math.floor(midnight / 864e5);
-  const ids = [now.getDay() === 0 ? 'course' : 'seance', extra[seed % 5], extra[(seed + 2) % 5]];
-  const key = dayKey(now);
-  state.quests = state.quests || {};
-  const log = state.quests[key] || {};
-  let changed = false;
-  const out = ids.map((id) => {
-    const q = QUESTS[id];
-    const done = !!log[id] || s[q.key] >= q.goal;
-    if (done && !log[id]) { log[id] = q.xp; changed = true; }
-    return { id, label: q.label, xp: q.xp, done, cur: done ? q.goal : Math.floor(s[q.key]), goal: q.goal, unit: q.unit };
-  });
-  if (changed) { state.quests[key] = log; save(); }
-  return out;
-}
 
 // Jours de la semaine en cours (lundi à dimanche) : entraîné ou non.
 export function weekDays() {
@@ -408,15 +360,11 @@ export function importJson(text) {
 
 // ---------- Objectif de la semaine ----------
 export function weekGoal() { return state.settings.weekGoal || 4; }
-// Quête de la semaine : atteindre son objectif de séances (courses comprises) rapporte 150 XP.
 export function weekQuest() {
   const now = new Date();
   const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)).getTime();
-  const cur = state.workouts.filter((w) => w.start >= monday).length;
+  // Ce n'est plus une quête (ça se fait tout seul) : juste ton objectif de la semaine. Les boss ne comptent pas comme séance.
+  const cur = state.workouts.filter((w) => w.start >= monday && !w.boss).length;
   const goal = weekGoal();
-  const key = 'w' + monday;
-  state.quests = state.quests || {};
-  const done = !!state.quests[key] || cur >= goal;
-  if (done && !state.quests[key]) { state.quests[key] = { week: 150 }; save(); }
-  return { id: 'week', label: goal + ' séances cette semaine', xp: 150, cur: Math.min(cur, goal), goal, done, unit: 'séances' };
+  return { id: 'week', label: goal + ' séances cette semaine', cur: Math.min(cur, goal), goal, done: cur >= goal, unit: 'séances' };
 }

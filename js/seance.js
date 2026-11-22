@@ -3,18 +3,26 @@
 import { EXOS, FICHES, WARMUP, GROUPES } from './data.js';
 import { figure } from './anim.js';
 import { progCard, progDone, progPlan } from './programme.js';
+import { dailyQuests, feats } from './quetes.js';
 import { beep, wakeAudio } from './sound.js';
 import {
   state, save, exoName, lastSets, kindOf, sorted, xpOf, totalXp, levelInfo, countPrs, isRecord,
-  fr, dur, clock, dateFr, setText, dailyQuests, exoHistory, routines, measureOf, lestOf, restOf, setPref,
+  fr, dur, clock, dateFr, setText, exoHistory, routines, measureOf, lestOf, restOf, setPref,
 } from './store.js';
-import { $, esc, norm, clean, plural, toNum, ui, ACTIONS, ICON, checkDark, toast, sheet, closeSheet, closeSheet2, closeBtn, burst, setsSummary, chartSvg } from './ui.js';
+import { $, esc, norm, clean, plural, toNum, ui, ACTIONS, ICON, checkDark, toast, sheet, closeSheet, closeSheet2, closeBtn, burst, setsSummary, chartSvg, xpFly, levelUp as levelUp_ } from './ui.js';
 import { render, sheetDetail } from './app.js';
 
 const curExo = () => state.active && state.active.exercises[state.active.idx];
 const curSet = () => { const ex = curExo(); return ex && ex.sets[state.active.setIdx]; };
 const exDone = (ex) => ex.sets.length > 0 && ex.sets.every((s) => s.done);
 const firstTodo = (ex) => { const i = ex.sets.findIndex((s) => !s.done); return i < 0 ? Math.max(0, ex.sets.length - 1) : i; };
+// Duel contre le fantôme : 1 = battu, 0 = égalité, -1 = il est devant. Le lest compte (environ 70 kg de poids du corps).
+const ghostOf = (ex, i) => ex.ghost && ex.ghost.length ? ex.ghost[Math.min(i, ex.ghost.length - 1)] : null;
+function duel(s, g) {
+  const v = (x) => (x.r || x.t || 0) * (70 + (x.w || 0)) / 70;
+  const a = v(s), b = v(g);
+  return a > b + 0.01 ? 1 : a < b - 0.01 ? -1 : 0;
+}
 const chipLabel = (name, s) => (measureOf(name) === 'time' ? (s.t || 0) + ' s' : String(s.r || 0));
 const top = () => window.scrollTo(0, 0);
 
@@ -77,6 +85,8 @@ function buildExo(name, sets, title) {
     sets: sets.map((s, i) => { const p = (prev && (prev[i] || prev[prev.length - 1])) || s; return { r: time ? 0 : (p.r || s.r || 0), w: p.w || s.w || 0, t: time ? (p.t || s.t || 0) : 0, done: false }; }),
     goals: sets.map((s, i) => { const p = prev && (prev[i] || prev[prev.length - 1]); if (!p) return null; if (time) return p.t ? { t: p.t + 5 } : null; return p.r ? { r: p.r + 1 } : null; }),
     prev: prev ? prev.map(setText).join(', ') : '',
+    // Le fantôme : ce que tu as fait la dernière fois, série par série.
+    ghost: prev ? prev.map((x) => ({ r: x.r || 0, w: x.w || 0, t: x.t || 0 })) : null,
     // La note laissée la dernière fois sur cet exercice revient toute seule.
     note: (() => { const w = sorted().find((x) => x.exercises.some((e) => e.name === name && e.note)); return w ? w.exercises.find((e) => e.name === name && e.note).note : ''; })(),
   };
@@ -198,8 +208,11 @@ function viewFocus(a) {
     const f = time ? 't' : 'r';
     const step = time ? 5 : 1;
     const goalText = goal ? 'Objectif : ' + (time ? goal.t + ' s' : goal.r) : '';
+    const g = a.prog && !a.test ? ghostOf(ex, a.setIdx) : null;
+    const ghostLine = g ? '<div class="ghost' + (s.done && s.gh !== undefined ? (s.gh > 0 ? ' win' : s.gh < 0 ? ' lose' : '') : '') + '"><span class="ghost-ico" aria-hidden="true"></span><span>Fantôme : <b>' + (time ? g.t + ' s' : g.r + ' rép.') + (g.w ? ' à ' + fr(g.w, 1) + ' kg' : '') + '</b></span>'
+      + (s.done && s.gh !== undefined ? '<span class="ghost-res">' + (s.gh > 0 ? 'battu' : s.gh < 0 ? 'devant toi' : 'égalité') + '</span>' : '') + '</div>' : '';
     h += '<section class="glass card hud col" style="border-radius:32px;padding:24px 18px;gap:18px;align-items:stretch">'
-      + '<div class="row between" style="padding:0 6px"><span class="label">Série ' + (a.setIdx + 1) + ' sur ' + ex.sets.length + '</span>' + (goalText ? '<span class="gold-text small" style="font-weight:600">' + goalText + '</span>' : '') + '</div>'
+      + '<div class="row between" style="padding:0 6px"><span class="label">Série ' + (a.setIdx + 1) + ' sur ' + ex.sets.length + '</span>' + (goalText ? '<span class="gold-text small" style="font-weight:600">' + goalText + '</span>' : '') + '</div>' + ghostLine
       + '<div class="row" style="gap:10px"><button type="button" class="stepbtn" data-act="step" data-f="' + f + '" data-d="-' + step + '" aria-label="Moins">' + ICON.minus + '</button>'
       + '<div class="col grow" style="align-items:center;gap:0"><input class="bignum" inputmode="numeric" data-f="' + f + '" data-i="' + a.setIdx + '" value="' + (s[f] || 0) + '" aria-label="' + (time ? 'Secondes' : 'Répétitions') + '"><span class="small mut">' + (time ? 'secondes' : 'répétitions') + '</span></div>'
       + '<button type="button" class="stepbtn" data-act="step" data-f="' + f + '" data-d="' + step + '" aria-label="Plus">' + ICON.plus + '</button></div>';
@@ -436,6 +449,10 @@ function finishWorkout() {
   const qBefore = new Set(dailyQuests().filter((q) => q.done).map((q) => q.id));
   const w = { id: 'a' + a.start, title: a.title, start: a.start, end: Date.now(), exercises };
   if (a.prog) w.prog = a.prog;
+  if (a.prog && !a.test) {
+    const duels = a.exercises.flatMap((e) => e.sets.filter((x) => x.done && x.gh !== undefined));
+    if (duels.length) w.ghost = { won: duels.filter((x) => x.gh > 0).length, lost: duels.filter((x) => x.gh < 0).length, total: duels.length };
+  }
   state.workouts.push(w);
   w.prs = countPrs(w);
   const progMsg = progDone(w);
@@ -450,11 +467,12 @@ function finishWorkout() {
   state.active = null;
   save();
   const qNew = dailyQuests().filter((q) => q.done && !qBefore.has(q.id)); // quêtes remplies par cette séance
+  const fNew = feats().fresh; // hauts faits réussis par cette séance
   ui.tab = 'home';
   ui.enter = true;
   render();
   top();
-  sheetSummary(w, a.label, xpBefore, qNew);
+  sheetSummary(w, a.label, xpBefore, qNew, fNew);
   if (progMsg) toast(progMsg);
 }
 
@@ -510,7 +528,7 @@ async function shareImage(w) {
   toast('Image enregistrée');
 }
 
-function sheetSummary(w, label, xpBefore, qNew) {
+function sheetSummary(w, label, xpBefore, qNew, fNew) {
   const xpAfter = totalXp();
   const before = levelInfo(xpBefore), after = levelInfo(xpAfter);
   const gained = xpAfter - xpBefore;
@@ -540,6 +558,16 @@ function sheetSummary(w, label, xpBefore, qNew) {
     h += '<section class="glass card col" style="gap:8px;border-color:rgba(205,170,98,0.5)"><span class="gold-text h2">' + plural(recs.length, 'record battu', 'records battus') + '</span>'
       + recs.map((l) => '<div class="row between"><span style="font-weight:500">' + esc(exoName(l.name)) + '</span><span class="small mut">' + esc(l.text) + '</span></div>').join('') + '</section>';
   }
+  if (w.ghost) {
+    const g = w.ghost, win = g.won > g.lost;
+    h += '<section class="glass card col duel' + (win ? ' win' : '') + '" style="gap:8px"><div class="row between"><span class="h2">' + (win ? 'Duel gagné contre ton fantôme' : g.won === g.lost ? 'Égalité avec ton fantôme' : 'Ton fantôme gagne cette fois') + '</span></div>'
+      + '<div class="duelbar"><i style="width:' + Math.round((g.won / g.total) * 100) + '%"></i><b style="width:' + Math.round((g.lost / g.total) * 100) + '%"></b></div>'
+      + '<span class="small mut">Contre toi la dernière fois : ' + plural(g.won, 'série gagnée', 'séries gagnées') + ', ' + plural(g.lost, 'perdue', 'perdues') + (g.total - g.won - g.lost ? ', ' + (g.total - g.won - g.lost) + ' à égalité' : '') + '.</span></section>';
+  }
+  if (fNew && fNew.length) {
+    h += '<section class="glass card col feat-new" style="gap:8px"><span class="label">' + plural(fNew.length, 'haut fait réussi', 'hauts faits réussis') + '</span>'
+      + fNew.map((f) => '<div class="row between"><div class="col" style="gap:2px"><span class="h2">' + esc(f.label) + '</span><span class="small mut">' + esc(f.desc) + '</span></div><span class="tag gold">' + (f.reward.title ? 'Titre' : 'Couleur') + '</span></div>').join('') + '</section>';
+  }
   if (qNew.length) {
     h += '<section class="glass card col" style="gap:8px"><span class="h2">' + plural(qNew.length, 'quête réussie', 'quêtes réussies') + '</span>'
       + qNew.map((q) => '<div class="row between"><span>' + esc(q.label) + '</span><span class="gold-text" style="font-weight:600">+' + q.xp + ' XP</span></div>').join('') + '</section>';
@@ -562,7 +590,8 @@ function sheetSummary(w, label, xpBefore, qNew) {
   };
   requestAnimationFrame(tick);
   setTimeout(() => { if (el.isConnected) el.textContent = gained; const b = $('xp-bar'); if (b) b.style.width = Math.round((after.into / after.need) * 100) + '%'; }, 1000);
-  if (recs.length || levelUp) burst();
+  if (recs.length) burst();
+  if (levelUp) setTimeout(() => levelUp_(after.level), 700);
 }
 
 // ---------- Repos, son, écran allumé ----------
@@ -687,6 +716,8 @@ Object.assign(ACTIONS, {
     const amt = (x) => x.r || x.t || 0;
     const record = isRecord(ex.name, s) && !ex.sets.some((x) => x !== s && x.done && (x.w || 0) >= (s.w || 0) && amt(x) >= amt(s));
     if (record) s.pr = true;
+    const gh = a.prog && !a.test ? ghostOf(ex, a.setIdx) : null;
+    if (gh) s.gh = duel(s, gh); else delete s.gh;
     const goal = ex.goals && ex.goals[a.setIdx];
     const beat = goal && (time ? s.t >= goal.t : s.r >= goal.r);
     startRest();
@@ -701,9 +732,17 @@ Object.assign(ACTIONS, {
       else { a.view = 'list'; ui.enter = true; toast('Toutes les séries sont faites'); top(); }
     }
     if (record) { toast('Record battu', true); burst(); }
+    else if (gh && s.gh > 0) toast('Fantôme battu');
+    const doneIdx = ex.sets.indexOf(s), exIdx = a.exercises.indexOf(ex);
     save(); render(); renderRest();
+    // Récompense visible : la puce de la série rebondit et « +10 XP » s'envole.
+    try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) { /* pas de vibreur */ }
+    const chip = a.view === 'focus' && a.idx === exIdx ? document.querySelectorAll('.chips .chip')[doneIdx] : document.querySelector('[data-act="goto"][data-i="' + exIdx + '"] .chip.done:last-of-type');
+    const at = chip || document.querySelector('.chips') || document.getElementById('app');
+    if (chip) chip.classList.add('pop');
+    xpFly(at, record ? '+35 XP' : '+10 XP');
   },
-  unvalidate: () => { const s = curSet(); s.done = false; delete s.pr; state.active.rest = null; save(); render(); renderRest(); },
+  unvalidate: () => { const s = curSet(); s.done = false; delete s.pr; delete s.gh; state.active.rest = null; save(); render(); renderRest(); },
   'add-set': () => { const ex = curExo(); const last = ex.sets[ex.sets.length - 1] || {}; ex.sets.push({ r: last.r || 0, w: last.w || 0, t: last.t || 0, done: false }); if (ex.goals) ex.goals.push(null); state.active.setIdx = ex.sets.length - 1; save(); render(); },
   'del-set': () => { const a = state.active, ex = curExo(); ex.sets.splice(a.setIdx, 1); if (ex.goals) ex.goals.splice(a.setIdx, 1); a.setIdx = Math.max(0, Math.min(a.setIdx, ex.sets.length - 1)); save(); render(); },
   'ex-menu': (el) => sheetExMenu(+el.dataset.i),

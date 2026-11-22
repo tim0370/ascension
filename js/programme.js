@@ -4,6 +4,7 @@
 // semaine 3 encore une série de plus et la dernière série au maximum, semaine 4 = re-test de tes qualités.
 // Chaque exercice principal monte tout seul à sa version plus dure quand tu as atteint le cap (ex. 10 pistols assistés → pistol).
 import { ALIAS } from './data.js';
+import { figure } from './anim.js';
 import { state, save, exoName, measureOf } from './store.js';
 import { esc, plural, ui, ACTIONS, ICON, sheet, setsSummary } from './ui.js';
 
@@ -24,23 +25,23 @@ export const TYPES = {
     Object.assign({ sets: 3, r: 5 }, EXPLO),
     { ladder: ['Seated Overhead Press (Dumbbell)'], sets: 3, r: 10, w: 10 },
     { ladder: ['Hollow Rock'], sets: 2, t: 30 },
-    { ladder: ['Plank'], sets: 2, t: 45 },
-  ], bonus: [{ ladder: ['Wide Push Up'], sets: 2, r: 15 }, { ladder: ['Lateral Raise (Dumbbell)'], sets: 2, r: 12, w: 10 }] },
-  legs: { label: 'Jambes et gainage', desc: 'Pistol, fentes, sauts, abdos', slots: [
+    { ladder: ['Lateral Raise (Dumbbell)'], sets: 2, r: 12, w: 10 },
+  ], bonus: [{ ladder: ['Wide Push Up'], sets: 2, r: 15 }, { ladder: ['Bench Dip'], sets: 2, r: 15 }] },
+  legs: { label: 'Jambes et abdos', desc: 'Pistol, fentes, sauts, abdos', slots: [
     Object.assign({ main: true, sets: 4, r: 4 }, PISTOL),
     { main: true, ladder: ['Reverse Lunge'], sets: 4, r: 12, w: 20 },
     { ladder: ['Jump Squat'], sets: 3, r: 10 },
     { ladder: ['Standing Calf Raise (Dumbbell)'], sets: 3, r: 12, w: 10 },
     { ladder: ['Hanging Leg Raise'], sets: 3, r: 8 },
     { ladder: ['Russian Twist (Bodyweight)'], sets: 2, r: 40, w: 10 },
-  ], bonus: [{ ladder: ['Bulgarian Split Squat (Dumbbell)'], sets: 2, r: 10, w: 10 }, { ladder: ['Plank'], sets: 2, t: 45 }] },
+  ], bonus: [{ ladder: ['Bulgarian Split Squat (Dumbbell)'], sets: 2, r: 10, w: 10 }, { ladder: ['Tuck Jump'], sets: 2, r: 8 }] },
   dips: { label: 'Dips et dos', desc: 'Dips lestés, rowing, bras', slots: [
     { main: true, ladder: ['Triceps Dip'], sets: 4, r: 8, w: 15 },
     { main: true, ladder: ['Bent Over Row (Dumbbell)'], sets: 4, r: 12, w: 20 },
     { ladder: ['Bent Over Row (Band)'], sets: 3, r: 12, w: 55 },
     { ladder: ['Decline Push Up'], sets: 3, r: 12 },
     { ladder: ['Hammer Curl (Dumbbell)'], sets: 3, r: 10, w: 10 },
-    { ladder: ['Plank'], sets: 2, t: 45 },
+    { ladder: ['Explosive Dip'], sets: 2, r: 6 },
   ], bonus: [{ ladder: ['Bicep Curl (Band)'], sets: 2, r: 12 }, { ladder: ['Hollow Rock'], sets: 2, t: 30 }] },
   full: { label: 'Complet', desc: 'Un peu de tout, en enchaînant', slots: [
     Object.assign({ main: true, sets: 4, r: 15 }, POMPES),
@@ -58,7 +59,7 @@ const TEST = [
   { ladder: ['Triceps Dip'], label: 'Max de dips sans lest', r: 12 },
   Object.assign({ label: 'Max de pistols' }, PISTOL, { r: 4 }),
   Object.assign({ label: 'Max de pompes explosives' }, EXPLO, { r: 5 }),
-  { ladder: ['Plank'], label: 'Gainage le plus long', t: 60 },
+  { ladder: ['Hollow Rock'], label: 'Hollow rock le plus long', t: 30 },
 ];
 
 // ---------- Où tu en es ----------
@@ -162,11 +163,12 @@ export function progCard(main, doneToday) {
   const list = plan(type, '');
   const fresh = list.find((e) => e.fresh);
   const names = list.slice(0, 4).map((e) => exoName(e.name)).join(' · ') + (list.length > 4 ? ' · +' + (list.length - 4) : '');
-  return '<section class="' + (main ? 'cta' : 'glass card') + ' hud tap" role="button" tabindex="0" data-act="prog" style="display:flex;flex-direction:column;gap:14px"><div class="col" style="gap:4px">'
-    + '<span class="label violet">' + (doneToday ? 'Séance faite aujourd’hui · la prochaine' : weekLabel()) + '</span>'
+  return '<section class="' + (main ? 'cta' : 'glass card') + ' hud tap" role="button" tabindex="0" data-act="prog" style="display:flex;flex-direction:column;gap:14px">'
+    + (main && list.length ? '<div class="ctafig">' + figure(list[0].name) + '</div>' : '') + '<div class="col ctahead" style="gap:4px">'
+    + '<span class="label violet">' + (doneToday ? 'Faite aujourd’hui · suivante' : weekLabel()) + '</span>'
     + '<span class="h1">' + esc(title(type)) + '</span>'
     + '<span class="small" style="color:var(--soft)">' + plural(list.length, 'exercice', 'exercices') + ' · environ ' + minutes(list, type === 'test') + ' min</span>'
-    + '<span class="small mut">' + esc(names) + '</span>'
+    + (main ? '' : '<span class="small mut">' + esc(names) + '</span>')
     + (fresh ? '<span class="small gold-text">Nouveau : ' + esc(exoName(fresh.name)) + '</span>' : '') + '</div>'
     + weeksBar()
     + '<div class="row">' + (type === 'test' ? '' : '<button type="button" class="pill glass" data-act="prog-start" data-type="' + type + '" data-mode="court">Courte</button>')

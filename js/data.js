@@ -416,6 +416,15 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 16, items: [
+    'Nouveau look : nuit violette, cartes de couleur (programme, boss, flamme, récompenses) et moins de texte',
+    'Boss de la semaine : un défi qui change chaque lundi (Le Mur, Le Titan, L’Éclair…), avec ses points de vie. Victoire : +300 XP',
+    'Fantôme : pendant le programme, tu affrontes ta dernière séance, série par série',
+    'Nouvelles quêtes : de vrais défis calés sur tes records, et parfois une quête rare',
+    'La flamme : tes jours d’entraînement d’affilée (un jour de repos permis)',
+    'Hauts faits : 19 défis durs qui débloquent des titres et des couleurs d’emblème',
+    'Chaque série validée rapporte un « +10 XP » visible, et un grand écran fête le niveau supérieur',
+  ] },
   { v: 15, items: [
     'Écran Séance allégé : le programme en grand, tes routines et la course rangées dans deux tuiles',
     'Plus de « course du dimanche » imposée : note ta course quand tu veux',
