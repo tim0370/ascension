@@ -13,11 +13,13 @@ let unlocked = false;   // lecteur débloqué par un toucher
 let ctx = null;         // Web Audio, en secours
 let lastErr = '';
 
-const NOTES = [[0, 880], [0.22, 880], [0.44, 1320]];
+// Deux notes qui montent, façon clochette : douces, mais on les entend bien.
+const NOTES = [[0, 784], [0.16, 1175]];
+const RING = 0.7; // durée de résonance d'une note
 
 // Fabrique le bip en fichier WAV (trois notes courtes), sans rien télécharger.
 function wavUrl() {
-  const rate = 22050, len = Math.round(rate * 0.7);
+  const rate = 22050, len = Math.round(rate * 0.95);
   const buf = new ArrayBuffer(44 + len * 2), v = new DataView(buf);
   const txt = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
   txt(0, 'RIFF'); v.setUint32(4, 36 + len * 2, true); txt(8, 'WAVE'); txt(12, 'fmt ');
@@ -29,9 +31,10 @@ function wavUrl() {
     let x = 0;
     for (const [d, f] of NOTES) {
       const u = t - d;
-      if (u >= 0 && u < 0.18) {
-        const env = Math.min(1, u / 0.01) * Math.min(1, (0.18 - u) / 0.04);
-        x += Math.sin(2 * Math.PI * f * u) * env;
+      if (u >= 0 && u < RING) {
+        // Attaque rapide puis décroissance lente, avec deux harmoniques pour un son de clochette.
+        const env = Math.min(1, u / 0.004) * Math.exp(-u * 6) * Math.min(1, (RING - u) / 0.05);
+        x += (Math.sin(2 * Math.PI * f * u) + 0.35 * Math.sin(4 * Math.PI * f * u) * Math.exp(-u * 10) + 0.12 * Math.sin(6 * Math.PI * f * u) * Math.exp(-u * 16)) * env * 0.5;
       }
     }
     v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, x * 0.8)) * 32767, true);
@@ -92,9 +95,9 @@ function playWebAudio() {
       o.type = 'sine'; o.frequency.value = f;
       o.connect(g); g.connect(ctx.destination);
       g.gain.setValueAtTime(0.0001, t0 + d);
-      g.gain.exponentialRampToValueAtTime(0.5, t0 + d + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.18);
-      o.start(t0 + d); o.stop(t0 + d + 0.2);
+      g.gain.exponentialRampToValueAtTime(0.4, t0 + d + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + RING);
+      o.start(t0 + d); o.stop(t0 + d + RING + 0.02);
     }
   };
   if (ctx.state !== 'running') ctx.resume().then(go, () => {}); else go();

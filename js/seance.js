@@ -554,7 +554,7 @@ export function tick() {
   if (a && a.warm) {
     const left = Math.ceil((a.warm.end - Date.now()) / 1000);
     const el = $('warm-time');
-    if (left <= 0) { beep(); warmNext(); } else if (el) el.textContent = left;
+    if (left <= 0) { if (left > -3) beep(); warmNext(); } else if (el) el.textContent = left;
   }
   // Chrono d'un exercice en secondes : la durée monte toute seule, avec un bip à l'objectif.
   if (a && a.chrono) {
@@ -565,7 +565,7 @@ export function tick() {
       const big = document.querySelector('.bignum');
       if (big && document.activeElement !== big) big.value = s.t;
       const goal = curExo().goals && curExo().goals[a.setIdx];
-      if (goal && goal.t && s.t >= goal.t && !a.chrono.rang) { a.chrono.rang = true; beep(); toast('Objectif atteint, tiens encore si tu peux'); }
+      if (goal && goal.t && s.t >= goal.t && !a.chrono.rang) { a.chrono.rang = true; if (s.t - goal.t < 3) beep(); toast('Objectif atteint, tiens encore si tu peux'); }
     }
   }
   renderRest();
@@ -584,7 +584,8 @@ export function renderRest() {
   const a = state.active;
   if (!a || !a.rest) { if ($('rest').innerHTML) $('rest').innerHTML = ''; return; }
   const left = (a.rest.end - Date.now()) / 1000;
-  if (left <= 0 && !a.rest.rang) { a.rest.rang = true; beep(); save(); }
+  // Pas de bip en retard : si l'app était fermée à la fin du repos, on ne sonne pas au retour.
+  if (left <= 0 && !a.rest.rang) { a.rest.rang = true; if (left > -3) beep(); save(); }
   if (left < -30) { a.rest = null; save(); $('rest').innerHTML = ''; return; }
   const ratio = Math.max(0, Math.min(1, left / a.rest.total));
   const over = left <= 0;

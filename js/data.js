@@ -416,6 +416,10 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 13, items: [
+    'Nouveau bip, plus doux : deux notes de clochette au lieu de trois bips secs',
+    'Plus de bip en retard : si tu étais sur une autre app à la fin du repos, l’app ne sonne plus quand tu reviens',
+  ] },
   { v: 12, items: [
     'Le bip est refait : il passe par un vrai lecteur audio, plus fiable sur iPhone, et sonne même en mode silencieux',
     'Nouveau réglage « Bip discret » si tu veux garder ta musique pendant la séance',

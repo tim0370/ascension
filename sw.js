@@ -1,7 +1,7 @@
 // Service worker : garde l'app dans le téléphone pour qu'elle s'ouvre tout de suite, même sans réseau.
 // À chaque mise à jour : augmenter VERSION ici, VERSION dans js/ui.js, et ajouter les nouveautés dans js/data.js.
 // L'app compare elle-même son numéro à celui de ce fichier en ligne et se met à jour (voir la fin de js/app.js).
-const VERSION = 'ascension-12';
+const VERSION = 'ascension-13';
 const FILES = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/ui.js', 'js/seance.js', 'js/progress.js', 'js/stats.js', 'js/photos.js', 'js/store.js', 'js/data.js', 'js/anim.js', 'js/sound.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png'];
 
 // À l'installation, on télécharge tous les fichiers avec le numéro de version dans l'adresse :
