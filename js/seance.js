@@ -1,6 +1,8 @@
 // Tout ce qui concerne une séance : routines, échauffement, vue d'ensemble, exercice en grand,
 // repos, choix et fiche d'un exercice, modification d'une routine ou d'une séance passée, bilan de fin.
-import { EXOS, FICHES, WARMUP } from './data.js';
+import { EXOS, FICHES, WARMUP, GROUPES } from './data.js';
+import { figure } from './anim.js';
+import { beep, wakeAudio } from './sound.js';
 import {
   state, save, exoName, lastSets, kindOf, sorted, xpOf, totalXp, levelInfo, countPrs, isRecord,
   fr, dur, clock, dateFr, setText, dailyQuests, exoHistory, routines, measureOf, lestOf, restOf, setPref,
@@ -162,9 +164,10 @@ function viewFocus(a) {
   let h = '<div class="row between"><button type="button" class="pill sm glass" data-act="list">' + ICON.back + 'Séance</button>'
     + '<span class="num" id="elapsed" style="font-size:20px;color:var(--soft)">' + clock((Date.now() - a.start) / 1000) + '</span>'
     + '<button type="button" class="iconbtn" data-act="ex-menu" data-i="' + a.idx + '" aria-label="Options de l’exercice">' + ICON.more + '</button></div>';
-  h += '<div class="col" style="gap:4px"><span class="label violet">Exercice ' + (a.idx + 1) + ' sur ' + n + '</span><h1 class="h1" style="font-size:30px">' + esc(exoName(ex.name)) + '</h1>'
+  h += '<div class="row" style="align-items:flex-start;gap:12px"><div class="col grow" style="gap:4px"><span class="label violet">Exercice ' + (a.idx + 1) + ' sur ' + n + '</span><h1 class="h1" style="font-size:30px">' + esc(exoName(ex.name)) + '</h1>'
     + '<span class="small mut">' + (ex.prev ? 'La dernière fois : ' + esc(ex.prev) : 'Première fois sur cet exercice') + '</span>'
-    + (ex.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(ex.note) + '</span>' : '') + '</div>';
+    + (ex.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(ex.note) + '</span>' : '') + '</div>'
+    + '<button type="button" class="figbtn" data-act="exo" data-name="' + esc(ex.name) + '" aria-label="Voir comment faire">' + figure(ex.name) + '</button></div>';
   h += '<div class="chips">' + ex.sets.map((x, k) => '<button type="button" class="chip' + (x.done ? ' done' : '') + (k === a.setIdx ? ' sel' : '') + (x.pr ? ' pr' : '') + '" data-act="sel-set" data-i="' + k + '" aria-label="Série ' + (k + 1) + '">' + chipLabel(ex.name, x) + '</button>').join('') + '</div>';
   if (s) {
     const f = time ? 't' : 'r';
@@ -230,11 +233,22 @@ export function sheetExo(name) {
   const { list, most, heavy } = exoHistory(name);
   const time = measureOf(name) === 'time';
   const f = FICHES[name];
-  let h = '<div class="col"><span class="label">' + (f ? esc(f.muscles) : plural(list.length, 'séance', 'séances')) + '</span><h1 class="h1">' + esc(exoName(name)) + '</h1></div>';
+  const g = EXOS[name] && GROUPES[EXOS[name].g];
+  let h = '<div class="col"><span class="label">' + (g ? esc(g) + ' · ' : '') + (list.length ? plural(list.length, 'séance', 'séances') : 'jamais fait') + '</span><h1 class="h1">' + esc(exoName(name)) + '</h1></div>';
+  h += figure(name, 'big');
   if (f) {
+    h += '<div class="exo"><span class="label">Muscles</span><span style="color:var(--soft)">' + esc(f.muscles) + '</span></div>';
     h += '<div class="exo"><span class="label violet">Comment faire</span>'
-      + f.steps.map((s, i) => '<div class="row" style="align-items:flex-start"><span class="num gold-text" style="width:18px;font-size:16px">' + (i + 1) + '</span><span class="grow" style="color:var(--soft)">' + esc(s) + '</span></div>').join('')
-      + '<div class="hair"></div><span class="small mut">Erreur fréquente : ' + esc(f.erreur.charAt(0).toLowerCase() + f.erreur.slice(1)) + '</span></div>';
+      + f.steps.map((x, i) => '<div class="row" style="align-items:flex-start"><span class="num gold-text" style="width:18px;font-size:16px">' + (i + 1) + '</span><span class="grow" style="color:var(--soft)">' + esc(x) + '</span></div>').join('') + '</div>';
+    h += '<div class="exo"><span class="label">Erreurs fréquentes</span>'
+      + f.erreurs.map((x) => '<div class="row" style="align-items:flex-start;gap:10px"><span class="errdot"></span><span class="grow small" style="color:var(--soft)">' + esc(x) + '</span></div>').join('') + '</div>';
+    // Version plus facile et plus dure : touchables pour voir leur fiche.
+    const step = (k, label) => {
+      if (!k) return '';
+      if (k === name) return '<div class="exo grow" style="gap:4px"><span class="label">' + label + '</span><span class="small" style="color:var(--soft)">' + (label === 'Plus dur' ? 'Ajoute du lest : gilet ou haltère' : 'Moins de répétitions, plus lentement') + '</span></div>';
+      return '<button type="button" class="exo grow vary" data-act="exo" data-name="' + esc(k) + '">' + figure(k) + '<span class="label">' + label + '</span><span class="small" style="font-weight:600">' + esc(exoName(k)) + '</span></button>';
+    };
+    if (f.facile || f.dur) h += '<div class="row" style="align-items:stretch">' + step(f.facile, 'Plus facile') + step(f.dur, 'Plus dur') + '</div>';
   }
   if (list.length >= 2) {
     const values = list.slice(0, 24).reverse().map((x) => Math.max(...x.sets.map((s) => s.r || s.t || 0)));
@@ -257,33 +271,45 @@ export function sheetExo(name) {
 function sheetPicker() {
   const mine = new Set();
   for (const r of routines()) for (const e of r.exercises) mine.add(e.name);
-  const names = new Set(Object.keys(EXOS));
-  for (const w of state.workouts) for (const e of w.exercises) names.add(e.name);
-  for (const n of mine) names.add(n);
-  names.delete('Running');
   mine.delete('Running');
+  // Exercices de l'historique absents du catalogue (anciens ou créés par toi) : proposés à la fin.
+  const others = new Set();
+  for (const w of state.workouts) for (const e of w.exercises) if (!EXOS[e.name] || EXOS[e.name].old) others.add(e.name);
+  for (const n of mine) if (!EXOS[n]) others.add(n);
+  others.delete('Running');
   const q = norm(ui.pickerQuery);
-  const match = (n) => !q || norm(exoName(n)).includes(q) || norm(n).includes(q);
-  const byName = (x, y) => exoName(x).localeCompare(exoName(y), 'fr');
-  const row = (n) => '<button type="button" class="item" data-act="add-exo" data-name="' + esc(n) + '"><span class="grow" style="font-weight:500">' + esc(exoName(n)) + '</span><span class="small mut">' + (measureOf(n) === 'time' ? 'durée' : 'répétitions') + (lestOf(n) ? ' · lest' : '') + '</span></button>';
-  const a1 = [...mine].filter(match).sort(byName);
-  const a2 = [...names].filter((n) => !mine.has(n) && match(n)).sort(byName);
-  const exact = [...names].some((n) => norm(exoName(n)) === q || norm(n) === q);
+  const fam = ui.pickerFam || '';
+  const match = (n) => (!q || norm(exoName(n)).includes(q) || norm(n).includes(q)) && (!fam || (EXOS[n] && EXOS[n].g === fam));
+  const card = (n) => '<button type="button" class="pcard" data-act="add-exo" data-name="' + esc(n) + '">' + figure(n) + '<span class="pname">' + esc(exoName(n)) + '</span>'
+    + '<span class="small mut">' + esc((EXOS[n] && GROUPES[EXOS[n].g]) || 'Perso') + (measureOf(n) === 'time' ? ' · durée' : '') + '</span></button>';
+  const row = (n) => '<button type="button" class="item" data-act="add-exo" data-name="' + esc(n) + '"><span class="grow" style="font-weight:500">' + esc(exoName(n)) + '</span><span class="small mut">' + (measureOf(n) === 'time' ? 'durée' : 'répétitions') + '</span></button>';
+  const cat = Object.keys(EXOS).filter((n) => !EXOS[n].old && n !== 'Running');
+  const a1 = [...mine].filter((n) => EXOS[n] && match(n));
   let items = '';
-  if (a1.length) items += '<span class="label" style="padding:10px 0 4px">Tes exercices actuels</span>' + a1.map(row).join('');
-  if (a2.length) items += '<span class="label" style="padding:14px 0 4px">Tous les exercices</span>' + a2.map(row).join('');
+  if (a1.length && !fam) items += '<span class="label" style="padding:10px 0 2px">Tes exercices actuels</span><div class="pgrid">' + a1.map(card).join('') + '</div>';
+  for (const g of Object.keys(GROUPES)) {
+    if (fam && g !== fam) continue;
+    const list = cat.filter((n) => EXOS[n].g === g && match(n) && (fam || !mine.has(n)));
+    if (list.length) items += '<span class="label" style="padding:14px 0 2px">' + GROUPES[g] + '</span><div class="pgrid">' + list.map(card).join('') + '</div>';
+  }
+  const a3 = [...others].filter((n) => !fam && match(n)).sort((x, y) => exoName(x).localeCompare(exoName(y), 'fr'));
+  if (a3.length) items += '<span class="label" style="padding:14px 0 2px">Anciens et perso</span><div class="list">' + a3.map(row).join('') + '</div>';
+  const all = cat.concat([...others]);
+  const exact = all.some((n) => norm(exoName(n)) === q || norm(n) === q);
   // Créer son propre exercice : proposé en dernier, pour ne pas le toucher par erreur.
   if (q && !exact) {
     const typed = clean(ui.pickerQuery);
     const made = typed.charAt(0).toUpperCase() + typed.slice(1);
     items += '<span class="label" style="padding:14px 0 4px">Pas dans la liste ?</span><button type="button" class="item" data-act="add-exo" data-name="' + esc(made) + '"><span class="grow gold-text" style="font-weight:600">Créer « ' + esc(made) + ' »</span></button>';
   }
+  if (!items) items = '<span class="mut" style="padding:20px 0">Aucun exercice ne correspond.</span>';
+  const chips = '<div class="fams" id="picker-fams">' + [['', 'Tout']].concat(Object.entries(GROUPES)).map(([k, v]) => '<button type="button" class="pill sm ' + (fam === k ? 'gold-btn' : 'glass') + '" data-act="pick-fam" data-k="' + k + '">' + v + '</button>').join('') + '</div>';
   const old = $('picker-list');
-  if (old) { old.innerHTML = items; return; }
+  if (old) { old.innerHTML = items; $('picker-fams').outerHTML = chips; return; }
   const title = ui.pick && ui.pick.mode === 'replace' ? 'Remplacer par' : 'Ajouter un exercice';
   sheet('<h1 class="h1">' + title + '</h1>'
     + '<input class="textin" id="picker-q" placeholder="Chercher ou créer un exercice" aria-label="Chercher ou créer un exercice" value="' + esc(ui.pickerQuery) + '">'
-    + '<div class="list" id="picker-list">' + items + '</div>', 2, 'full');
+    + chips + '<div class="col" id="picker-list" style="gap:6px">' + items + '</div>', 2, 'full');
 }
 
 // Séries par défaut d'un exercice qu'on ajoute : celles de la dernière fois, sinon 3 séries simples.
@@ -512,23 +538,7 @@ function sheetSummary(w, label, xpBefore, qNew) {
 }
 
 // ---------- Repos, son, écran allumé ----------
-let audio = null;
-function beep() {
-  try {
-    if (!audio || state.settings.sound === false) return;
-    [0, 0.25, 0.5].forEach((d) => {
-      const o = audio.createOscillator(), g = audio.createGain();
-      o.frequency.value = 880; o.connect(g); g.connect(audio.destination);
-      g.gain.setValueAtTime(0.0001, audio.currentTime + d);
-      g.gain.exponentialRampToValueAtTime(0.4, audio.currentTime + d + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + d + 0.18);
-      o.start(audio.currentTime + d); o.stop(audio.currentTime + d + 0.2);
-    });
-  } catch (e) { /* pas de son disponible */ }
-}
-function wakeAudio() {
-  try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (e) { /* ignore */ }
-}
+// Le son (bip) est dans sound.js.
 function startRest() {
   wakeAudio();
   const ex = curExo();
@@ -664,7 +674,7 @@ Object.assign(ACTIONS, {
   'ex-menu': (el) => sheetExMenu(+el.dataset.i),
   'ex-up': (el) => moveExo(+el.dataset.i, -1),
   'ex-down': (el) => moveExo(+el.dataset.i, 1),
-  'ex-replace': (el) => { ui.pick = { mode: 'replace', i: +el.dataset.i }; ui.pickerQuery = ''; sheetPicker(); },
+  'ex-replace': (el) => { ui.pick = { mode: 'replace', i: +el.dataset.i }; ui.pickerQuery = ''; ui.pickerFam = ''; sheetPicker(); },
   'ex-measure': (el) => {
     const i = +el.dataset.i, ex = state.active.exercises[i];
     const to = measureOf(ex.name) === 'time' ? 'reps' : 'time';
@@ -690,7 +700,8 @@ Object.assign(ACTIONS, {
     if (!a.exercises.length) a.view = 'list'; else a.setIdx = firstTodo(a.exercises[a.idx]);
     save(); closeSheet(); render();
   },
-  picker: (el) => { const n = state.active.exercises.length; ui.pick = { mode: 'insert', at: el.dataset.at === undefined ? n : +el.dataset.at }; ui.pickerQuery = ''; sheetPicker(); },
+  picker: (el) => { const n = state.active.exercises.length; ui.pick = { mode: 'insert', at: el.dataset.at === undefined ? n : +el.dataset.at }; ui.pickerQuery = ''; ui.pickerFam = ''; sheetPicker(); },
+  'pick-fam': (el) => { ui.pickerFam = el.dataset.k; sheetPicker(); const b = document.querySelector('#sheet2 .sheet > div'); if (b) b.scrollTop = 0; },
   'add-exo': (el) => {
     const name = el.dataset.name, p = ui.pick || {};
     closeSheet2();
@@ -733,7 +744,7 @@ Object.assign(ACTIONS, {
   'ed-del-exo': (el) => { ui.edit.draft.exercises.splice(+el.dataset.e, 1); sheetEditor(); },
   'ed-up': (el) => { const l = ui.edit.draft.exercises, i = +el.dataset.e; if (i > 0) { [l[i - 1], l[i]] = [l[i], l[i - 1]]; sheetEditor(); } },
   'ed-down': (el) => { const l = ui.edit.draft.exercises, i = +el.dataset.e; if (i < l.length - 1) { [l[i + 1], l[i]] = [l[i], l[i + 1]]; sheetEditor(); } },
-  'ed-add-exo': () => { ui.pick = { mode: 'edit' }; ui.pickerQuery = ''; sheetPicker(); },
+  'ed-add-exo': () => { ui.pick = { mode: 'edit' }; ui.pickerQuery = ''; ui.pickerFam = ''; sheetPicker(); },
   'ed-save': () => saveEditor(),
   'ed-del-routine': () => { if (confirm('Supprimer cette routine ? Tes séances passées restent dans l’historique.')) { state.routines = routines().filter((r) => r.id !== ui.edit.id); save(); closeSheet(); render(); } },
 });

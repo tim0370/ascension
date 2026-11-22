@@ -13,6 +13,14 @@
   --line: rgba(255, 255, 255, 0.08);
   --display: 'Space Grotesk', system-ui, sans-serif;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Silhouettes animées des exercices */
+  --fig-bg: #110F19;
+  --fig-line: #ECE8F4;
+  --fig-gold: #D8BD82;
+  --fig-eq: rgba(255, 255, 255, 0.24);
+  --fig-eq2: #A29DB0;
+  --fig-band: #9C86EE;
+  --fig-floor: rgba(132, 104, 232, 0.45);
 }
 
 /* touch-action évite le zoom quand on tape vite deux fois sur un bouton (plus et moins, valider). */
@@ -280,3 +288,31 @@ button.chip { height: 44px; min-width: 56px; font-size: 15px; }
 @keyframes fill { from { transform: scaleX(0); } }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---------- Silhouettes animées ---------- */
+.fig { display: block; width: 100%; height: auto; aspect-ratio: 100 / 64; border-radius: 14px;
+  background: radial-gradient(120% 90% at 50% 8%, rgba(132, 104, 232, 0.14), transparent 60%), var(--fig-bg);
+  border: 1px solid rgba(255, 255, 255, 0.06); }
+.fig.big { border-radius: 22px; }
+.figbtn { flex: 0 0 104px; padding: 0; border: 0; background: none; margin-top: 2px; }
+.pgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pcard { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 8px 8px 10px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.035); color: var(--txt); font: inherit; }
+.pcard:active { transform: scale(0.97); }
+.pcard .fig { margin-bottom: 4px; }
+.pcard .pname { font-weight: 600; font-size: 14px; line-height: 1.2; }
+.fams { display: flex; gap: 8px; overflow-x: auto; margin: 0 -20px; padding: 2px 20px 4px; scrollbar-width: none; }
+.fams::-webkit-scrollbar { display: none; }
+.fams .pill { flex: 0 0 auto; }
+.vary { text-align: left; color: var(--txt); font: inherit; }
+.vary .fig { margin-bottom: 4px; }
+.errdot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); margin-top: 7px; flex: 0 0 6px; opacity: 0.8; }
+.radar { display: block; width: 100%; height: auto; }
+.radar-poly { animation: radargrow 0.9s var(--ease) both; }
+@keyframes radargrow { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.qletter { flex: 0 0 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 18px; color: var(--gold); border: 1px solid rgba(216, 189, 130, 0.35); background: rgba(216, 189, 130, 0.07); }
+.qletter.sm { flex-basis: 28px; height: 28px; font-size: 15px; border-radius: 8px; }
+.qletter.big { flex-basis: 64px; height: 64px; font-size: 36px; border-radius: 18px; }
+.bar.thin { height: 4px; }
+.minirad { width: 100%; margin: -6px 0 -4px; }
+/* Dans une fenêtre plein écran, rien ne doit être écrasé quand le contenu est long. */
+.sheet > div > * { flex-shrink: 0; }

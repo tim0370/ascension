@@ -6,10 +6,11 @@ import {
   dailyQuests, weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines,
 } from './store.js';
 import { NEWS } from './data.js';
-import { rankInfo, heat } from './stats.js';
+import { rankInfo, heat, bodyLog } from './stats.js';
+import { beep, wakeAudio, initSound } from './sound.js';
 import { $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg } from './ui.js';
 import { viewWorkout, nextRoutine, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
-import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate } from './progress.js';
+import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
 
 const DAY = 864e5;
 const local = ['localhost', '127.0.0.1'].includes(location.hostname); // tests sur le PC
@@ -83,16 +84,12 @@ function viewHome() {
       + '<div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div>'
       + '<div class="bar' + (wq.done ? ' gold' : '') + '"><div style="width:' + Math.round((wq.cur / wq.goal) * 100) + '%"></div></div></section>';
 
-    // Deux tuiles : l'examen de rang et la course
+    // Deux tuiles : le rang et la course
     h += '<div class="tiles">';
-    if (info.next) {
-      const todo = info.tests.find((x) => !x.done);
-      h += '<section class="glass tile tap" role="button" tabindex="0" data-act="rank"><span class="label violet">Examen rang ' + info.next.letter + '</span>'
-        + ring(info.passed / info.tests.length, info.passed + '/' + info.tests.length, true)
-        + '<span class="small mut">' + (todo ? esc(todo.label) : 'Tout est réussi') + '</span></section>';
-    } else {
-      h += '<section class="glass tile tap" role="button" tabindex="0" data-act="rank"><span class="label violet">Rang</span>' + rankSvg(info.rank.letter) + '<span class="small mut">Tu es au sommet</span></section>';
-    }
+    // Tuile du rang : l'étoile des 5 qualités en petit et l'avancée vers le rang suivant.
+    h += '<section class="glass tile tap" role="button" tabindex="0" data-act="rank"><span class="label violet">Rang ' + info.rank.letter + '</span>'
+      + '<div class="minirad">' + radarSvg(info.q, true) + '</div>'
+      + '<span class="small mut">' + info.q.map((x) => x.letter).join(' ') + (info.next ? ' · ' + Math.round(info.ratio * 100) + ' % vers ' + info.next.letter : '') + '</span></section>';
     if (rs.length) {
       const six = rs.slice(0, 6).reverse();
       const max = Math.max(...six.map((x) => x.d));
@@ -271,7 +268,16 @@ function sheetSettings() {
     + '<div class="col" style="gap:8px"><span class="label">Temps de repos par défaut</span><div class="row" style="flex-wrap:wrap;gap:8px">'
     + [60, 90, 120, 150, 180].map((s) => '<button type="button" class="pill sm ' + (s === rest ? 'gold-btn' : 'glass') + '" data-act="set-rest" data-s="' + s + '">' + clock(s) + '</button>').join('') + '</div>'
     + '<span class="small mut">Tu peux aussi régler un repos différent pour chaque exercice pendant la séance.</span>'
-    + '<button type="button" class="pill sm glass wide' + (state.settings.sound === false ? '' : ' on') + '" data-act="toggle-sound">' + (state.settings.sound === false ? 'Bip de fin de repos : non' : 'Bip de fin de repos : oui') + '</button></div>'
+    + '</div>'
+    + '<div class="col" style="gap:8px"><span class="label">Son</span>'
+    + '<button type="button" class="pill sm glass wide' + (state.settings.sound === false ? '' : ' on') + '" data-act="toggle-sound">' + (state.settings.sound === false ? 'Bip de fin de repos : non' : 'Bip de fin de repos : oui') + '</button>'
+    + '<button type="button" class="pill sm glass wide' + (state.settings.soundSilent === false ? '' : ' on') + '" data-act="toggle-silent">' + (state.settings.soundSilent === false ? 'Bip en mode silencieux : non' : 'Bip en mode silencieux : oui') + '</button>'
+    + '<button type="button" class="pill sm glass wide" data-act="test-sound">Tester le son</button>'
+    + '<span class="small mut">Le bip sonne même si ton iPhone est en silencieux. Si ta musique se coupe à chaque bip, mets « mode silencieux : non ». Le son ne marche que si l’app est ouverte à l’écran.</span></div>'
+    + '<div class="col" style="gap:8px"><span class="label">Toi</span><div class="row">'
+    + '<label class="field grow" style="height:52px"><input id="set-age" inputmode="numeric" placeholder="Âge" aria-label="Ton âge" value="' + (state.settings.age || '') + '"><span class="unit">ans</span></label>'
+    + '<button type="button" class="pill glass grow" data-act="body" style="height:52px">' + (bodyLog().length ? 'Poids : ' + fr(bodyLog()[0].kg, 1) + ' kg' : 'Noter mon poids') + '</button></div>'
+    + '<span class="small mut">Ton âge et ton poids ajustent les lettres de tes 5 qualités : 20 pompes ne valent pas la même chose à 55 kg et à 90 kg.</span></div>'
     + '<div class="col" style="gap:8px"><span class="label">Objectif de séances par semaine</span><div class="row" style="flex-wrap:wrap;gap:8px">'
     + [2, 3, 4, 5, 6].map((n) => '<button type="button" class="pill sm ' + (n === weekGoal() ? 'gold-btn' : 'glass') + '" data-act="set-goal" data-n="' + n + '">' + n + '</button>').join('') + '</div>'
     + '<span class="small mut">Les courses comptent. L’atteindre valide la quête de la semaine (+150 XP).</span></div>'
@@ -335,6 +341,8 @@ Object.assign(ACTIONS, {
   'set-rest': (el) => { state.settings.rest = +el.dataset.s; save(); sheetSettings(); },
   'set-goal': (el) => { state.settings.weekGoal = +el.dataset.n; save(); render(); sheetSettings(); },
   'toggle-sound': () => { state.settings.sound = state.settings.sound === false; save(); sheetSettings(); },
+  'toggle-silent': () => { state.settings.soundSilent = state.settings.soundSilent === false; save(); wakeAudio(); sheetSettings(); },
+  'test-sound': () => { wakeAudio(); beep(true); toast('Bip envoyé : tu l’entends ?'); },
   news: () => sheetNews(),
   update: async () => {
     if (!('serviceWorker' in navigator) || local) { toast('Mise à jour indisponible ici'); return; }
@@ -400,7 +408,14 @@ document.addEventListener('input', (ev) => {
   if (ev.target.id === 'h-search') { ui.hQuery = ev.target.value; ui.historyLimit = 40; $('h-list').innerHTML = historyList(); return; }
   onInput(ev.target);
 });
-document.addEventListener('change', (ev) => { if (ev.target.id === 'photo-date') onPhotoDate(ev.target); });
+document.addEventListener('change', (ev) => {
+  if (ev.target.id === 'photo-date') onPhotoDate(ev.target);
+  if (ev.target.id === 'set-age') {
+    const a = Math.round(toNum(ev.target.value));
+    if (a && (a < 10 || a > 90)) { toast('Indique ton âge en années'); return; }
+    state.settings.age = a || undefined; save(); render(); toast(a ? 'Âge enregistré' : 'Âge retiré');
+  }
+});
 
 // Tirer une fenêtre vers le bas la ferme (quand elle est en haut de son contenu, et hors modification).
 let drag = null;
@@ -428,6 +443,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { ke
 setInterval(tick, 500);
 
 if (state.active) { ui.tab = 'workout'; keepAwake(); }
+initSound();
 render();
 renderRest();
 loadPhotos().then(() => { if (ui.tab === 'home' && photoDue()) render(); });
