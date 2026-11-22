@@ -416,6 +416,12 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 17, items: [
+    'Course avec le GPS : chrono, distance et allure en direct, sans rien noter à la main',
+    'Un lièvre à battre : il court à l’allure que tu choisis, tu vois ton avance ou ton retard',
+    'Une voix annonce chaque kilomètre (temps, avance sur le lièvre, distance restante)',
+    'Tes temps par kilomètre sont gardés dans le détail de la course',
+  ] },
   { v: 16, items: [
     'Nouveau look : nuit violette, cartes de couleur (programme, boss, flamme, récompenses) et moins de texte',
     'Boss de la semaine : un défi qui change chaque lundi (Le Mur, Le Titan, L’Éclair…), avec ses points de vie. Victoire : +300 XP',

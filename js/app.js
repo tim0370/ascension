@@ -13,6 +13,7 @@ import { viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills
 import { progCard } from './programme.js';
 import { dailyQuests, streak, feats, myTitle, titles, skins, SKINS } from './quetes.js';
 import { bossCard } from './boss.js';
+import './course.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
 
 const DAY = 864e5;
@@ -268,6 +269,7 @@ export function sheetDetail(id) {
     + '<span class="small mut">' + esc(summary(w)) + ' · <span class="gold-text" style="font-weight:600">+' + xpOf(w) + ' XP</span>' + (w.prs ? ' · ' + plural(w.prs, 'record', 'records') : '') + '</span></div>'
     + '<div class="list">' + w.exercises.map((e) => '<button type="button" class="item" data-act="exo" data-name="' + esc(e.name) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(e.name)) + (e.sets.some((x) => x.pr) ? ' <span class="gold-text small">· record</span>' : '') + '</span><span class="small mut">'
       + esc(e.name === 'Running' ? e.sets.map((s) => setText(s) + ' · ' + pace(s.d, s.t)).join(', ') : e.sets.map(setText).join(', ')) + '</span>' + (e.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(e.note) + '</span>' : '') + '</div>' + ICON.chev + '</button>').join('') + '</div>'
+    + (w.splits && w.splits.length ? '<section class="glass card col" style="gap:6px"><span class="label violet">Temps par kilomètre (GPS)</span>' + w.splits.map((x, i) => { const b = Math.min(...w.splits); return '<div class="row between small"><span class="mut">Km ' + (i + 1) + '</span><span class="num"' + (x === b && w.splits.length > 1 ? ' style="color:var(--vert)"' : '') + '>' + Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0') + '</span></div>'; }).join('') + '</section>' : '')
     + '<div class="col" style="gap:8px"><span class="label">Ressenti</span><div class="row" id="feel-row">' + feelPills(w) + '</div></div>'
     + '<div class="row"><button type="button" class="pill glass grow" data-act="share" data-id="' + esc(w.id) + '">Partager en image</button>'
     + '<button type="button" class="pill glass grow" data-act="copy" data-id="' + esc(w.id) + '" style="color:var(--gold)">' + ICON.copy + 'Pour Claude</button></div>'
@@ -279,7 +281,9 @@ function sheetRun() {
   const rs = runs();
   const todayIso = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   let h = '<div class="col"><span class="label">' + plural(rs.length, 'course', 'courses') + '</span><h1 class="h1">Course à pied</h1></div>';
-  h += '<div class="exo"><span class="label violet">Noter une course</span>'
+  h += '<button type="button" class="pill gold-btn wide big" data-act="gps">' + ICON.run + 'Courir avec le GPS</button>'
+    + '<span class="small mut" style="text-align:center;margin-top:-6px">Chrono, distance, un lièvre à battre et une voix à chaque kilomètre.</span>';
+  h += '<div class="exo"><span class="label violet">Ou noter une course déjà faite</span>'
     + '<div class="row"><label class="field grow" style="height:52px"><input id="run-d" inputmode="decimal" placeholder="0" aria-label="Distance en kilomètres"><span class="unit">km</span></label>'
     + '<label class="field grow" style="height:52px"><input id="run-m" inputmode="numeric" placeholder="0" aria-label="Minutes"><span class="unit">min</span></label>'
     + '<label class="field grow" style="height:52px"><input id="run-s" inputmode="numeric" placeholder="0" aria-label="Secondes"><span class="unit">s</span></label></div>'

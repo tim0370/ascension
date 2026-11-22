@@ -435,3 +435,10 @@ button.chip { height: 44px; min-width: 56px; font-size: 15px; }
 .sechead .h2 { font-size: 20px; }
 .emblem-sm { width: 96px; height: 106px; filter: drop-shadow(0 0 18px rgba(139, 108, 246, 0.45)); }
 .topbar .emb svg { width: 54px; height: 60px; filter: drop-shadow(0 0 12px rgba(139, 108, 246, 0.45)); }
+
+/* Course GPS : la piste du lièvre */
+.hare { position: relative; height: 34px; }
+.hare-line { position: absolute; left: 0; right: 0; top: 16px; height: 2px; border-radius: 2px; background: var(--line); }
+.hare-dot, .me-dot { position: absolute; top: 7px; width: 20px; height: 20px; margin-left: -10px; border-radius: 999px; transition: left 0.9s var(--ease); }
+.hare-dot { left: 50%; background: linear-gradient(160deg, #F3DFA8, #B8913F); }
+.me-dot { left: 50%; background: var(--violet); box-shadow: 0 0 14px rgba(139, 108, 246, 0.75); z-index: 1; }
