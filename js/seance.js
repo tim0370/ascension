@@ -35,6 +35,17 @@ export function usualTime(r) {
   return last && last.end - last.start >= 300000 ? 'environ ' + dur(Math.round((last.end - last.start) / 300000) * 300) : plural(r.exercises.reduce((n, e) => n + e.sets.length, 0), 'série', 'séries');
 }
 
+// Fenêtre « Mes routines » : tes anciennes routines, en secours, et la séance libre.
+function sheetRoutines() {
+  let h = '<div class="col"><span class="label">En secours</span><h1 class="h1">Mes routines</h1><span class="small mut">Le programme choisit ta séance. Tes routines restent ici si tu veux en faire une.</span></div><div class="list">';
+  for (const r of routines()) {
+    h += '<button type="button" class="item" data-act="routine" data-id="' + esc(r.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(r.label) + '</span><span class="small mut">' + plural(r.exercises.length, 'exercice', 'exercices') + ' · ' + usualTime(r) + '</span></div>' + ICON.chev + '</button>';
+  }
+  h += '</div><div class="row"><button type="button" class="pill glass grow" data-act="new-routine">Nouvelle routine</button><button type="button" class="pill glass grow" data-act="start" data-id="">Séance libre</button></div>'
+    + '<button type="button" class="pill sm glass wide" data-act="close" style="color:var(--mut)">Fermer</button>';
+  sheet(h);
+}
+
 export function sheetRoutine(id) {
   const r = routines().find((x) => x.id === id);
   if (!r) return;
@@ -117,19 +128,10 @@ export function viewWorkout() {
   if (!a) {
     let h = '<div class="col" style="gap:2px"><span class="small mut">Ton programme guidé</span><h1 class="h1">Séance</h1></div>';
     h += progCard(true);
-    h += '<span class="label" style="margin-top:6px">Mes routines</span>';
-    for (const r of routines()) {
-      const main = false;
-      const names = r.exercises.slice(0, 4).map((e) => exoName(e.name)).join(' · ') + (r.exercises.length > 4 ? ' · +' + (r.exercises.length - 4) : '');
-      h += '<section class="' + (main ? 'cta' : 'glass card') + ' hud tap" role="button" tabindex="0" data-act="routine" data-id="' + esc(r.id) + '" style="display:flex;flex-direction:column;gap:14px"><div class="col" style="gap:4px">'
-        + (main ? '<span class="label violet">À faire maintenant</span>' : '') + '<span class="h1" style="font-size:24px">' + esc(r.label) + '</span>'
-        + '<span class="small" style="color:var(--soft)">' + plural(r.exercises.length, 'exercice', 'exercices') + ' · ' + usualTime(r) + '</span><span class="small mut">' + esc(names) + '</span></div>'
-        + '<div class="row"><button type="button" class="pill glass" data-act="start" data-id="' + esc(r.id) + '" data-express="1">Express</button>'
-        + '<button type="button" class="pill gold-btn grow" data-act="start" data-id="' + esc(r.id) + '">Commencer</button></div></section>';
-    }
-    h += '<section class="glass card row tap" role="button" tabindex="0" data-act="run"><span class="ico gold">' + ICON.run + '</span><div class="col grow"><span class="h2">Course à pied</span><span class="small mut">Noter une course, voir tes records</span></div>' + ICON.chev + '</section>';
-    h += '<div class="row"><button type="button" class="pill glass grow" data-act="new-routine">Nouvelle routine</button><button type="button" class="pill glass grow" data-act="start" data-id="">Séance libre</button></div>'
-      + '<span class="small mut" style="text-align:center">Touche une routine pour voir ses exercices ou la modifier.</span>';
+    // Le reste (routines, séance libre, course) est rangé derrière deux tuiles, pour laisser la place au programme.
+    h += '<div class="tiles"><section class="glass tile tap" role="button" tabindex="0" data-act="routines"><span class="label">Mes routines</span>'
+      + '<span class="h2">' + plural(routines().length, 'routine', 'routines') + '</span><span class="small mut" style="margin-top:auto">Full Body, séance libre</span></section>'
+      + '<section class="glass tile tap" role="button" tabindex="0" data-act="run"><span class="label">Course</span><span class="ico gold">' + ICON.run + '</span><span class="small mut" style="margin-top:auto">Noter une course, quand tu veux</span></section></div>';
     return h;
   }
   if (a.warm) return viewWarmup(a);
@@ -663,6 +665,7 @@ Object.assign(ACTIONS, {
     ui.progMode = '';
   },
   routine: (el) => sheetRoutine(el.dataset.id),
+  routines: () => sheetRoutines(),
   exo: (el) => sheetExo(el.dataset.name),
   start: (el) => startWorkout(el.dataset.id, { express: !!el.dataset.express }),
   'toggle-warm': (el) => { state.settings.warm = !state.settings.warm; save(); sheetRoutine(el.dataset.id); },

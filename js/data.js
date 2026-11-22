@@ -416,6 +416,10 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 15, items: [
+    'Écran Séance allégé : le programme en grand, tes routines et la course rangées dans deux tuiles',
+    'Plus de « course du dimanche » imposée : note ta course quand tu veux',
+  ] },
   { v: 14, items: [
     'Programme guidé : l’app choisit ta séance du jour (pompes et épaules, jambes et gainage, dips et dos, complet), à tour de rôle',
     'Cycles de 4 semaines : 3 semaines où ça monte, puis une semaine de re-test pour mettre à jour tes lettres',

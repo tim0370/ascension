@@ -61,14 +61,7 @@ function viewHome() {
       + '<button type="button" class="pill gold-btn wide" data-tab="workout">Reprendre la séance</button></section>';
   } else {
     const doneToday = state.workouts.find((w) => w.start >= t0 && w.exercises.some((e) => e.name !== 'Running'));
-    const ranToday = rs.some((r) => r.date >= t0);
-    const sunday = new Date().getDay() === 0 && !ranToday;
-    if (sunday) {
-      h += '<section class="cta hud"><div class="col" style="gap:4px"><span class="label violet">Dimanche</span><span class="h1">Course du dimanche</span>'
-        + '<span class="small" style="color:var(--soft)">' + (rs.length ? 'La dernière : ' + fr(rs[0].d) + ' km en ' + dur(rs[0].t) : 'Note ta distance et ton temps') + '</span></div>'
-        + '<button type="button" class="pill gold-btn wide" data-act="run">Noter ma course</button></section>';
-    }
-    h += progCard(!sunday, !!doneToday);
+    h += progCard(true, !!doneToday);
   }
 
   if (has) {
