@@ -416,6 +416,9 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 25, items: [
+    'Boucliers de flamme : tous les 7 jours de flamme, tu gagnes un bouclier (2 au plus). Il protège tout seul ta flamme un jour manqué de plus',
+  ] },
   { v: 24, items: [
     'Retour au calme : 6 étirements guidés en 3 minutes, avec silhouette, minuteur et voix, proposé à la fin de chaque séance',
     'L’échauffement montre maintenant les mouvements en animation',

@@ -10,7 +10,7 @@ export const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
 export const toNum = (v) => parseFloat(String(v).replace(',', '.')) || 0;
 
 // Numéro de version affiché dans les réglages. À augmenter avec VERSION dans sw.js et NEWS dans data.js.
-export const VERSION = 24;
+export const VERSION = 25;
 
 // État de l'interface (pas enregistré). hFilter = filtre de l'historique. edit = brouillon en cours ; pick = à quoi sert le choix d'exercice.
 export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null, hQuery: '' };
@@ -40,6 +40,7 @@ export const ICON = {
   run: svg('<circle cx="15" cy="5" r="2"/><path d="M5 21l3-5 4 1.500 1-5.500-4-1-2.500 3M13 12l3 2 3-1M12 17.500l2 3.500"/>'),
   cam: svg('<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.500"/>'),
   save: svg('<path d="M12 4v10M8 10l4 4 4-4M5 19h14"/>'),
+  shield: '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2.8 4.5 5.6v5.6c0 4.7 3.1 8.6 7.5 10 4.4-1.4 7.5-5.3 7.5-10V5.6z" fill="rgba(132,104,232,0.28)" stroke="#B6A4FF" stroke-width="1.6" stroke-linejoin="round"/><path d="m8.6 12 2.4 2.4 4.6-4.8" fill="none" stroke="#E4DCFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   flame: '<svg aria-hidden="true" viewBox="0 0 24 24"><defs><linearGradient id="fl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD27A"/><stop offset="0.6" stop-color="#FF8A3D"/><stop offset="1" stop-color="#FF4D4D"/></linearGradient></defs><path d="M12 2.5c.6 3.2 4.8 5.6 4.8 10.4A4.8 4.8 0 0 1 12 21.5 4.8 4.8 0 0 1 7.2 16.7c0-2.3 1.1-3.6 2.3-4.9.2 1.4.9 2.4 2 2.8-.6-3.9.2-8 .5-12.1z" fill="url(#fl)"/><path d="M12 13.5c.4 1.6 2.2 2.5 2.2 4.4a2.2 2.2 0 0 1-4.4 0c0-1.5 1.3-2.4 2.2-4.4z" fill="#FFE9B8"/></svg>',
   medal: svg('<path d="M8 3h8l-2 6h-4z"/><circle cx="12" cy="15" r="5.5"/><path d="M12 12.5l.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z" fill="currentColor" stroke="none"/>'),
   bolt: svg('<path d="M13 3L5 14h6l-1 7 8-11h-6z"/>'),

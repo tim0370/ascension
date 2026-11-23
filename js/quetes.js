@@ -124,29 +124,46 @@ export function dailyQuests() {
 }
 
 // ---------- La flamme : jours d'entraînement d'affilée ----------
-// Un jour de repos est permis : la flamme s'éteint seulement après deux jours de suite sans rien.
-export function streak() {
+// Un jour de repos est permis. En plus, chaque palier de 7 jours donne un bouclier (2 au plus) :
+// un bouclier couvre un jour manqué de plus, et il est utilisé tout seul quand il le faut.
+export const SHIELD_MAX = 2;
+function flameDays() {
   // Les pompes du jour (hors séance) gardent la flamme à partir de 30.
-  const days = new Set(state.workouts.filter((w) => !w.quick || w.exercises.reduce((n, e) => n + e.sets.reduce((k, s) => k + (s.r || 0), 0), 0) >= 30).map((w) => dayKey(w.start)));
-  const t0 = day0(Date.now());
-  let d = days.has(dayKey(t0)) ? t0 : t0 - DAY;
-  if (!days.has(dayKey(d))) d -= DAY; // hier repos : on regarde avant-hier
-  let n = 0, off = 0;
-  while (off < 2) {
-    if (days.has(dayKey(d))) { n += 1; off = 0; } else off += 1;
-    d -= DAY;
-    if (n > 3650) break;
-  }
-  const todayDone = days.has(dayKey(t0));
-  const yesterday = days.has(dayKey(t0 - DAY));
-  return { n, todayDone, danger: !todayDone && !yesterday && n > 0, best: Math.max(n, bestStreak(days)) };
+  return new Set(state.workouts.filter((w) => !w.quick || w.exercises.reduce((n, e) => n + e.sets.reduce((k, s) => k + (s.r || 0), 0), 0) >= 30).map((w) => dayKey(w.start)));
 }
-function bestStreak(days) {
+function simulate(days) {
   const all = [...days].map((k) => { const [y, m, dd] = k.split('-').map(Number); return new Date(y, m - 1, dd).getTime(); }).sort((a, b) => a - b);
-  let best = 0, cur = 0, last = null;
-  for (const t of all) { cur = last !== null && Math.round((t - last) / DAY) <= 2 ? cur + 1 : 1; best = Math.max(best, cur); last = t; }
-  return best;
+  let n = 0, sh = 0, best = 0, last = null, saved = 0;
+  for (const t of all) {
+    if (last === null) n = 1;
+    else {
+      const extra = Math.max(0, Math.round((t - last) / DAY) - 2); // jours manqués au-delà du repos permis
+      if (extra <= sh) { sh -= extra; saved += extra; n += 1; } else { n = 1; sh = 0; saved = 0; }
+    }
+    if (n % 7 === 0) sh = Math.min(SHIELD_MAX, sh + 1);
+    best = Math.max(best, n); last = t;
+  }
+  return { n, sh, best, last, saved };
 }
+export function streak() {
+  const days = flameDays();
+  const r = simulate(days);
+  const t0 = day0(Date.now());
+  const todayDone = r.last === t0;
+  let n = r.n, sh = r.sh, using = 0;
+  if (r.last !== null && !todayDone) {
+    const off = Math.round((t0 - r.last) / DAY) - 1; // jours sans rien avant aujourd'hui
+    using = Math.max(0, off - 1);
+    if (using > sh) { n = 0; sh = 0; using = 0; } else sh -= using;
+  }
+  if (r.last === null) n = 0;
+  const off = r.last === null || todayDone ? 0 : Math.round((t0 - r.last) / DAY) - 1;
+  // En danger : si rien aujourd'hui, demain il manquera un jour de trop.
+  const danger = !todayDone && n > 0 && off >= 1 && sh === 0;
+  const next = 7 - (n % 7); // jours avant le prochain bouclier
+  return { n, todayDone, danger, best: Math.max(n, r.best), shields: sh, using, saved: r.saved, next };
+}
+function bestStreak(days) { return simulate(days).best; }
 
 // ---------- Hauts faits : défis durs, avec un titre ou une couleur à gagner ----------
 export const SKINS = {

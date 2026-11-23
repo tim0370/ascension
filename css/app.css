@@ -354,6 +354,12 @@ button.chip { height: 44px; min-width: 56px; font-size: 15px; }
 .flame.off { color: var(--mut); background: rgba(255, 255, 255, 0.05); border-color: var(--line); box-shadow: none; filter: grayscale(1); }
 .flame.danger { animation: flicker 1.6s ease-in-out infinite; }
 @keyframes flicker { 50% { box-shadow: 0 0 30px rgba(255, 90, 60, 0.55); } }
+.fshield { position: relative; display: inline-flex; width: 18px; height: 18px; margin-left: 2px; }
+.fshield svg { width: 18px; height: 18px; }
+.fshield b { position: absolute; right: -6px; bottom: -4px; font-size: 10px; line-height: 1; color: #fff; background: #6B4FD8; border-radius: 6px; padding: 1px 3px; }
+.shieldslot { display: inline-flex; width: 40px; height: 40px; opacity: 0.25; filter: grayscale(1); }
+.shieldslot svg { width: 40px; height: 40px; }
+.shieldslot.on { opacity: 1; filter: none; filter: drop-shadow(0 0 10px rgba(132, 104, 232, 0.55)); }
 .flame-big { width: 86px; height: 86px; }
 
 /* Programme : silhouette dans la carte violette */

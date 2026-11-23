@@ -11,7 +11,7 @@ import { beep, wakeAudio, initSound, soundError } from './sound.js';
 import { $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst } from './ui.js';
 import { viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
 import { progCard } from './programme.js';
-import { dailyQuests, streak, feats, myTitle, titles, skins, SKINS } from './quetes.js';
+import { dailyQuests, streak, SHIELD_MAX, feats, myTitle, titles, skins, SKINS } from './quetes.js';
 import { bossCard } from './boss.js';
 import './course.js';
 import { monthBanner } from './bilan.js';
@@ -40,7 +40,7 @@ export function questRow(q) {
 }
 
 function flamePill(st) {
-  return '<button type="button" class="flame' + (st.n ? '' : ' off') + (st.danger ? ' danger' : '') + '" data-act="flame" aria-label="Série de ' + st.n + ' jours">' + ICON.flame + st.n + '</button>';
+  return '<button type="button" class="flame' + (st.n ? '' : ' off') + (st.danger ? ' danger' : '') + '" data-act="flame" aria-label="Série de ' + st.n + ' jours' + (st.shields ? ', ' + st.shields + ' bouclier' + (st.shields > 1 ? 's' : '') : '') + '">' + ICON.flame + st.n + (st.shields ? '<span class="fshield">' + ICON.shield + (st.shields > 1 ? '<b>' + st.shields + '</b>' : '') + '</span>' : '') + '</button>';
 }
 
 function viewHome() {
@@ -53,6 +53,8 @@ function viewHome() {
   const lv = levelInfo(xp);
   const info = rankInfo();
   const st = streak();
+  if (st.shields > (state.settings.shSeen || 0)) setTimeout(() => toast('Bouclier gagné : ta flamme est protégée un jour de plus', true), 1200);
+  if (st.shields !== (state.settings.shSeen || 0)) { state.settings.shSeen = st.shields; save(); }
   const t0 = midnight();
   const title = myTitle();
   if (fx.fresh.length) setTimeout(() => { burst(); toast('Haut fait : ' + fx.fresh[0].label, true); }, 600);
@@ -186,10 +188,14 @@ function sheetFlame() {
   const st = streak();
   const days = weekDays();
   let h = '<div class="col center" style="gap:8px"><span class="flame-big">' + ICON.flame + '</span><span class="big">' + plural(st.n, 'jour', 'jours') + '</span>'
-    + '<span class="small mut">' + (st.todayDone ? 'Fait aujourd’hui, la flamme tient.' : st.danger ? 'Entraîne-toi aujourd’hui, sinon la flamme s’éteint.' : st.n ? 'Une séance aujourd’hui la fait grandir.' : 'Une séance pour l’allumer.') + '</span></div>'
+    + '<span class="small mut">' + (st.todayDone ? 'Fait aujourd’hui, la flamme tient.' : st.using ? 'Un bouclier tient ta flamme. Entraîne-toi aujourd’hui.' : st.danger ? 'Entraîne-toi aujourd’hui, sinon la flamme s’éteint.' : st.n ? 'Une séance aujourd’hui la fait grandir.' : 'Une séance pour l’allumer.') + '</span></div>'
     + '<section class="glass card"><div class="week">' + days.map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>'
     + '<div class="stats3 glass card"><div><span class="num" style="font-size:22px">' + st.n + '</span><span class="small mut">en cours</span></div><div><span class="num" style="font-size:22px">' + st.best + '</span><span class="small mut">record</span></div><div><span class="num" style="font-size:22px">' + weekGoal() + '</span><span class="small mut">objectif semaine</span></div></div>'
-    + '<span class="small mut">Chaque jour où tu t’entraînes (séance, course ou boss) ajoute un jour à ta flamme. Tu as droit à un jour de repos : elle s’éteint seulement après deux jours de suite sans rien. Hauts faits : 7 jours, puis 30 jours.</span>';
+    + '<section class="glass card col" style="gap:10px"><div class="row between"><span class="label violet">Boucliers</span><span class="small mut">' + st.shields + ' sur ' + SHIELD_MAX + '</span></div>'
+    + '<div class="row" style="gap:10px">' + Array.from({ length: SHIELD_MAX }, (_, i) => '<span class="shieldslot' + (i < st.shields ? ' on' : '') + '">' + ICON.shield + '</span>').join('') + '</div>'
+    + '<span class="small mut">' + (st.using ? 'Un bouclier protège ta flamme en ce moment. Entraîne-toi aujourd’hui pour ne pas en perdre un autre.' : st.shields >= SHIELD_MAX ? 'Réserve pleine. Un bouclier couvre un jour manqué de plus que le repos permis.' : 'Prochain bouclier dans ' + plural(st.next, 'jour', 'jours') + ' d’entraînement.') + '</span>'
+    + (st.saved ? '<span class="small" style="color:var(--violet2, #B6A4FF)">Tes boucliers ont déjà sauvé ' + plural(st.saved, 'jour', 'jours') + ' de cette flamme.</span>' : '') + '</section>'
+    + '<span class="small mut">Chaque jour où tu t’entraînes (séance, course, boss ou 30 pompes du jour) ajoute un jour à ta flamme. Tu as droit à un jour de repos : elle s’éteint après deux jours de suite sans rien. Tous les 7 jours de flamme, tu gagnes un bouclier (2 au plus) : il couvre tout seul un jour manqué de plus. Hauts faits : 7 jours, puis 30 jours.</span>';
   sheet(h + closeBtn);
 }
 
