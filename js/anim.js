@@ -338,6 +338,29 @@ const MORE = {
   'Neck Bridge': ['Glute Bridge', {  }],
   'Neck Harness Extension': ['Lying Neck Extension', {  }],
   'Neck Isometric (Band)': ['Face Pull (Band)', {  }],
+  'Boxing (Heavy Bag)': ['Running', { f: [st({ a1: [60, -100], a2: [70, -110], l1: { to: [56, AY], s: 'fwd' }, l2: { to: [42, AY], s: 'fwd' } }), st({ t: -84, a1: [0, 0], a2: [70, -110], l1: { to: [56, AY], s: 'fwd' }, l2: { to: [42, AY], s: 'fwd' } }), st({ a1: [60, -100], a2: [70, -110], l1: { to: [56, AY], s: 'fwd' }, l2: { to: [42, AY], s: 'fwd' } }), st({ t: -96, a1: [60, -100], a2: [-4, -4], l1: { to: [56, AY], s: 'fwd' }, l2: { to: [42, AY], s: 'fwd' } })], m: ['shoulder', 'ua', 'abs'], eq: [['bag', 74]], d: 1.2 }],
+  'Shadow Boxing': ['Boxing (Heavy Bag)', { eq: [] }],
+  'Hamstring Stretch (Active)': ['stretch-ham', {  }],
+  'Seated Forward Fold': ['stretch-ham', {  }],
+  'Standing Quad Stretch': ['stretch-quad', {  }],
+  'Calf Stretch': ['stretch-dog', {  }],
+  'Chest Stretch': ['stretch-chest', {  }],
+  'Cross Body Shoulder Stretch': ['stretch-chest', { f: [st({ a1: [-6, 180], a2: [40, -150] }), st({ a1: [-10, 184], a2: [36, -154] })], m: ['shoulder'], d: 5 }],
+  'Triceps Stretch': ['stretch-triceps', {  }],
+  'Pigeon Stretch': ['stretch-child', {  }],
+  'Hip Flexor Stretch': ['Lunge', { f: HOLD(st({ h: [52, 46], t: -88, l1: { to: [64, AY], s: 'fwd' }, l2: { to: [34, AY], s: 'fwd', f: 180 } }), 0.6), m: ['th'], d: 5 }],
+  'Butterfly Stretch': ['stretch-ham', {  }],
+  'Cat Cow': ['Bird Dog', { f: [QUAD({ t: -16, hd: -40 }), QUAD({ t: -28, hd: 20 })], m: ['back'], d: 5 }],
+  'Cobra Stretch': ['Superman', { f: HOLD({ h: [56, G - 3], t: 200, hd: 210, a1: { to: [40, G - 0.6], s: 'back' }, l1: [-1, -1], l2: [1, 1] }, 0.4), m: ['abs'], d: 5 }],
+  'Child Pose': ['stretch-child', {  }],
+  'Downward Dog': ['stretch-dog', {  }],
+  'Lying Spinal Twist': ['Lying Neck Side Raise', { f: HOLD(LIE({ h: [56, G - 3.4], a1: [8, 4], a2: [176, 180], l1: [-60, 30], l2: [2, 2] }), 0.3), m: ['back', 'glute'], d: 5 }],
+  'Neck Stretch': ['stretch-triceps', { f: [st({ hd: -70, a1: [92, 90], a2: [-80, 160] }), st({ hd: -60, a1: [92, 90], a2: [-84, 164] })], m: ['neck'], d: 5 }],
+  'Wrist Stretch': ['stretch-chest', { f: [st({ a1: [-4, -4], a2: [30, -10] }), st({ a1: [-2, -2], a2: [28, -8] })], m: ['fa'], d: 5 }],
+  'Lat Stretch': ['stretch-triceps', { f: [fr({ t: -80, hd: -76, a1: [-100, -110], a2: [100, 92] }), fr({ t: -74, hd: -70, a1: [-106, -116], a2: [104, 96] })], m: ['back'], d: 5 }],
+  '90 90 Hip Stretch': ['stretch-ham', {  }],
+  'Worlds Greatest Stretch': ['Lunge', { f: [st({ h: [52, 44], t: -40, l1: { to: [66, AY], s: 'fwd' }, l2: { to: [30, AY], s: 'fwd', f: 180 }, a1: { to: [58, G - 0.6] } }), st({ h: [52, 44], t: -40, l1: { to: [66, AY], s: 'fwd' }, l2: { to: [30, AY], s: 'fwd', f: 180 }, a1: [-90, -90] })], m: ['th', 'back'], d: 5 }],
+  'Side Lunge Stretch': ['Cossack Squat', {  }],
 };
 for (const [k, [base, o]] of Object.entries(MORE)) FIG[k] = Object.assign({}, FIG[base], o);
 
@@ -452,6 +475,7 @@ function staticEq(e) {
   if (e[0] === 'bars') return '<path ' + c + ' stroke-width="2.2" d="M' + e[1] + ' ' + e[3] + 'H' + e[2] + 'M' + (e[1] + 1.5) + ' ' + e[3] + 'V' + G + 'M' + (e[2] - 1.5) + ' ' + e[3] + 'V' + G + '"/>';
   if (e[0] === 'bench') return '<path ' + c + ' stroke-width="2" d="M' + e[1] + ' ' + f2(e[3]) + 'H' + e[2] + 'M' + (e[1] + 3) + ' ' + f2(e[3]) + 'V' + G + 'M' + (e[2] - 3) + ' ' + f2(e[3]) + 'V' + G + '"/><rect x="' + e[1] + '" y="' + f2(e[3] - 1.5) + '" width="' + (e[2] - e[1]) + '" height="3" rx="1.5" fill="var(--fig-eq2)"/>';
   if (e[0] === 'bar') return '<path ' + c + ' stroke-width="2.2" d="M' + (e[1] - 13) + ' ' + e[2] + 'H' + (e[1] + 13) + 'M' + (e[1] - 13) + ' ' + e[2] + 'V0M' + (e[1] + 13) + ' ' + e[2] + 'V0"/>';
+  if (e[0] === 'bag') return '<path ' + c + ' stroke-width="1" d="M' + e[1] + ' 0V8"/><rect x="' + (e[1] - 5) + '" y="8" width="10" height="28" rx="4.5" fill="var(--fig-eq2)" stroke="var(--fig-eq)" stroke-width="1.2"/>';
   if (e[0] === 'wall') return '<path ' + c + ' stroke-width="1.8" d="M' + e[1] + ' 0V' + G + '"/>';
   if (e[0] === 'post') return '<path ' + c + ' stroke-width="2" d="M' + e[1] + ' 20V' + G + '"/>';
   if (e[0] === 'box') return '<rect x="' + e[1] + '" y="' + (G - e[3]) + '" width="' + (e[2] - e[1]) + '" height="' + e[3] + '" rx="0.8" fill="none" stroke="var(--fig-eq)" stroke-width="1.6"/>';

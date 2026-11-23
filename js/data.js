@@ -220,6 +220,30 @@ export const EXOS = {
   'Cycling': { fr: 'Vélo', kind: 'time', g: 'cardio' },
   'Walking': { fr: 'Marche', kind: 'time', g: 'cardio' },
   'Swimming': { fr: 'Natation', kind: 'time', g: 'cardio' },
+  // v44 : boxe et étirements.
+  'Boxing (Heavy Bag)': { fr: 'Boxe au sac de frappe', kind: 'time', g: 'cardio' },
+  'Shadow Boxing': { fr: 'Shadow boxing', kind: 'time', g: 'cardio' },
+  'Hamstring Stretch (Active)': { fr: 'Étirement ischios actif', kind: 'time', g: 'etirements' },
+  'Seated Forward Fold': { fr: 'Pince assise', kind: 'time', g: 'etirements' },
+  'Standing Quad Stretch': { fr: 'Étirement des quadriceps', kind: 'time', g: 'etirements' },
+  'Calf Stretch': { fr: 'Étirement des mollets', kind: 'time', g: 'etirements' },
+  'Chest Stretch': { fr: 'Étirement des pectoraux', kind: 'time', g: 'etirements' },
+  'Cross Body Shoulder Stretch': { fr: 'Étirement de l’épaule (bras croisé)', kind: 'time', g: 'etirements' },
+  'Triceps Stretch': { fr: 'Étirement des triceps', kind: 'time', g: 'etirements' },
+  'Pigeon Stretch': { fr: 'Pigeon', kind: 'time', g: 'etirements' },
+  'Hip Flexor Stretch': { fr: 'Étirement des fléchisseurs de hanche', kind: 'time', g: 'etirements' },
+  'Butterfly Stretch': { fr: 'Papillon', kind: 'time', g: 'etirements' },
+  'Cat Cow': { fr: 'Chat-vache', kind: 'time', g: 'etirements' },
+  'Cobra Stretch': { fr: 'Cobra', kind: 'time', g: 'etirements' },
+  'Child Pose': { fr: 'Posture de l’enfant', kind: 'time', g: 'etirements' },
+  'Downward Dog': { fr: 'Chien tête en bas', kind: 'time', g: 'etirements' },
+  'Lying Spinal Twist': { fr: 'Torsion allongée', kind: 'time', g: 'etirements' },
+  'Neck Stretch': { fr: 'Étirement du cou', kind: 'time', g: 'etirements' },
+  'Wrist Stretch': { fr: 'Étirement des poignets', kind: 'time', g: 'etirements' },
+  'Lat Stretch': { fr: 'Étirement du dos (grand dorsal)', kind: 'time', g: 'etirements' },
+  '90 90 Hip Stretch': { fr: 'Étirement 90/90 des hanches', kind: 'time', g: 'etirements' },
+  'Worlds Greatest Stretch': { fr: 'Le meilleur étirement du monde', kind: 'time', g: 'etirements' },
+  'Side Lunge Stretch': { fr: 'Étirement en fente latérale', kind: 'time', g: 'etirements' },
   // Anciens exercices : gardés pour l'historique, cachés dans le choix d'exercice (old: true).
 };
 
@@ -414,10 +438,33 @@ export const AKA = {
   'Neck Bridge': ['Pont de lutteur', 'Neck bridge', 'Wrestler bridge'],
   'Neck Harness Extension': ['Harnais cou', 'Neck harness'],
   'Neck Isometric (Band)': ['Isométrie cou', 'Cou élastique'],
+  'Boxing (Heavy Bag)': ['Boxe', 'Sac de frappe', 'Boxe sac', 'Heavy bag', 'Punching bag', 'Frappe au sac'],
+  'Shadow Boxing': ['Shadow boxing', 'Boxe dans le vide', 'Boxe à vide', 'Shadow'],
+  'Hamstring Stretch (Active)': ['Étirement ischios actif', 'Étirement des ischios', 'Étirement ischio-jambiers', 'Active hamstring stretch', 'Hamstring stretch', 'Étirement arrière des cuisses'],
+  'Seated Forward Fold': ['Pince', 'Pince assise', 'Seated forward bend', 'Toucher ses pieds', 'Étirement ischios assis'],
+  'Standing Quad Stretch': ['Étirement quadriceps', 'Étirement des quadriceps', 'Quad stretch', 'Étirement avant de la cuisse'],
+  'Calf Stretch': ['Étirement mollets', 'Étirement du mollet', 'Calf stretch', 'Étirement mollet au mur'],
+  'Chest Stretch': ['Étirement pectoraux', 'Étirement des pecs', 'Chest stretch', 'Étirement pectoral au mur'],
+  'Cross Body Shoulder Stretch': ['Étirement épaule', 'Étirement des épaules', 'Bras croisé', 'Shoulder stretch', 'Cross body stretch'],
+  'Triceps Stretch': ['Étirement triceps', 'Triceps stretch', 'Étirement arrière du bras'],
+  'Pigeon Stretch': ['Pigeon', 'Posture du pigeon', 'Pigeon pose', 'Étirement fessiers', 'Étirement du fessier'],
+  'Hip Flexor Stretch': ['Fente basse', 'Étirement psoas', 'Étirement du psoas', 'Hip flexor stretch', 'Étirement hanche'],
+  'Butterfly Stretch': ['Papillon', 'Butterfly stretch', 'Étirement adducteurs', 'Étirement des adducteurs'],
+  'Cat Cow': ['Chat vache', 'Cat cow', 'Dos rond dos creux'],
+  'Cobra Stretch': ['Cobra', 'Posture du cobra', 'Cobra stretch', 'Étirement abdos'],
+  'Child Pose': ['Posture de l’enfant', 'Child pose', 'Position de l’enfant', 'Étirement du dos'],
+  'Downward Dog': ['Chien tête en bas', 'Downward dog', 'Down dog'],
+  'Lying Spinal Twist': ['Torsion allongée', 'Torsion', 'Spinal twist', 'Rotation du dos allongé'],
+  'Neck Stretch': ['Étirement cou', 'Étirement de la nuque', 'Neck stretch', 'Étirement trapèzes'],
+  'Wrist Stretch': ['Étirement poignets', 'Étirement avant-bras', 'Wrist stretch', 'Étirement des avant-bras'],
+  'Lat Stretch': ['Étirement grand dorsal', 'Étirement des dorsaux', 'Lat stretch', 'Étirement latéral'],
+  '90 90 Hip Stretch': ['90 90', '90/90', 'Étirement 90 90', 'Hip 90 90'],
+  'Worlds Greatest Stretch': ['World’s greatest stretch', 'Worlds greatest stretch', 'Fente avec rotation'],
+  'Side Lunge Stretch': ['Fente latérale étirement', 'Étirement adducteurs debout'],
 };
 
 // Familles affichées dans le choix d'exercice (champ g de chaque exercice).
-export const GROUPES = { pompes: 'Pompes', dips: 'Dips', pecs: 'Pectoraux', epaules: 'Épaules', dos: 'Dos', bras: 'Bras', jambes: 'Jambes', gainage: 'Gainage', cou: 'Cou', skills: 'Calisthénie', cardio: 'Cardio' };
+export const GROUPES = { pompes: 'Pompes', dips: 'Dips', pecs: 'Pectoraux', epaules: 'Épaules', dos: 'Dos', bras: 'Bras', jambes: 'Jambes', gainage: 'Gainage', cou: 'Cou', skills: 'Calisthénie', cardio: 'Cardio', etirements: 'Étirements' };
 
 // Variantes regroupées : dans Hevy, la version lestée est un exercice à part. Ici c'est le même exercice,
 // avec un lest facultatif. À gauche le nom Hevy, à droite le nom gardé.
@@ -820,6 +867,29 @@ export const FICHES = {
   'Neck Bridge': { muscles: 'Cou, haut du dos', steps: ['Allongé sur le dos, pieds au sol, mains à côté de la tête.', 'Monte les hanches et roule doucement sur le haut de la tête, mains en appui.', 'Tiens peu, puis redescends.'], erreurs: ['Le faire sans échauffer le cou.', 'Mettre tout le poids sur la tête sans les mains.'] },
   'Neck Harness Extension': { muscles: 'Arrière du cou', steps: ['Debout ou assis penché, harnais sur la tête avec un poids.', 'Monte la tête vers l’arrière, lentement.', 'Redescends menton vers la poitrine.'], erreurs: ['Poids trop lourd.', 'Donner des à-coups.'] },
   'Neck Isometric (Band)': { muscles: 'Cou (tous les côtés)', steps: ['Élastique autour de la tête, accroché à côté de toi.', 'Recule pour mettre de la tension, tête immobile.', 'Tiens, puis change de côté.'], erreurs: ['Laisser la tête tourner.', 'Trop de tension.'] },
+  'Boxing (Heavy Bag)': { muscles: 'Épaules, bras, gainage, cardio', steps: ['En garde face au sac, poings devant le visage, pieds décalés.', 'Enchaîne des coups (direct, crochet, uppercut) en tournant les hanches.', 'Reviens en garde après chaque coup et bouge autour du sac.'], erreurs: ['Baisser la garde entre les coups.', 'Frapper avec le bras seul, sans tourner les hanches.', 'Taper sans bandes ni gants (poignets).'] },
+  'Shadow Boxing': { muscles: 'Épaules, bras, cardio, coordination', steps: ['En garde, poings devant le visage, pieds décalés.', 'Boxe dans le vide : enchaînements de coups, esquives, déplacements.', 'Imagine un adversaire et ne reste jamais immobile.'], erreurs: ['Tendre les bras à fond (coudes) : garde un léger pli au bout du coup.', 'Oublier de bouger les pieds.'] },
+  'Hamstring Stretch (Active)': { muscles: 'Ischios (arrière des cuisses)', steps: ['Allongé sur le dos, monte une jambe tendue, mains derrière la cuisse.', 'Tends et plie doucement le genou pendant que l’autre jambe reste au sol.', 'Respire lentement, puis change de jambe.'], erreurs: ['Forcer jusqu’à la douleur.', 'Arrondir le bas du dos.'] },
+  'Seated Forward Fold': { muscles: 'Ischios, bas du dos', steps: ['Assis jambes tendues devant toi.', 'Penche-toi en avant depuis les hanches, mains vers les pieds.', 'Relâche à chaque expiration.'], erreurs: ['Tirer fort sur les pieds.', 'Rebondir.'] },
+  'Standing Quad Stretch': { muscles: 'Quadriceps (avant des cuisses)', steps: ['Debout, attrape ton pied derrière toi.', 'Ramène le talon vers les fesses, genoux serrés.', 'Pousse un peu le bassin en avant. Change de jambe.'], erreurs: ['Écarter le genou sur le côté.', 'Cambrer le dos.'] },
+  'Calf Stretch': { muscles: 'Mollets', steps: ['Mains contre un mur, une jambe tendue derrière, talon au sol.', 'Avance le bassin jusqu’à sentir le mollet.', 'Tiens, puis change de jambe.'], erreurs: ['Décoller le talon.', 'Plier la jambe de derrière.'] },
+  'Chest Stretch': { muscles: 'Pectoraux, avant des épaules', steps: ['Avant-bras contre un mur ou un cadre de porte, coude à hauteur d’épaule.', 'Tourne doucement le buste vers l’opposé.', 'Tiens, puis change de côté.'], erreurs: ['Monter le coude trop haut.', 'Forcer sur l’épaule.'] },
+  'Cross Body Shoulder Stretch': { muscles: 'Arrière de l’épaule', steps: ['Passe un bras tendu devant ta poitrine.', 'Avec l’autre main, ramène-le contre toi au niveau du coude.', 'Tiens, puis change de bras.'], erreurs: ['Hausser l’épaule.', 'Tirer sur la main au lieu du coude.'] },
+  'Triceps Stretch': { muscles: 'Triceps', steps: ['Lève un bras, plie-le et pose la main entre tes omoplates.', 'Avec l’autre main, pousse doucement le coude vers l’arrière.', 'Tiens, puis change.'], erreurs: ['Pencher la tête en avant.', 'Cambrer.'] },
+  'Pigeon Stretch': { muscles: 'Fessiers, hanches', steps: ['Depuis la position à quatre pattes, avance un genou vers ta main, jambe pliée devant toi.', 'Allonge l’autre jambe derrière.', 'Descends le buste doucement. Change de côté.'], erreurs: ['Forcer sur le genou avant.', 'Pencher le bassin sur le côté.'] },
+  'Hip Flexor Stretch': { muscles: 'Avant de la hanche (psoas)', steps: ['Un genou au sol, l’autre pied devant, en fente.', 'Serre les fessiers et avance le bassin.', 'Tiens, puis change de jambe.'], erreurs: ['Cambrer au lieu de serrer les fessiers.', 'Genou avant qui dépasse beaucoup le pied.'] },
+  'Butterfly Stretch': { muscles: 'Adducteurs (intérieur des cuisses)', steps: ['Assis, plantes des pieds collées, genoux ouverts.', 'Tiens tes pieds et laisse descendre les genoux.', 'Penche-toi un peu en avant, dos droit.'], erreurs: ['Appuyer fort sur les genoux.', 'Arrondir le dos.'] },
+  'Cat Cow': { muscles: 'Dos, colonne', steps: ['À quatre pattes, mains sous les épaules.', 'Inspire en creusant le dos, regard vers le haut.', 'Expire en arrondissant le dos, menton vers la poitrine.'], erreurs: ['Aller vite.', 'Plier les bras.'] },
+  'Cobra Stretch': { muscles: 'Abdos, bas du dos', steps: ['Allongé sur le ventre, mains sous les épaules.', 'Pousse pour monter le buste, hanches au sol.', 'Épaules basses, respire.'], erreurs: ['Hausser les épaules.', 'Décoller les hanches.'] },
+  'Child Pose': { muscles: 'Dos, épaules', steps: ['À genoux, fesses sur les talons.', 'Allonge les bras devant toi, front au sol.', 'Respire lentement dans le dos.'], erreurs: ['Forcer si les genoux font mal.', 'Retenir sa respiration.'] },
+  'Downward Dog': { muscles: 'Mollets, ischios, épaules', steps: ['Mains et pieds au sol, fesses vers le plafond.', 'Pousse le sol, talons vers le bas.', 'Plie un peu les genoux si besoin.'], erreurs: ['Arrondir le dos.', 'Hausser les épaules.'] },
+  'Lying Spinal Twist': { muscles: 'Dos, fessiers', steps: ['Allongé sur le dos, ramène un genou plié de l’autre côté.', 'Bras ouverts, épaules au sol.', 'Tiens, puis change de côté.'], erreurs: ['Décoller l’épaule.', 'Forcer avec la main.'] },
+  'Neck Stretch': { muscles: 'Cou, trapèzes', steps: ['Assis ou debout, penche l’oreille vers l’épaule.', 'Pose la main sur la tête sans tirer, juste son poids.', 'Tiens, puis change de côté.'], erreurs: ['Tirer sur la tête.', 'Monter l’épaule.'] },
+  'Wrist Stretch': { muscles: 'Poignets, avant-bras', steps: ['Bras tendu devant toi, paume vers le haut.', 'Tire doucement les doigts vers le bas avec l’autre main.', 'Puis paume vers le bas, et change de bras.'], erreurs: ['Tirer fort.', 'Plier le coude.'] },
+  'Lat Stretch': { muscles: 'Grand dorsal, côtés du buste', steps: ['Debout, lève un bras au-dessus de la tête.', 'Penche-toi sur le côté opposé.', 'Tiens, puis change.'], erreurs: ['Pencher en avant.', 'Bloquer la respiration.'] },
+  '90 90 Hip Stretch': { muscles: 'Hanches (rotation)', steps: ['Assis, une jambe pliée devant à 90 degrés, l’autre pliée sur le côté à 90 degrés.', 'Buste droit, penche-toi au-dessus du tibia avant.', 'Change de côté.'], erreurs: ['Arrondir le dos.', 'Forcer sur les genoux.'] },
+  'Worlds Greatest Stretch': { muscles: 'Hanches, dos, ischios, épaules', steps: ['En grande fente, main opposée au sol.', 'Coude vers le pied avant, puis ouvre le bras vers le plafond.', 'Fais quelques allers-retours, puis change de côté.'], erreurs: ['Aller vite.', 'Poser le genou arrière.'] },
+  'Side Lunge Stretch': { muscles: 'Adducteurs', steps: ['Pieds très écartés, plie une jambe, l’autre reste tendue.', 'Descends doucement les fesses.', 'Tiens, puis change.'], erreurs: ['Genou plié qui rentre.', 'Dos rond.'] },
 };
 
 // Échauffement guidé (facultatif) : environ 3 minutes 30.
@@ -835,6 +905,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 44, items: [
+    'Boxe au sac de frappe et shadow boxing (en durée, comme la course)',
+    'Nouvelle famille Étirements : ischios, quadriceps, mollets, pectoraux, épaules, pigeon, psoas, papillon, chat-vache, cobra, posture de l’enfant, chien tête en bas et d’autres',
+    'Tes anciens noms Hevy qui correspondent (« Boxe », « Étirement Ischios Actif »…) sont reliés tout seuls',
+  ] },
   { v: 43, items: [
     '205 exercices au lieu de 97 : barre, machines, poulies, tractions, et une nouvelle famille Calisthénie (muscle-up, front lever, planche, L-sit, drapeau…). Chacun a sa fiche, son personnage et ses autres noms',
     'Trois façons de s’entraîner, dans les Réglages : programme complet, programme débutant (3 séances faciles au poids du corps) ou sans programme (tes routines directement sur l’accueil)',

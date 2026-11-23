@@ -102,6 +102,16 @@ function migrate() {
     if (prefs[A]) { prefs[B] = Object.assign({}, prefs[A], prefs[B] || {}); delete prefs[A]; }
     state.v = 6; fixed = true;
   }
+  if ((state.v || 0) < 7) {
+    // v44 : boxe et étirements ajoutés au catalogue : on relie les noms d'avant qui correspondent.
+    const moved = {};
+    for (const w of state.workouts) for (const e of w.exercises || []) { const n = frenchName(e.name); if (n) moved[e.name] = n; }
+    for (const w of state.workouts) if ((w.exercises || []).some((e) => moved[e.name])) canon(w);
+    for (const r of state.routines || []) canon(r);
+    const prefs = state.prefs || {};
+    for (const [a, b] of Object.entries(moved)) if (prefs[a]) { prefs[b] = Object.assign({}, prefs[a], prefs[b] || {}); delete prefs[a]; }
+    state.v = 7; fixed = true;
+  }
   if (fixed) save();
 }
 
