@@ -123,7 +123,7 @@ export function insights() {
 export function coachCard() {
   const L = insights();
   const i = L.find((x) => !x.ready) || L[0]; // « prêt à X % » est déjà sur la carte du programme
-  return '<section class="glass card coachcard tap" role="button" tabindex="0" data-act="coach"><span class="coachav">' + ICON.bolt + '</span><div class="col grow" style="gap:3px;min-width:0"><span class="label violet">Coach · ' + esc(i.title) + '</span><span class="small" style="color:var(--soft)">' + esc(i.text) + '</span></div>' + ICON.chev + '</section>';
+  return '<section class="glass card coachcard tap tint t-cyan" role="button" tabindex="0" data-act="coach"><span class="coachav">' + ICON.bolt + '</span><div class="col grow" style="gap:3px;min-width:0"><span class="label violet">Coach · ' + esc(i.title) + '</span><span class="small" style="color:var(--soft)">' + esc(i.text) + '</span></div>' + ICON.chev + '</section>';
 }
 
 // ---------- Les réponses aux questions ----------

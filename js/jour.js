@@ -59,7 +59,7 @@ function refresh() {
 export function quickCard() {
   const n = pushToday(), goal = targetOf(n);
   const pct = Math.min(100, Math.round((n / goal) * 100));
-  return '<section class="glass card col" id="quickcard" style="gap:12px"><div class="row between tap" role="button" tabindex="0" data-act="quick"><div class="col" style="gap:2px"><span class="label violet">Pompes du jour</span>'
+  return '<section class="glass card col tint t-orange" id="quickcard" style="gap:12px"><div class="row between tap" role="button" tabindex="0" data-act="quick"><div class="col" style="gap:2px"><span class="label violet">Pompes du jour</span>'
     + '<span class="h2"><span class="num">' + n + '</span><span class="mut" style="font-weight:500"> / ' + goal + '</span></span></div>'
     + '<div class="qring" style="--p:' + pct + '"><span>' + pct + '%</span></div></div>'
     + '<div class="row" style="gap:8px">' + [5, 10, 15, 20].map((k) => '<button type="button" class="pill sm glass grow" data-act="quick-add" data-n="' + k + '">+' + k + '</button>').join('')

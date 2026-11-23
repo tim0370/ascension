@@ -19,7 +19,7 @@ export function measuresCard() {
   const last = all.length ? Math.max(...all.map((m) => m.d)) : 0;
   const days = last ? Math.floor((Date.now() - last) / 864e5) : 0;
   const bras = list('bras');
-  return '<section class="glass card row tap" role="button" tabindex="0" data-act="measures"><div class="col grow"><span class="label">Mensurations</span>'
+  return '<section class="glass card row tap tint t-pink" role="button" tabindex="0" data-act="measures"><div class="col grow"><span class="label">Mensurations</span>'
     + '<span class="h2">' + (bras.length ? 'Bras ' + fr(bras[0].v, 1) + ' cm' : all.length ? plural(new Set(all.map((m) => m.k)).size, 'zone mesurée', 'zones mesurées') : 'Pas encore mesuré') + '</span>'
     + '<span class="small mut">' + (!last ? 'Un mètre ruban, 2 minutes, une fois par mois' : days > 30 ? 'Dernière mesure il y a ' + days + ' jours : à refaire' : 'Mesuré ' + dateFr(last) + (bras.length > 1 ? ' · bras ' + (bras[0].v - bras[bras.length - 1].v >= 0 ? '+' : '') + fr(bras[0].v - bras[bras.length - 1].v, 1) + ' cm' : '')) + '</span></div>' + ICON.chev + '</section>';
 }

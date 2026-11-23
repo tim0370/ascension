@@ -255,8 +255,8 @@ function framesOf(spec) {
 }
 function staticEq(e) {
   const c = 'stroke="var(--fig-eq)" fill="none" stroke-linecap="round"';
-  if (e[0] === 'bars') return '<path ' + c + ' stroke-width="1.6" d="M' + e[1] + ' ' + e[3] + 'H' + e[2] + 'M' + (e[1] + 1.5) + ' ' + e[3] + 'V' + G + 'M' + (e[2] - 1.5) + ' ' + e[3] + 'V' + G + '"/>';
-  if (e[0] === 'bench') return '<path ' + c + ' stroke-width="1.6" d="M' + e[1] + ' ' + f2(e[3]) + 'H' + e[2] + 'M' + (e[1] + 3) + ' ' + f2(e[3]) + 'V' + G + 'M' + (e[2] - 3) + ' ' + f2(e[3]) + 'V' + G + '"/><rect x="' + e[1] + '" y="' + f2(e[3] - 1.2) + '" width="' + (e[2] - e[1]) + '" height="2.4" rx="1.2" fill="var(--fig-eq)"/>';
+  if (e[0] === 'bars') return '<path ' + c + ' stroke-width="2.2" d="M' + e[1] + ' ' + e[3] + 'H' + e[2] + 'M' + (e[1] + 1.5) + ' ' + e[3] + 'V' + G + 'M' + (e[2] - 1.5) + ' ' + e[3] + 'V' + G + '"/>';
+  if (e[0] === 'bench') return '<path ' + c + ' stroke-width="2" d="M' + e[1] + ' ' + f2(e[3]) + 'H' + e[2] + 'M' + (e[1] + 3) + ' ' + f2(e[3]) + 'V' + G + 'M' + (e[2] - 3) + ' ' + f2(e[3]) + 'V' + G + '"/><rect x="' + e[1] + '" y="' + f2(e[3] - 1.2) + '" width="' + (e[2] - e[1]) + '" height="3" rx="1.5" fill="var(--fig-eq2)"/>';
   if (e[0] === 'wall') return '<path ' + c + ' stroke-width="1.6" d="M' + e[1] + ' 0V' + G + '"/>';
   if (e[0] === 'post') return '<path ' + c + ' stroke-width="1.8" d="M' + e[1] + ' 20V' + G + '"/>';
   if (e[0] === 'box') return '<rect x="' + e[1] + '" y="' + (G - e[3]) + '" width="' + (e[2] - e[1]) + '" height="' + e[3] + '" rx="0.8" fill="none" stroke="var(--fig-eq)" stroke-width="1.4"/>';
@@ -265,31 +265,46 @@ function staticEq(e) {
 }
 
 const cache = {};
+// Corps en volume : chaque segment a son épaisseur (cuisse plus large que le tibia, bras plus fin que la jambe),
+// le côté lointain est plus sombre, une ombre suit le corps au sol, les muscles travaillés sont colorés par-dessus.
+const W = { tor: 7, neck: 3.2, th: 5.4, sh: 4.2, foot: 2.6, ua: 3.8, fa: 3.1 };
+const MW = { chest: 6.4, abs: 5, back: 5.6, glute: 4.6, shoulder: 3.6, ua: 3.1, fa: 2.5, th: 4.4, calf: 3.2 };
 export function figure(name, cls) {
   const key = name + '|' + (cls || '');
   if (cache[key]) return cache[key];
   const spec = FIG[name] || IDLE;
   const frames = framesOf(spec).map(joints);
-  const body = 'fill="none" stroke="var(--fig-line)" stroke-linecap="round" stroke-linejoin="round"';
-  const far = body + ' stroke-width="2.4" opacity="0.38"';
-  const near = body + ' stroke-width="2.6"';
-  const legP = (a, b, c, d) => (J) => 'M' + pt2(J.hip) + 'L' + pt2(J[a]) + 'L' + pt2(J[b]) + 'L' + pt2(J[c]);
-  const armP = (a, b) => (J) => 'M' + pt2(J.sh) + 'L' + pt2(J[a]) + 'L' + pt2(J[b]);
-  let s = '<line x1="2" y1="' + G + '" x2="98" y2="' + G + '" stroke="var(--fig-floor)" stroke-width="1"/>';
+  const cap = 'fill="none" stroke-linecap="round" stroke-linejoin="round"';
+  const segP = (a, b) => (J) => 'M' + pt2(J[a]) + 'L' + pt2(J[b]);
+  const part = (a, b, w, col) => path(frames, segP(a, b), cap + ' stroke="' + col + '" stroke-width="' + w + '"', spec);
+  const leg = (k, f, t, col) => part('hip', k, W.th, col) + part(k, f, W.sh, col) + part(f, t, W.foot, col);
+  const arm = (e, h, col) => part('sh', e, W.ua, col) + part(e, h, W.fa, col);
+  let s = '<line x1="2" y1="' + (G + 0.6) + '" x2="98" y2="' + (G + 0.6) + '" stroke="var(--fig-floor)" stroke-width="1.2"/>';
   const sc = spec.sc || 1;
   s += '<g' + (sc !== 1 ? ' transform="translate(50 ' + G + ') scale(' + sc + ') translate(-50 -' + G + ')"' : '') + '>';
+  // Ombre au sol, sous le centre du corps
+  const shx = frames.map((J) => f2((J.hip[0] + J.sh[0]) / 2));
+  const shy = frames.map((J) => Math.max(J.hip[1], J.sh[1]));
+  const op = shy.map((y) => f2(Math.max(0.12, 0.5 - (G - y) / 70)));
+  s += '<ellipse cx="' + shx[0] + '" cy="' + (G + 0.4) + '" rx="15" ry="1.8" fill="var(--fig-shadow)" opacity="' + op[0] + '">' + animate('cx', shx, spec) + animate('opacity', op, spec) + '</ellipse>';
   for (const e of spec.eq || []) s += staticEq(e);
-  s += path(frames, legP('k2', 'f2', 't2'), far, spec) + path(frames, armP('e2', 'h2'), far, spec);
-  s += path(frames, (J) => 'M' + pt2(J.hip) + 'L' + pt2(J.sh) + 'L' + pt2(J.neck), near + ' stroke-width="3"', spec);
-  s += circle(frames, (J) => J.head, 'r="' + L.head + '" fill="var(--fig-line)"', spec);
-  s += path(frames, legP('k1', 'f1', 't1'), near, spec) + path(frames, armP('e1', 'h1'), near, spec);
-  for (const m of spec.m || []) if (MUSCLE[m]) s += path(frames, MUSCLE[m], 'fill="none" stroke="var(--fig-gold)" stroke-width="3.2" stroke-linecap="round"', spec);
+  s += leg('k2', 'f2', 't2', 'var(--fig-far)') + arm('e2', 'h2', 'var(--fig-far)');
+  s += part('sh', 'neck', W.neck, 'var(--fig-skin)');
+  s += part('hip', 'sh', W.tor, 'var(--fig-line)');
+  s += path(frames, (J) => seg(J.hip, J.sh, 0.55, 0.92), cap + ' stroke="var(--fig-line)" stroke-width="8.6"', spec); // cage thoracique, plus large que la taille
+  s += circle(frames, (J) => J.head, 'r="' + (L.head + 0.4) + '" fill="var(--fig-skin)"', spec);
+  s += leg('k1', 'f1', 't1', 'var(--fig-line)');
+  for (const m of spec.m || []) if (MUSCLE[m] && m !== 'shoulder' && m !== 'ua' && m !== 'fa') s += path(frames, MUSCLE[m], cap + ' stroke="var(--fig-gold)" stroke-width="' + MW[m] + '"', spec);
+  s += arm('e1', 'h1', 'var(--fig-line)');
+  for (const m of spec.m || []) if (MUSCLE[m] && (m === 'shoulder' || m === 'ua' || m === 'fa')) s += path(frames, MUSCLE[m], cap + ' stroke="var(--fig-gold)" stroke-width="' + MW[m] + '"', spec);
+  // Reflet le long du buste : donne du relief
+  s += path(frames, (J) => seg(J.hip, J.sh, 0.15, 0.85), cap + ' stroke="var(--fig-shine)" stroke-width="1.2" transform="translate(-0.9 -0.9)"', spec);
   for (const e of spec.eq || []) {
     if (e[0] !== 'band') continue;
     const end = (k) => (J) => (typeof k === 'string' ? J[k] : k);
-    s += path(frames, (J) => 'M' + pt2(end(e[1])(J)) + 'L' + pt2(end(e[2])(J)), 'fill="none" stroke="var(--fig-band)" stroke-width="1.3" stroke-linecap="round"', spec);
+    s += path(frames, (J) => 'M' + pt2(end(e[1])(J)) + 'L' + pt2(end(e[2])(J)), 'fill="none" stroke="var(--fig-band)" stroke-width="1.5" stroke-linecap="round"', spec);
   }
-  const dbAt = (k) => circle(frames, (J) => J[k], 'r="2.3" fill="var(--fig-bg)" stroke="var(--fig-eq2)" stroke-width="1.6"', spec);
+  const dbAt = (k) => circle(frames, (J) => J[k], 'r="2.6" fill="var(--fig-db)" stroke="var(--fig-eq2)" stroke-width="1.2"', spec);
   if (spec.db & 2) s += dbAt('h2');
   if (spec.db & 1) s += dbAt('h1');
   s += '</g>';

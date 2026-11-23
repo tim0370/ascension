@@ -73,11 +73,11 @@ export function medalSvg(kind, size) {
 export function seasonCard() {
   const s = season();
   const next = Object.keys(REWARDS).map(Number).find((t) => t > s.tier);
-  return '<section class="glass card col tap seasoncard" role="button" tabindex="0" data-act="season" style="gap:10px"><div class="row between"><div class="col" style="gap:2px"><span class="label violet">Saison ' + esc(de(s.key, true)) + '</span>'
+  return '<section class="glass card col tap seasoncard tint t-gold" role="button" tabindex="0" data-act="season" style="gap:10px"><div class="row between"><div class="col" style="gap:2px"><span class="label violet">Saison ' + esc(de(s.key, true)) + '</span>'
     + '<span class="h2">Palier <span class="num">' + s.tier + '</span><span class="mut" style="font-weight:500"> / ' + TIERS + '</span></span></div>'
     + '<div class="row" style="gap:4px">' + ['bronze', 'argent', 'or'].map((m, i) => '<span class="smedal' + (s.tier >= (i + 1) * 10 ? ' on' : '') + '">' + medalSvg(m, 26) + '</span>').join('') + '</div></div>'
     + '<div class="bar"><div style="width:' + Math.round((s.into / TIER_XP) * 100) + '%"></div></div>'
-    + '<span class="small mut">' + (s.tier >= TIERS ? 'Saison terminée au maximum. Bravo.' : (TIER_XP - s.into) + ' XP pour le palier ' + (s.tier + 1) + (next ? ' · palier ' + next + ' : ' + esc(REWARDS[next].label.charAt(0).toLowerCase() + REWARDS[next].label.slice(1)) : '')) + ' · fin dans ' + plural(s.daysLeft, 'jour', 'jours') + '</span></section>';
+    + '<span class="small mut">' + (s.tier >= TIERS ? 'Saison terminée au maximum. Bravo.' : (TIER_XP - s.into) + ' XP pour le palier ' + (s.tier + 1) + (next ? (next === s.tier + 1 ? ' : ' : ' · palier ' + next + ' : ') + esc(REWARDS[next].label.charAt(0).toLowerCase() + REWARDS[next].label.slice(1)) : '')) + ' · fin dans ' + plural(s.daysLeft, 'jour', 'jours') + '</span></section>';
 }
 
 export function sheetSeason() {

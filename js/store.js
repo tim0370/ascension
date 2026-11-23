@@ -297,6 +297,17 @@ function parseDate(s) {
     const hit = MONTHS.find((x) => key.startsWith(x[0]));
     if (hit) return new Date(+m[3], hit[1], +m[1], +m[4], +m[5]).getTime();
   }
+  // 2026-11-23 18:45(:00) : Safari (iPhone) ne sait pas lire cette forme seul.
+  const iso = /(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})/.exec(s || '');
+  if (iso) return new Date(+iso[1], iso[2] - 1, +iso[3], +iso[4], +iso[5]).getTime();
+  // 23/11/2026 18:45 ou 11/23/2026 6:45 PM
+  const sl = /(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2})\s*([AaPp][Mm])?/.exec(s || '');
+  if (sl) {
+    let d = +sl[1], mo = +sl[2], h = +sl[4];
+    if (sl[6] || mo > 12) { const x = d; d = mo; mo = x; }
+    if (sl[6]) h = (h % 12) + (/p/i.test(sl[6]) ? 12 : 0);
+    return new Date(+sl[3], mo - 1, d, h, +sl[5]).getTime();
+  }
   const t = Date.parse(s);
   return isNaN(t) ? null : t;
 }
@@ -304,7 +315,7 @@ function parseDate(s) {
 // Renvoie { added, skipped } ; ne crée pas de doublon si on importe deux fois le même fichier.
 export function importHevy(text) {
   const rows = parseCsv(text.replace(/^﻿/, ''));
-  const head = rows.shift() || [];
+  const head = (rows.shift() || []).map((h) => h.trim().toLowerCase());
   const col = (n) => head.indexOf(n);
   const need = ['title', 'start_time', 'exercise_title'];
   if (need.some((n) => col(n) < 0)) throw new Error("Ce fichier ne ressemble pas à un export Hevy (workouts.csv).");
@@ -324,7 +335,11 @@ export function importHevy(text) {
     let ex = w.exercises[w.exercises.length - 1];
     if (!ex || ex.name !== name) { ex = { name, sets: [] }; w.exercises.push(ex); }
     const s = { done: true };
-    const wkg = num(r[col('weight_kg')]), reps = num(r[col('reps')]), d = num(r[col('distance_km')]), t = num(r[col('duration_seconds')]);
+    if (col('set_type') >= 0 && /warm/i.test(r[col('set_type')])) continue; // séries d'échauffement : pas comptées
+    const wkg = col('weight_kg') >= 0 ? num(r[col('weight_kg')]) : Math.round(num(r[col('weight_lbs')]) * 0.4536 * 10) / 10;
+    const reps = num(r[col('reps')]), t = num(r[col('duration_seconds')]);
+    const d = col('distance_km') >= 0 ? num(r[col('distance_km')]) : Math.round(num(r[col('distance_miles')]) * 1.609 * 100) / 100;
+    if (!wkg && !reps && !d && !t) continue;
     if (wkg) s.w = wkg;
     if (reps) s.r = reps;
     if (d) s.d = d;
@@ -333,13 +348,17 @@ export function importHevy(text) {
   }
   for (const w of map.values()) canon(w);
   let added = 0, skipped = 0;
+  const mine = state.workouts.filter((w) => w.src !== 'hevy').map((w) => w.start);
   for (const [key, w] of map) {
-    if (known.has(key)) { skipped += 1; continue; }
+    // Déjà là, ou même séance notée aussi dans Ascension (moins de 90 minutes d'écart) : pas de doublon.
+    if (known.has(key) || mine.some((t) => Math.abs(t - w.start) < 90 * 60000)) { skipped += 1; continue; }
+    if (!w.exercises.length) continue;
     state.workouts.push(w);
     added += 1;
   }
   save();
-  return { added, skipped };
+  const first = Math.min(...[...map.values()].map((w) => w.start));
+  return { added, skipped, first: isFinite(first) ? first : 0 };
 }
 
 // ---------- Sauvegarde complète ----------

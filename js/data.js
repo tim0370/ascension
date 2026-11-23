@@ -416,6 +416,13 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 34, items: [
+    'Nouvelles silhouettes : un vrai corps en volume (membres épais, ombre au sol, côté éloigné plus sombre) au lieu des bonhommes bâton',
+    'Plus de couleurs : chaque famille de carte a la sienne (quêtes en vert, pompes du jour en orange, défis en rouge, saison en or, semaine en bleu, coach en cyan)',
+    'Accueil rangé en trois parties : Aujourd’hui, Défis, Ta progression',
+    'Import Hevy réparé et mis en avant : il lit maintenant toutes les formes de date d’iPhone, laisse de côté les séries d’échauffement et ne crée pas de doublon. Une fois importé, rang, records, pompes à vie et parcours comptent tout depuis ta première séance',
+    'Onglet Séance : chaque tuile a sa silhouette animée ; la tuile Carrière affiche tes pompes à vie',
+  ] },
   { v: 33, items: [
     'Guide de l’app (en haut des Réglages) : tout ce que fait Ascension, fonction par fonction, et une touche pour ouvrir chacune',
   ] },

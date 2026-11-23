@@ -148,12 +148,12 @@ export function viewWorkout() {
     let h = '<div class="col" style="gap:2px"><span class="small mut">Ton programme guidé</span><h1 class="h1">Séance</h1></div>';
     h += progCard(true);
     // Le reste (routines, séance libre, course) est rangé derrière deux tuiles, pour laisser la place au programme.
-    h += '<div class="tiles"><section class="glass tile tap" role="button" tabindex="0" data-act="routines"><span class="label">Mes routines</span>'
-      + '<span class="h2">' + plural(routines().length, 'routine', 'routines') + '</span><span class="small mut" style="margin-top:auto">Full Body, séance libre</span></section>'
-      + '<section class="glass tile tap" role="button" tabindex="0" data-act="run"><span class="label">Course</span><span class="ico gold">' + ICON.run + '</span><span class="small mut" style="margin-top:auto">Avec le GPS, quand tu veux</span></section>'
-      + '<section class="glass tile tap" role="button" tabindex="0" data-act="chrono2"><span class="label">Chrono</span><span class="ico">' + ICON.bolt + '</span><span class="small mut" style="margin-top:auto">Tabata, EMOM, AMRAP</span></section>'
-      + '<section class="glass tile tap" role="button" tabindex="0" data-act="quick"><span class="label">Pompes du jour</span><span class="ico">' + ICON.plus + '</span><span class="small mut" style="margin-top:auto">Une série hors séance</span></section></div>'
-      + '<button type="button" class="pill glass wide" data-act="cooldown">Retour au calme · 3 min d’étirements</button>';
+    const T = (act, t, label, fig, title, sub) => '<section class="glass tile tap tint figtile ' + t + '" role="button" tabindex="0" data-act="' + act + '"><span class="label violet">' + label + '</span><div class="tilefig">' + figure(fig) + '</div>' + (title ? '<span class="h2">' + title + '</span>' : '') + '<span class="small mut">' + sub + '</span></section>';
+    h += '<div class="tiles">' + T('routines', 't-violet', 'Mes routines', 'Triceps Dip', plural(routines().length, 'routine', 'routines'), 'Full Body, séance libre')
+      + T('run', 't-cyan', 'Course', 'Running', 'GPS en direct', 'Ou note une course faite')
+      + T('chrono2', 't-red', 'Chrono', 'Burpee', '4 modes', 'Tabata, EMOM, AMRAP')
+      + T('quick', 't-orange', 'Pompes du jour', 'Push Up', 'Hors séance', 'Une série vite notée') + '</div>'
+      + '<section class="glass card row tap tint t-teal" role="button" tabindex="0" data-act="cooldown" style="gap:12px;padding:10px 16px 10px 10px"><div class="tilefig" style="width:96px;flex:none">' + figure('stretch-dog') + '</div><div class="col grow" style="gap:2px"><span style="font-weight:700">Retour au calme</span><span class="small mut">3 minutes d’étirements guidés</span></div>' + ICON.chev + '</section>';
     return h;
   }
   if (a.warm) return viewWarmup(a);

@@ -25,12 +25,17 @@
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   /* Silhouettes animées des exercices */
   --fig-bg: #130F24;
-  --fig-line: #F0ECFA;
-  --fig-gold: #E3C47F;
-  --fig-eq: rgba(255, 255, 255, 0.26);
-  --fig-eq2: #A8A0C2;
+  --fig-line: #D9D1F7;
+  --fig-skin: #EAE5FB;
+  --fig-far: #6A5AAE;
+  --fig-shine: rgba(255, 255, 255, 0.55);
+  --fig-shadow: #000;
+  --fig-db: #3A3354;
+  --fig-gold: #F0B44C;
+  --fig-eq: rgba(190, 180, 230, 0.42);
+  --fig-eq2: #8C82B4;
   --fig-band: #A68DFF;
-  --fig-floor: rgba(139, 108, 246, 0.5);
+  --fig-floor: rgba(139, 108, 246, 0.35);
 }
 
 /* touch-action évite le zoom quand on tape vite deux fois sur un bouton (plus et moins, valider). */
@@ -633,3 +638,36 @@ select.textin option { background: #1A1530; color: #fff; }
 .route { width: 100%; height: auto; border-radius: 16px; background: radial-gradient(circle at 50% 40%, rgba(132, 104, 232, 0.12), transparent 70%), rgba(255, 255, 255, 0.03); }
 .route .rline { stroke-dasharray: 100; stroke-dashoffset: 100; animation: rdraw 1.6s ease-out 0.2s forwards; }
 @keyframes rdraw { to { stroke-dashoffset: 0; } }
+.stepn { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 14px; background: var(--violet, #8468E8); color: #fff; }
+.steps b { color: var(--txt, #fff); }
+
+/* ---------- Couleurs par famille de carte (v34) ----------
+   Chaque carte garde le verre violet, avec une lueur de sa couleur dans le coin et un bord teinté. */
+.t-violet { --t: 139 108 246; }
+.t-teal { --t: 63 214 155; }
+.t-orange { --t: 255 154 61; }
+.t-red { --t: 255 90 110; }
+.t-gold { --t: 227 196 127; }
+.t-blue { --t: 92 156 255; }
+.t-pink { --t: 255 112 190; }
+.t-cyan { --t: 72 206 240; }
+.glass.tint {
+  background: radial-gradient(120% 90% at 100% 0%, rgb(var(--t) / 0.20) 0%, rgb(var(--t) / 0) 58%),
+    radial-gradient(80% 60% at 0% 100%, rgb(var(--t) / 0.07) 0%, rgb(var(--t) / 0) 70%),
+    linear-gradient(180deg, rgba(40, 30, 74, 0.72) 0%, rgba(26, 20, 48, 0.72) 100%);
+  border-color: rgb(var(--t) / 0.26);
+}
+.tint .label.violet { color: rgb(var(--t)); }
+.tint .ico { background: rgb(var(--t) / 0.16); color: rgb(var(--t)); }
+.tint .bar:not(.gold) > div { background: linear-gradient(90deg, rgb(var(--t) / 0.75), rgb(var(--t))); box-shadow: 0 0 12px rgb(var(--t) / 0.45); }
+.tint.t-violet .bar > div { background: linear-gradient(90deg, #6A4BE6, #B49CFF); }
+.secdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: rgb(var(--t)); box-shadow: 0 0 10px rgb(var(--t) / 0.8); }
+.sechead { margin-top: 10px; }
+.coachcard.tint .coachav { background: linear-gradient(160deg, #6FE3FF, #2F86C9); box-shadow: 0 0 18px rgba(72, 206, 240, 0.35); }
+.tint .dots i.done { background: rgb(var(--t)); box-shadow: 0 0 10px rgb(var(--t) / 0.5); }
+.tint .dots b.done { background: rgb(var(--t) / 0.8); }
+.tint .dots i.current { border-color: rgb(var(--t)); box-shadow: 0 0 10px rgb(var(--t) / 0.6); }
+.tint.t-gold .dots i.done { background: linear-gradient(180deg, #EBD7A3, #C6A35B); }
+.tilefig .fig { background: none; border: none; border-radius: 0; }
+.figtile { gap: 6px; }
+.figtile .tilefig { margin: -4px -8px 0; }

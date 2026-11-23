@@ -9,6 +9,7 @@ import { render } from './app.js';
 import { bodyCard } from './corps.js';
 import { goalsCard } from './objectifs.js';
 import { measuresCard } from './mesures.js';
+import { careerTotals } from './bilan.js';
 
 let photos = null; // chargées une fois, puis gardées en mémoire
 
@@ -137,20 +138,30 @@ function sheetTree(id) {
 }
 
 // ---------- Écran ----------
+// Tant que l'historique Hevy n'est pas importé, tout ne compte que depuis Ascension : on le dit clairement.
+export function hevyCard() {
+  if (state.workouts.some((w) => w.src === 'hevy') || state.settings.noHevy) return '';
+  return '<section class="glass card col hevycard tint t-orange" style="gap:12px"><div class="row" style="gap:12px;align-items:flex-start"><span class="ico">' + ICON.stack + '</span><div class="col grow" style="gap:3px"><span style="font-weight:700">Ton passé chez Hevy ne compte pas encore</span>'
+    + '<span class="small mut">Rang, records, pompes à vie, parcours : tout sera recalculé depuis ta toute première séance.</span></div></div>'
+    + '<div class="row" style="gap:8px"><button type="button" class="pill glass" data-act="no-hevy">Pas de Hevy</button><button type="button" class="pill gold-btn grow" data-act="hevy-how">Importer Hevy</button></div></section>';
+}
+
 export function viewProgress() {
   const info = rankInfo();
   let h = '<div class="col" style="gap:2px"><span class="small mut">Rang ' + info.rank.letter + ' · ' + esc(info.rank.name) + '</span><h1 class="h1">Progression</h1></div>';
+  h += hevyCard();
   h += rankCard(info);
+  const car = careerTotals();
   h += '<div class="tiles">'
-    + '<section class="glass tile tap" role="button" tabindex="0" data-act="career"><span class="label" style="color:var(--gold)">Ma carrière</span><span class="ico gold">' + ICON.medal + '</span><span class="small mut" style="margin-top:auto">Pompes à vie, tonnes soulevées, km</span></section>'
-    + '<section class="glass tile tap" role="button" tabindex="0" data-act="bilan"><span class="label violet">Bilan du mois</span><span class="ico">' + ICON.star + '</span><span class="small mut" style="margin-top:auto">Ton mois en plein écran</span></section></div>';
-  h += '<section class="glass card row tap" role="button" tabindex="0" data-act="parcours" style="gap:12px;align-items:center"><span class="ico">' + ICON.flame + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Mon parcours</span><span class="small mut">La frise de tes grands moments depuis le début</span></div>' + ICON.chev + '</section>';
+    + '<section class="glass tile tap tint t-gold" role="button" tabindex="0" data-act="career"><span class="label" style="color:var(--gold)">Ma carrière</span><span class="col" style="gap:0;margin-top:auto"><span class="num gold-text" style="font-size:30px;line-height:1.1">' + car.pompes.toLocaleString('fr-FR') + '</span><span class="small mut">pompes à vie</span></span><span class="small" style="color:var(--soft)">' + car.dips.toLocaleString('fr-FR') + ' dips · ' + fr(car.km, 1) + ' km</span></section>'
+    + '<section class="glass tile tap tint t-cyan" role="button" tabindex="0" data-act="bilan"><span class="label violet">Bilan du mois</span><span class="ico">' + ICON.star + '</span><span class="small mut" style="margin-top:auto">Ton mois en plein écran</span></section></div>';
+  h += '<section class="glass card row tap tint t-orange" role="button" tabindex="0" data-act="parcours" style="gap:12px;align-items:center"><span class="ico">' + ICON.flame + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Mon parcours</span><span class="small mut">La frise de tes grands moments depuis le début</span></div>' + ICON.chev + '</section>';
   h += goalsCard();
   h += bodyCard();
 
-  h += '<div class="sec"><span class="h2">Arbres de progression</span></div>';
+  h += '<div class="sec"><span class="h2 row" style="gap:10px"><i class="secdot t-violet"></i>Arbres de progression</span></div>';
   for (const t of allTrees()) {
-    h += '<section class="glass card col tap" role="button" tabindex="0" data-act="tree" data-id="' + t.id + '" style="gap:12px"><div class="row between"><span class="h2">' + esc(t.name) + '</span><span class="row small mut" style="gap:4px">' + t.done + ' sur ' + t.nodes.length + ICON.chev + '</span></div>'
+    h += '<section class="glass card col tap tint ' + ({ pompes: 't-orange', dips: 't-violet', course: 't-cyan' }[t.id] || 't-violet') + '" role="button" tabindex="0" data-act="tree" data-id="' + t.id + '" style="gap:12px"><div class="row between"><span class="h2">' + esc(t.name) + '</span><span class="row small mut" style="gap:4px">' + t.done + ' sur ' + t.nodes.length + ICON.chev + '</span></div>'
       + '<div class="dots">' + t.nodes.map((n, i) => (i ? '<b class="' + (n.state === 'done' ? 'done' : '') + '"></b>' : '') + '<i class="' + n.state + '"></i>').join('') + '</div>'
       + '<span class="small mut">' + (t.current ? 'En cours : ' + esc(t.current.label.charAt(0).toLowerCase() + t.current.label.slice(1)) : 'Arbre terminé') + '</span></section>';
   }
@@ -160,7 +171,7 @@ export function viewProgress() {
   for (const r of routines()) for (const e of r.exercises) if (!mine.includes(e.name)) mine.push(e.name);
   const rows = mine.map((n) => ({ n, h: exoHistory(n) })).filter((x) => x.h.most);
   if (rows.length) {
-    h += '<div class="sec"><span class="h2">Mes records</span><span class="small mut">' + plural(rows.length, 'exercice', 'exercices') + '</span></div><section class="glass card list" style="padding:4px 16px">'
+    h += '<div class="sec"><span class="h2 row" style="gap:10px"><i class="secdot t-gold"></i>Mes records</span><span class="small mut">' + plural(rows.length, 'exercice', 'exercices') + '</span></div><section class="glass card list tint t-gold" style="padding:4px 16px">'
       + rows.map((x) => '<button type="button" class="item" data-act="exo" data-name="' + esc(x.n) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(x.n)) + '</span><span class="small mut">' + dateFr(x.h.most.date, true) + '</span></div>'
         + '<div class="col" style="gap:2px;align-items:flex-end"><span class="gold-text" style="font-weight:600">' + esc(setText(x.h.most.set)) + '</span>' + (x.h.heavy && x.h.heavy.set !== x.h.most.set ? '<span class="small mut">' + esc(setText(x.h.heavy.set)) + '</span>' : '') + '</div></button>').join('') + '</section>';
   }
@@ -168,7 +179,7 @@ export function viewProgress() {
   const b = balance();
   const max = Math.max(1, ...Object.values(b));
   const totalSets = Object.values(b).reduce((x, y) => x + y, 0);
-  h += '<div class="sec"><span class="h2">Équilibre du corps</span><span class="small mut">4 dernières semaines</span></div><section class="glass card col" style="gap:12px">'
+  h += '<div class="sec"><span class="h2 row" style="gap:10px"><i class="secdot t-blue"></i>Équilibre du corps</span><span class="small mut">4 dernières semaines</span></div><section class="glass card col tint t-blue" style="gap:12px">'
     + Object.keys(CATS).map((k) => '<div class="hbar"><span class="small" style="font-weight:500">' + CATS[k] + '</span><div class="bar"><div style="width:' + Math.round((b[k] / max) * 100) + '%"></div></div><span class="small mut" style="text-align:right">' + b[k] + '</span></div>').join('');
   if (totalSets) {
     const low = Object.keys(CATS).reduce((a, k) => (b[k] < b[a] ? k : a));
@@ -178,10 +189,10 @@ export function viewProgress() {
   h += '</section>';
 
   const log = bodyLog();
-  h += '<div class="sec"><span class="h2">Corps</span></div><section class="glass card row tap" role="button" tabindex="0" data-act="body"><div class="col grow"><span class="label">Poids</span>'
+  h += '<div class="sec"><span class="h2 row" style="gap:10px"><i class="secdot t-pink"></i>Corps</span></div><section class="glass card row tap tint t-pink" role="button" tabindex="0" data-act="body"><div class="col grow"><span class="label">Poids</span>'
     + '<span class="h2">' + (log.length ? fr(log[0].kg, 1) + ' kg' : 'Pas encore noté') + '</span><span class="small mut">' + (log.length ? 'Noté ' + dateFr(log[0].d) + (log.length > 1 ? ' · ' + (log[0].kg - log[log.length - 1].kg >= 0 ? '+' : '') + fr(log[0].kg - log[log.length - 1].kg, 1) + ' kg depuis le début' : '') : 'Touche pour ajouter une pesée') + '</span></div>' + ICON.chev + '</section>';
   h += measuresCard();
-  h += '<section class="glass card col tap" role="button" tabindex="0" data-act="photos" style="gap:10px"><div class="row between"><div class="col"><span class="label">Photos</span><span class="h2" id="photo-count">' + (photos ? plural(photos.length, 'photo', 'photos') : 'Photos de suivi') + '</span></div>' + ICON.chev + '</div>'
+  h += '<section class="glass card col tap tint t-pink" role="button" tabindex="0" data-act="photos" style="gap:10px"><div class="row between"><div class="col"><span class="label">Photos</span><span class="h2" id="photo-count">' + (photos ? plural(photos.length, 'photo', 'photos') : 'Photos de suivi') + '</span></div>' + ICON.chev + '</div>'
     + '<span class="small mut">' + photoHint() + '</span></section>';
   if (!photos) listPhotos().then((p) => { photos = p; const el = $('photo-count'); if (el) el.textContent = plural(p.length, 'photo', 'photos'); }).catch(() => { photos = []; });
   return h;

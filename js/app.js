@@ -23,7 +23,7 @@ import './parcours.js';
 import { seasonCard, celebrateSeason, sheetSeason } from './saison.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync } from './notif.js';
-import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
+import { viewProgress, hevyCard, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
 import { routeSvg } from './course.js';
 
 const DAY = 864e5;
@@ -68,11 +68,6 @@ function viewHome() {
     + '<span class="h2">Niveau ' + lv.level + '</span><div class="bar thin" style="width:100%"><div style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></div></div></button>'
     + flamePill(st) + '</div>';
 
-  if (!has) {
-    h += '<section class="glass card col" style="gap:12px"><h2 class="h2">Récupère ton historique</h2>'
-      + '<span class="small mut">Importe ton fichier Hevy (workouts.csv) pour retrouver toutes tes séances, tes records et ton XP.</span>'
-      + '<button type="button" class="pill gold-btn wide" data-act="pick-hevy">Importer depuis Hevy</button></section>';
-  }
 
   // Le bloc principal : la séance en cours, ou celle du programme
   if (state.active) {
@@ -89,52 +84,60 @@ function viewHome() {
     if (has && show('coach')) h += coachCard();
   }
 
-  if (has) {
-    h += monthBanner();
-    if (show('boss')) h += bossCard();
-    // Deux tuiles : le rang (étoile des 5 qualités) et les hauts faits
+  if (has) h += monthBanner();
+  if (!has || state.workouts.length < 40) h += hevyCard();
+  // Rappels utiles (sauvegarde, photo) : juste sous le programme, car ils demandent une action.
+  const DAYMS = 864e5;
+  if (state.workouts.length >= 5 && Date.now() - (state.lastExport || state.installed || 0) > 14 * DAYMS && Date.now() > (state.settings.backupSnooze || 0)) {
+    h += '<section class="glass card col backupcard tint t-blue" style="gap:10px"><div class="row" style="gap:12px;align-items:center"><span class="ico">' + ICON.save + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Sauvegarde tes progrès</span><span class="small mut">' + (state.lastExport ? 'Dernière sauvegarde il y a ' + Math.floor((Date.now() - state.lastExport) / DAYMS) + ' jours.' : 'Tu n’as jamais sauvegardé.') + ' Tes ' + state.workouts.length + ' séances ne sont que dans ce téléphone. Un fichier dans Fichiers ou iCloud, et rien ne se perd.</span></div></div>'
+      + '<div class="row"><button type="button" class="pill glass" data-act="backup-later">Plus tard</button><button type="button" class="pill gold-btn grow" data-act="export">Sauvegarder</button></div></section>';
+  }
+  if (photoDue()) {
+    h += '<section class="glass card row tap tint t-pink" role="button" tabindex="0" data-act="photos"><span class="ico">' + ICON.cam + '</span><div class="col grow"><span class="h2">C’est le moment de ta photo</span><span class="small mut">La dernière a plus de deux semaines.</span></div>' + ICON.chev + '</section>';
+  }
+  const head = (t, c, right) => '<div class="sechead"><span class="h2 row" style="gap:10px"><i class="secdot ' + c + '"></i>' + t + '</span>' + (right || '') + '</div>';
+
+  // 1. Aujourd'hui : quêtes et pompes du jour
+  let today = '';
+  if (quests.length && show('quests')) {
+    const doneCount = quests.filter((q) => q.done).length;
+    today += '<section class="glass card tap tint t-teal" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + quests.map(questRow).join('') + '</section>';
+    today = head('Aujourd’hui', 't-teal', '<span class="small mut">' + doneCount + ' quête' + (doneCount > 1 ? 's' : '') + ' sur ' + quests.length + '</span>') + today;
+  }
+  if (has && show('quick')) today = (today || head('Aujourd’hui', 't-teal')) + quickCard();
+  h += today;
+
+  // 2. Défis : boss de la semaine et saison du mois
+  let defis = '';
+  if (has && show('boss')) defis += bossCard();
+  if (has) { if (show('season')) defis += seasonCard(); celebrateSeason(); }
+  if (defis) h += head('Défis', 't-red') + defis;
+
+  // 3. Ta progression : rang, hauts faits, objectif, semaine
+  let prog = '';
+  if (has && show('tiles')) {
     const got = fx.list.filter((f) => f.done).length;
     const next = fx.list.filter((f) => !f.done).sort((a, b) => b.cur / b.goal - a.cur / a.goal)[0];
-    if (show('tiles')) h += '<div class="tiles">'
-      + '<section class="glass tile tap" role="button" tabindex="0" data-act="rank"><span class="label violet">Rang ' + info.rank.letter + '</span>'
+    prog += '<div class="tiles">'
+      + '<section class="glass tile tap tint t-violet" role="button" tabindex="0" data-act="rank"><span class="label violet">Rang ' + info.rank.letter + '</span>'
       + '<div class="minirad">' + radarSvg(info.q, true) + '</div>'
       + '<span class="small mut">' + info.q.map((x) => x.letter).join(' ') + (info.next ? ' · ' + Math.round(info.ratio * 100) + ' % vers ' + info.next.letter : '') + '</span></section>'
-      + '<section class="glass tile tap" role="button" tabindex="0" data-act="feats"><span class="label" style="color:var(--gold)">Hauts faits</span>'
+      + '<section class="glass tile tap tint t-gold" role="button" tabindex="0" data-act="feats"><span class="label" style="color:var(--gold)">Hauts faits</span>'
       + '<div class="row" style="gap:10px"><span class="medal" style="background:linear-gradient(160deg,#F3DFA8,#B8913F);color:#24190A;border:none">' + ICON.medal + '</span><span class="num" style="font-size:28px">' + got + '<span class="mut" style="font-size:16px"> / ' + fx.list.length + '</span></span></div>'
       + (next ? '<div class="col" style="gap:6px;margin-top:auto"><span class="small" style="font-weight:600">' + esc(next.desc) + '</span><div class="bar thin gold"><div style="width:' + Math.round((next.cur / next.goal) * 100) + '%"></div></div></div>' : '<span class="small mut" style="margin-top:auto">Tout est débloqué</span>')
       + '</section></div>';
   }
-
-  if (has) { if (show('season')) h += seasonCard(); celebrateSeason(); }
-  if (has && show('quick')) h += quickCard();
-  // Rappel de sauvegarde : sur iPhone, les données ne vivent que dans le téléphone.
-  const DAYMS = 864e5;
-  if (state.workouts.length >= 5 && Date.now() - (state.lastExport || state.installed || 0) > 14 * DAYMS && Date.now() > (state.settings.backupSnooze || 0)) {
-    h += '<section class="glass card col backupcard" style="gap:10px"><div class="row" style="gap:12px;align-items:center"><span class="ico">' + ICON.save + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Sauvegarde tes progrès</span><span class="small mut">' + (state.lastExport ? 'Dernière sauvegarde il y a ' + Math.floor((Date.now() - state.lastExport) / DAYMS) + ' jours.' : 'Tu n’as jamais sauvegardé.') + ' Tes ' + state.workouts.length + ' séances ne sont que dans ce téléphone. Un fichier dans Fichiers ou iCloud, et rien ne se perd.</span></div></div>'
-      + '<div class="row"><button type="button" class="pill glass" data-act="backup-later">Plus tard</button><button type="button" class="pill gold-btn grow" data-act="export">Sauvegarder</button></div></section>';
-  }
-
-  if (quests.length && show('quests')) {
-    const doneCount = quests.filter((q) => q.done).length;
-    h += '<div class="sechead"><span class="h2">Quêtes du jour</span><span class="small mut">' + doneCount + ' sur ' + quests.length + '</span></div>'
-      + '<section class="glass card tap" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + quests.map(questRow).join('') + '</section>';
-  }
-
   const goal = (state.goals || []).find((g) => !g.done);
   if (goal && show('goal')) {
-    h += '<div class="sechead"><span class="h2">Objectif</span><button type="button" class="small mut row" style="gap:4px" data-act="goals-all">Tous' + ICON.chev + '</button></div>'
-      + '<section class="glass card" style="padding:2px 16px">' + goalRow(goal, true) + '</section>';
+    prog += '<section class="glass card tint t-pink" style="padding:2px 16px">' + goalRow(goal, true) + '</section>';
   }
-
   if (has && show('week')) {
-    h += '<section class="glass card col tap" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span>'
+    prog += '<section class="glass card col tap tint t-blue" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span>'
       + '<span class="row small mut" style="gap:4px">' + (wq.done ? 'Objectif atteint' : wq.cur + ' sur ' + wq.goal + ' séances') + ICON.chev + '</span></div>'
       + '<div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>';
   }
+  if (prog) h += head('Ta progression', 't-violet', goal && show('goal') ? '<button type="button" class="small mut row" style="gap:4px" data-act="goals-all">Objectifs' + ICON.chev + '</button>' : '') + prog;
 
-  if (photoDue()) {
-    h += '<section class="glass card row tap" role="button" tabindex="0" data-act="photos"><span class="ico">' + ICON.cam + '</span><div class="col grow"><span class="h2">C’est le moment de ta photo</span><span class="small mut">La dernière a plus de deux semaines.</span></div>' + ICON.chev + '</section>';
-  }
   // Rappel de sauvegarde : toutes les deux semaines, tant que rien n'a été exporté.
   if (!state.installed) { state.installed = Date.now(); save(); }
   if (has) h += '<button type="button" class="pill glass wide" data-act="home-edit" style="color:var(--mut)">Personnaliser l’accueil</button>';
@@ -342,7 +345,7 @@ function viewHistory() {
   // Calendrier de régularité : 18 semaines, une colonne par semaine.
   const cols = heat(18);
   const active = cols.reduce((n, c) => n + c.filter((d) => d.n).length, 0);
-  h += '<section class="glass card hud col" style="gap:12px"><div class="row between"><span class="h2">Régularité</span><span class="small mut">' + plural(active, 'jour actif', 'jours actifs') + ' sur 18 semaines</span></div>'
+  h += '<section class="glass card hud col tint t-gold" style="gap:12px"><div class="row between"><span class="h2">Régularité</span><span class="small mut">' + plural(active, 'jour actif', 'jours actifs') + ' sur 18 semaines</span></div>'
     + '<div class="heat">' + cols.map((c) => '<div role="button" tabindex="0" data-act="week" data-m="' + c[0].start + '" aria-label="Semaine du ' + new Date(c[0].start).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + '">' + c.map((d) => '<i class="' + (d.future ? 'future' : (d.n > 1 ? 'n2' : (d.n ? 'n1' : ''))) + (d.today ? ' today' : '') + '"></i>').join('') + '</div>').join('') + '</div>'
     + '<span class="small mut">Chaque colonne est une semaine. Touche une colonne pour voir ses séances.</span></section>';
 
@@ -421,7 +424,7 @@ function sheetSettings() {
     + [2, 3, 4, 5, 6].map((n) => '<button type="button" class="pill sm ' + (n === weekGoal() ? 'gold-btn' : 'glass') + '" data-act="set-goal" data-n="' + n + '">' + n + '</button>').join('') + '</div>'
     + '<span class="small mut">Les courses comptent. L’atteindre valide la quête de la semaine (+150 XP).</span></div>'
     + '<div class="col" style="gap:8px"><span class="label">Hevy</span><button type="button" class="pill glass wide" data-act="pick-hevy">Importer mon historique Hevy</button>'
-    + '<span class="small mut">Dans Hevy : Profil, Réglages, Exporter les données. Choisis ensuite le fichier workouts.csv ici.</span></div>'
+    + '<span class="small mut">' + (state.workouts.some((w) => w.src === 'hevy') ? plural(state.workouts.filter((w) => w.src === 'hevy').length, 'séance Hevy importée', 'séances Hevy importées') + '. Tu peux réimporter un fichier plus récent : rien ne sera en double.' : 'Dans Hevy : Profil, Réglages, Exporter les données. Choisis ensuite le fichier workouts.csv ici.') + '</span></div>'
     + '<div class="col" style="gap:8px"><span class="label">Sauvegarde</span><div class="row"><button type="button" class="pill glass grow" data-act="export">Exporter</button><button type="button" class="pill glass grow" data-act="pick-backup">Restaurer</button></div>'
     + '<span class="small mut">Tes données restent sur ce téléphone. Exporte une sauvegarde de temps en temps pour ne rien perdre.</span></div>'
     + '<div class="col" style="gap:8px"><span class="label">Version ' + VERSION + '</span><div class="row"><button type="button" class="pill glass grow" data-act="news">Nouveautés</button><button type="button" class="pill glass grow" data-act="update">Mettre à jour</button></div></div>' + closeBtn);
@@ -519,9 +522,21 @@ Object.assign(ACTIONS, {
     toast('Installation de la version ' + v + '…');
     forceUpdate();
   },
-  'pick-hevy': () => pickFile('.csv,text/csv,text/comma-separated-values', (text) => {
-    try { const r = importHevy(text); closeSheet(); ui.enter = true; render(); toast(r.added + ' séances importées' + (r.skipped ? ', ' + r.skipped + ' déjà là' : '')); } catch (e) { toast(e.message); }
+  'pick-hevy': () => pickFile('.csv,text/csv,text/comma-separated-values,text/plain', (text) => {
+    let r;
+    try { r = importHevy(text); } catch (e) { toast(e.message); return; }
+    ui.enter = true; render();
+    if (!r.added) { toast(r.skipped ? 'Tout était déjà là (' + r.skipped + ' séances)' : 'Aucune séance trouvée dans ce fichier'); return; }
+    burst();
+    sheet('<div class="col center" style="gap:8px;padding-top:10px"><span class="label violet">Historique importé</span><span class="num" style="font-size:64px;line-height:1">' + r.added + '</span><span class="h2">séances ramenées de Hevy</span>'
+      + '<span class="small mut" style="text-align:center">Depuis le ' + dateFr(r.first, true) + (r.skipped ? '. ' + r.skipped + ' déjà présentes ont été laissées de côté' : '') + '. Ton rang, tes records, ton niveau, tes pompes à vie et ton parcours comptent maintenant tout depuis le début.</span></div>'
+      + '<button type="button" class="pill gold-btn wide" data-act="parcours">Voir mon parcours</button><button type="button" class="pill glass wide" data-tab="progress" data-act="close">Voir mon rang</button>', 1);
   }),
+  'hevy-how': () => sheet('<div class="col" style="gap:4px"><span class="label violet">2 minutes</span><h1 class="h1">Importer depuis Hevy</h1><span class="small mut">Le fichier reste dans ton téléphone, rien n’est envoyé.</span></div>'
+    + '<section class="glass card col steps" style="gap:14px">' + ['Ouvre Hevy, va sur ton <b>Profil</b> puis la roue des <b>Réglages</b>.', 'Touche <b>Exporter et importer des données</b>, puis <b>Exporter les séances</b>.', 'Choisis <b>Enregistrer dans Fichiers</b> (garde le nom workouts.csv).', 'Reviens ici et touche le bouton ci-dessous, puis choisis ce fichier.']
+      .map((t, i) => '<div class="row" style="gap:12px;align-items:flex-start"><span class="stepn">' + (i + 1) + '</span><span>' + t + '</span></div>').join('') + '</section>'
+    + '<button type="button" class="pill gold-btn wide" data-act="pick-hevy">Choisir le fichier Hevy</button><button type="button" class="pill glass wide" data-act="close">Plus tard</button>', 1),
+  'no-hevy': () => { state.settings.noHevy = true; save(); render(); },
   'pick-backup': () => pickFile('.json,application/json', (text) => {
     try { const r = importJson(text); closeSheet(); ui.enter = true; render(); toast(r.added + ' séances restaurées'); } catch (e) { toast('Ce fichier n’est pas une sauvegarde valide'); }
   }),

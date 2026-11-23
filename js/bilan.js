@@ -98,6 +98,7 @@ function tally(ws) {
 }
 
 // ---------- Ta carrière ----------
+export function careerTotals() { const t = tally(sorted()); return { pompes: t.pompes, dips: t.dips, km: t.km, n: t.n }; }
 const CAPS = [100, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000];
 const nextCap = (n) => CAPS.find((c) => c > n) || n * 2;
 
