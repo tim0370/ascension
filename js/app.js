@@ -10,8 +10,10 @@ import { rankInfo, heat, bodyLog } from './stats.js';
 import { beep, wakeAudio, initSound, soundError } from './sound.js';
 import { hint, $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst } from './ui.js';
 import { routinesCard, viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
-import { progCard, progOn, isBeginner } from './programme.js';
-import { dailyQuests, streak, SHIELD_MAX, feats, myTitle, titles, skins, SKINS } from './quetes.js';
+import { progCard, progOn, isBeginner, todayList } from './programme.js';
+import { formeCard, painCard } from './forme.js';
+import { weekCard, lundiBanner } from './semaine.js';
+import { dailyQuests, streak, SHIELD_MAX, SHIELD_EVERY, feats, myTitle, titles, skins, SKINS } from './quetes.js';
 import { bossCard } from './boss.js';
 import './course.js';
 import { monthBanner } from './bilan.js';
@@ -44,7 +46,7 @@ export function questRow(q) {
 }
 
 function flamePill(st) {
-  return '<button type="button" class="flame' + (st.n ? '' : ' off') + (st.danger ? ' danger' : '') + '" data-act="flame" aria-label="Série de ' + st.n + ' jours' + (st.shields ? ', ' + st.shields + ' bouclier' + (st.shields > 1 ? 's' : '') : '') + '">' + ICON.flame + st.n + (st.shields ? '<span class="fshield">' + ICON.shield + (st.shields > 1 ? '<b>' + st.shields + '</b>' : '') + '</span>' : '') + '</button>';
+  return '<button type="button" class="flame' + (st.n ? '' : ' off') + (st.danger ? ' danger' : '') + '" data-act="flame" aria-label="Flamme de ' + st.n + ' semaine' + (st.n > 1 ? 's' : '') + (st.shields ? ', ' + st.shields + ' bouclier' + (st.shields > 1 ? 's' : '') : '') + '">' + ICON.flame + st.n + (st.shields ? '<span class="fshield">' + ICON.shield + (st.shields > 1 ? '<b>' + st.shields + '</b>' : '') + '</span>' : '') + '</button>';
 }
 
 function viewHome() {
@@ -57,7 +59,7 @@ function viewHome() {
   const lv = levelInfo(xp);
   const info = rankInfo();
   const st = streak();
-  if (st.shields > (state.settings.shSeen || 0)) setTimeout(() => toast('Bouclier gagné : ta flamme est protégée un jour de plus', true), 1200);
+  if (st.shields > (state.settings.shSeen || 0)) setTimeout(() => toast('Bouclier gagné : ta flamme est protégée une semaine de plus', true), 1200);
   if (st.shields !== (state.settings.shSeen || 0)) { state.settings.shSeen = st.shields; save(); }
   const t0 = midnight();
   const title = myTitle();
@@ -81,11 +83,14 @@ function viewHome() {
   } else {
     const doneToday = state.workouts.find((w) => w.start >= t0 && !w.boss && !w.quick && w.exercises.some((e) => e.name !== 'Running'));
     if (!state.settings.modeSet && state.workouts.length < 30) h += modeCard();
-    h += progOn() ? progCard(true, !!doneToday) : routinesCard();
+    h += painCard();
+    const fc = has && progOn() && show('forme');
+    if (fc) h += formeCard(todayList());
+    h += progOn() ? progCard(true, !!doneToday, fc) : routinesCard();
     if (has && show('coach') && progOn()) h += coachCard();
   }
 
-  if (has) h += monthBanner();
+  if (has) h += monthBanner() + lundiBanner();
   if (!has || state.workouts.length < 40) h += hevyCard();
   // Rappels utiles (sauvegarde, photo) : juste sous le programme, car ils demandent une action.
   const DAYMS = 864e5;
@@ -132,11 +137,7 @@ function viewHome() {
   if (goal && show('goal')) {
     prog += '<section class="glass card tint t-pink" style="padding:2px 16px">' + goalRow(goal, true) + '</section>';
   }
-  if (has && show('week')) {
-    prog += '<section class="glass card col tap tint t-blue" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span>'
-      + '<span class="row small mut" style="gap:4px">' + (wq.done ? 'Objectif atteint' : wq.cur + ' sur ' + wq.goal + ' séances') + ICON.chev + '</span></div>'
-      + '<div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>';
-  }
+  if (has && show('week')) prog += progOn() ? weekCard() : '<section class="glass card col tap tint t-blue" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span><span class="row small mut" style="gap:4px">' + (wq.done ? 'Objectif atteint' : wq.cur + ' sur ' + wq.goal + ' séances') + ICON.chev + '</span></div><div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>';
   if (prog) h += head('Ta progression', 't-violet', goal && show('goal') ? '<button type="button" class="small mut row" style="gap:4px" data-act="goals-all">Objectifs' + ICON.chev + '</button>' : '') + prog;
 
   // Rappel de sauvegarde : toutes les deux semaines, tant que rien n'a été exporté.
@@ -160,7 +161,8 @@ function sheetUnknown() {
 // ---------- Guide de l'app ----------
 const GUIDE = [
   ['S’entraîner', [
-    ['prog', 'Programme guidé', 'L’app choisit ta séance du jour (4 séances qui tournent), monte les exercices quand tu es prêt, et te fait un re-test toutes les 4 semaines.'],
+    ['prog', 'Programme guidé', 'Pensé pour être fort partout : 4 séances qui tournent (figure, force, explosivité, muscle, gainage), une séance « point faible » par semaine, et un re-test toutes les 4 semaines.'],
+    ['plan', 'Plan de la semaine', 'Tes 7 jours remplis par l’app : séances, course du dimanche, repos. Il se refait tout seul si tu rates un jour.'],
     ['settings', 'Choisir son programme', 'Dans les Réglages : programme complet, programme débutant (3 séances faciles au poids du corps) ou sans programme (tes routines sur l’accueil).'],
     ['routines', 'Mes routines', 'Tes listes d’exercices : touche une routine, puis « Modifier les exercices » pour en ajouter ou en retirer. Et la séance libre.'],
     ['quick', 'Pompes du jour', 'Note une série en une touche, n’importe quand, pour viser 100 pompes dans la journée.'],
@@ -169,7 +171,10 @@ const GUIDE = [
     ['gps', 'Course GPS', 'Distance, allure, lièvre, voix à chaque kilomètre et tracé de la course.'],
   ]],
   ['Être guidé', [
-    ['coach', 'Coach', 'Il lit ton historique : quoi faire aujourd’hui, pourquoi tu stagnes, comment monter de rang. Pose-lui tes questions.'],
+    ['checkin', 'Bilan du matin et forme', '4 touches le matin (sommeil, courbatures, énergie, stress) : ton score de forme, expliqué point par point. Forme basse : séance allégée toute seule. Forme haute : jour de record.'],
+    ['forme', 'Charge et ce qui te réussit', 'Ta charge des 8 dernières semaines, la semaine légère conseillée quand il faut, et ce qui te fait mieux performer (heure, repos, sommeil).'],
+    ['pain', 'Signaler une douleur', 'Épaules, poignets, genoux… pendant 7 jours, tes séances évitent les exercices qui la sollicitent.'],
+    ['coach', 'Coach', 'Il lit ton historique et ton bilan du matin : quoi faire aujourd’hui, records prévus, stagnation, point faible, fatigue, motivation. Pose-lui tes questions.'],
     ['', 'Pendant la séance', 'Objectif par série, fantôme de la dernière fois, compteur de pompes à la caméra, et « facile, bien, très dur » pour régler la séance suivante.'],
     ['', 'Voix du coach', 'Dans les réglages, partie Son : elle annonce chaque série à la fin du repos.'],
     ['', 'Notifications', 'Dans les réglages : fin du repos, rappel de séance, flamme, boss.'],
@@ -179,7 +184,8 @@ const GUIDE = [
     ['quests', 'Quêtes du jour', 'Trois défis calés sur tes records, et parfois une quête rare.'],
     ['boss', 'Boss de la semaine', 'Un nouveau chaque lundi, à battre en un seul effort.'],
     ['season', 'Saison du mois', '30 paliers, médailles de bronze, d’argent et d’or.'],
-    ['flame', 'Flamme et boucliers', 'Jours d’affilée ; un bouclier tous les 7 jours la protège.'],
+    ['flame', 'Flamme et boucliers', 'Semaines d’affilée où ton objectif est atteint ; un bouclier toutes les 4 semaines la protège.'],
+    ['lundi', 'Bilan du lundi', 'Ta semaine passée en chiffres et en équivalents parlants, tes records et ceux qui arrivent.'],
     ['feats', 'Hauts faits', 'Des défis durs qui débloquent titres et couleurs.'],
     ['profile', 'Mon profil', 'Ton titre et la couleur de ton emblème.'],
   ]],
@@ -206,7 +212,7 @@ function sheetGuide() {
 }
 
 // ---------- Personnaliser l'accueil ----------
-const HOME_CARDS = [['coach', 'Coach'], ['boss', 'Boss de la semaine'], ['tiles', 'Rang et hauts faits'], ['season', 'Saison du mois'], ['quick', 'Pompes du jour'], ['quests', 'Quêtes du jour'], ['goal', 'Objectif en cours'], ['week', 'Ta semaine']];
+const HOME_CARDS = [['forme', 'Ta forme du jour'], ['coach', 'Coach'], ['boss', 'Boss de la semaine'], ['tiles', 'Rang et hauts faits'], ['season', 'Saison du mois'], ['quick', 'Pompes du jour'], ['quests', 'Quêtes du jour'], ['goal', 'Objectif en cours'], ['week', 'Ta semaine']];
 function show(k) { return !(state.settings.hide || {})[k]; }
 function sheetHomeEdit() {
   const h = '<div class="col" style="gap:4px"><span class="label violet">Accueil</span><h1 class="h1">Personnaliser</h1><span class="small mut">Choisis les cartes affichées sur l’accueil. La séance du programme reste toujours en haut. Tout reste accessible ailleurs.</span></div>'
@@ -266,19 +272,23 @@ function sheetQuests() {
   sheet(h + closeBtn);
 }
 
-// La flamme : jours d'entraînement d'affilée, un jour de repos permis.
+// La flamme : semaines d'affilée où l'objectif de séances est atteint.
 function sheetFlame() {
   const st = streak();
   const days = weekDays();
-  let h = '<div class="col center" style="gap:8px"><span class="flame-big">' + ICON.flame + '</span><span class="big">' + plural(st.n, 'jour', 'jours') + '</span>'
-    + '<span class="small mut">' + (st.todayDone ? 'Fait aujourd’hui, la flamme tient.' : st.using ? 'Un bouclier tient ta flamme. Entraîne-toi aujourd’hui.' : st.danger ? 'Entraîne-toi aujourd’hui, sinon la flamme s’éteint.' : st.n ? 'Une séance aujourd’hui la fait grandir.' : 'Une séance pour l’allumer.') + '</span></div>'
-    + '<section class="glass card"><div class="week">' + days.map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>'
-    + '<div class="stats3 glass card"><div><span class="num" style="font-size:22px">' + st.n + '</span><span class="small mut">en cours</span></div><div><span class="num" style="font-size:22px">' + st.best + '</span><span class="small mut">record</span></div><div><span class="num" style="font-size:22px">' + weekGoal() + '</span><span class="small mut">objectif semaine</span></div></div>'
+  const msg = st.weekDone ? 'Objectif de la semaine atteint : la flamme a grandi.'
+    : st.using ? 'Cette semaine ne peut plus être finie : un bouclier va sauver ta flamme.'
+      : st.lost ? (st.n ? 'Cette semaine ne peut plus être finie : la flamme repartira de zéro lundi.' : 'La semaine prochaine, vise ' + plural(st.goal, 'séance', 'séances') + ' pour l’allumer.')
+        : 'Encore ' + plural(st.need, 'séance', 'séances') + ' cette semaine, il reste ' + plural(st.left, 'jour', 'jours') + '.' + (st.danger ? ' C’est serré.' : '');
+  let h = '<div class="col center" style="gap:8px"><span class="flame-big">' + ICON.flame + '</span><span class="big">' + plural(st.n, 'semaine', 'semaines') + '</span>'
+    + '<span class="small mut" style="text-align:center">' + msg + '</span></div>'
+    + '<section class="glass card col" style="gap:12px"><div class="row between"><span class="label violet">Cette semaine</span><span class="small mut">' + Math.min(st.cur, st.goal) + ' sur ' + st.goal + '</span></div><div class="week">' + days.map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>'
+    + '<div class="stats3 glass card"><div><span class="num" style="font-size:22px">' + st.n + '</span><span class="small mut">en cours</span></div><div><span class="num" style="font-size:22px">' + st.best + '</span><span class="small mut">record</span></div><div><span class="num" style="font-size:22px">' + st.goal + '</span><span class="small mut">séances / sem.</span></div></div>'
     + '<section class="glass card col" style="gap:10px"><div class="row between"><span class="label violet">Boucliers</span><span class="small mut">' + st.shields + ' sur ' + SHIELD_MAX + '</span></div>'
     + '<div class="row" style="gap:10px">' + Array.from({ length: SHIELD_MAX }, (_, i) => '<span class="shieldslot' + (i < st.shields ? ' on' : '') + '">' + ICON.shield + '</span>').join('') + '</div>'
-    + '<span class="small mut">' + (st.using ? 'Un bouclier protège ta flamme en ce moment. Entraîne-toi aujourd’hui pour ne pas en perdre un autre.' : st.shields >= SHIELD_MAX ? 'Réserve pleine. Un bouclier couvre un jour manqué de plus que le repos permis.' : 'Prochain bouclier dans ' + plural(st.next, 'jour', 'jours') + ' d’entraînement.') + '</span>'
-    + (st.saved ? '<span class="small" style="color:var(--violet2, #B6A4FF)">Tes boucliers ont déjà sauvé ' + plural(st.saved, 'jour', 'jours') + ' de cette flamme.</span>' : '') + '</section>'
-    + '<span class="small mut">Chaque jour où tu t’entraînes (séance, course, boss ou 30 pompes du jour) ajoute un jour à ta flamme. Tu as droit à un jour de repos : elle s’éteint après deux jours de suite sans rien. Tous les 7 jours de flamme, tu gagnes un bouclier (2 au plus) : il couvre tout seul un jour manqué de plus. Hauts faits : 7 jours, puis 30 jours.</span>';
+    + '<span class="small mut">' + (st.shields >= SHIELD_MAX ? 'Réserve pleine. Un bouclier sauve tout seul une semaine ratée.' : 'Prochain bouclier dans ' + plural(st.next, 'semaine', 'semaines') + ' réussie' + (st.next > 1 ? 's' : '') + '.') + '</span>'
+    + (st.saved ? '<span class="small" style="color:var(--violet2, #B6A4FF)">Tes boucliers ont déjà sauvé ' + plural(st.saved, 'semaine', 'semaines') + ' de cette flamme.</span>' : '') + '</section>'
+    + '<span class="small mut">Une semaine compte quand tu fais ton objectif (' + plural(st.goal, 'séance', 'séances') + ', réglable dans les Réglages). Séances, courses et re-tests comptent ; les boss et les pompes du jour non. La semaine en cours ne casse jamais ta flamme avant dimanche soir. Toutes les ' + SHIELD_EVERY + ' semaines réussies, tu gagnes un bouclier (2 au plus). Hauts faits : 4 semaines, puis 12.</span>';
   sheet(h + closeBtn);
 }
 

@@ -1,4 +1,4 @@
-// Quêtes, série de jours (la flamme), hauts faits, titres et couleurs d'emblème.
+// Quêtes, série de semaines (la flamme), hauts faits, titres et couleurs d'emblème.
 // Principe : rien qui se fait tout seul. Les quêtes du jour sont des défis calés sur TES records
 // (assez durs pour demander un effort, jamais impossibles), avec des exercices qui servent vraiment.
 import { EXOS } from './data.js';
@@ -124,47 +124,50 @@ export function dailyQuests() {
   return out;
 }
 
-// ---------- La flamme : jours d'entraînement d'affilée ----------
-// Un jour de repos est permis. En plus, chaque palier de 7 jours donne un bouclier (2 au plus) :
-// un bouclier couvre un jour manqué de plus, et il est utilisé tout seul quand il le faut.
+// ---------- La flamme : semaines d'affilée où l'objectif de la semaine est atteint ----------
+// Une semaine compte quand tu fais ton objectif de séances (réglable). La semaine en cours ne casse rien tant qu'elle n'est pas finie.
+// Toutes les 4 semaines de flamme, un bouclier (2 au plus) : il sauve tout seul une semaine ratée.
 export const SHIELD_MAX = 2;
-function flameDays() {
-  // Les pompes du jour (hors séance) gardent la flamme à partir de 30.
-  return new Set(state.workouts.filter((w) => !w.quick || w.exercises.reduce((n, e) => n + e.sets.reduce((k, s) => k + (s.r || 0), 0), 0) >= 30).map((w) => dayKey(w.start)));
+export const SHIELD_EVERY = 4;
+const monday0 = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
+const addDays = (ms, n) => { const d = new Date(ms); d.setDate(d.getDate() + n); return d.getTime(); };
+function weekCounts() {
+  const c = {};
+  for (const w of state.workouts) if (!w.boss && !w.quick) { const k = monday0(w.start); c[k] = (c[k] || 0) + 1; }
+  return c;
 }
-function simulate(days) {
-  const all = [...days].map((k) => { const [y, m, dd] = k.split('-').map(Number); return new Date(y, m - 1, dd).getTime(); }).sort((a, b) => a - b);
-  let n = 0, sh = 0, best = 0, last = null, saved = 0;
-  for (const t of all) {
-    if (last === null) n = 1;
-    else {
-      const extra = Math.max(0, Math.round((t - last) / DAY) - 2); // jours manqués au-delà du repos permis
-      if (extra <= sh) { sh -= extra; saved += extra; n += 1; } else { n = 1; sh = 0; saved = 0; }
+function simulate(goal) {
+  const c = weekCounts();
+  const keys = Object.keys(c).map(Number).sort((a, b) => a - b);
+  const cur = monday0(Date.now());
+  let n = 0, sh = 0, best = 0, saved = 0;
+  if (keys.length) {
+    for (let m = keys[0]; m < cur; m = addDays(m, 7)) {
+      if ((c[m] || 0) >= goal) { n += 1; if (n % SHIELD_EVERY === 0) sh = Math.min(SHIELD_MAX, sh + 1); }
+      else if (n > 0 && sh > 0) { sh -= 1; saved += 1; }
+      else { n = 0; saved = 0; }
+      best = Math.max(best, n);
     }
-    if (n % 7 === 0) sh = Math.min(SHIELD_MAX, sh + 1);
-    best = Math.max(best, n); last = t;
   }
-  return { n, sh, best, last, saved };
+  return { n, sh, best, saved, cur: c[cur] || 0 };
 }
 export function streak() {
-  const days = flameDays();
-  const r = simulate(days);
+  const goal = state.settings.weekGoal || 4;
+  const r = simulate(goal);
   const t0 = day0(Date.now());
-  const todayDone = r.last === t0;
-  let n = r.n, sh = r.sh, using = 0;
-  if (r.last !== null && !todayDone) {
-    const off = Math.round((t0 - r.last) / DAY) - 1; // jours sans rien avant aujourd'hui
-    using = Math.max(0, off - 1);
-    if (using > sh) { n = 0; sh = 0; using = 0; } else sh -= using;
-  }
-  if (r.last === null) n = 0;
-  const off = r.last === null || todayDone ? 0 : Math.round((t0 - r.last) / DAY) - 1;
-  // En danger : si rien aujourd'hui, demain il manquera un jour de trop.
-  const danger = !todayDone && n > 0 && off >= 1 && sh === 0;
-  const next = 7 - (n % 7); // jours avant le prochain bouclier
-  return { n, todayDone, danger, best: Math.max(n, r.best), shields: sh, using, saved: r.saved, next };
+  const todayDone = state.workouts.some((w) => w.start >= t0 && !w.boss);
+  const weekDone = r.cur >= goal;
+  const left = 7 - ((new Date().getDay() + 6) % 7) - (todayDone ? 1 : 0); // jours encore possibles cette semaine
+  const need = Math.max(0, goal - r.cur);
+  let n = r.n + (weekDone ? 1 : 0);
+  let sh = r.sh;
+  if (weekDone && n % SHIELD_EVERY === 0 && r.n % SHIELD_EVERY !== 0) sh = Math.min(SHIELD_MAX, sh + 1);
+  const lost = !weekDone && need > left; // impossible de finir la semaine
+  const using = lost && n > 0 && sh > 0 ? 1 : 0;
+  const danger = !weekDone && n > 0 && need > 0 && need >= left - 1;
+  return { n, weekDone, todayDone, danger, lost, need, left, cur: r.cur, goal, best: Math.max(n, r.best), shields: sh, using, saved: r.saved, next: SHIELD_EVERY - (n % SHIELD_EVERY) };
 }
-function bestStreak(days) { return simulate(days).best; }
+function bestStreak() { return simulate(state.settings.weekGoal || 4).best; }
 
 // ---------- Hauts faits : défis durs, avec un titre ou une couleur à gagner ----------
 export const SKINS = {
@@ -201,7 +204,7 @@ function allStats() {
   }
   m.dayPush = Math.max(0, ...Object.values(perDay));
   m.rare = Object.values(state.quests || {}).reduce((n, d) => n + Object.keys(d).filter((id) => id.startsWith('x-')).length, 0);
-  m.streak = bestStreak(new Set(state.workouts.map((w) => dayKey(w.start))));
+  m.streak = Math.max(bestStreak(), streak().n);
   return m;
 }
 
@@ -219,8 +222,8 @@ export const FEATS = [
   { id: 'pistol12', group: 'Jambes', label: 'Jambes d’acier', desc: '12 pistols d’affilée par jambe', key: 'pistol', goal: 12, reward: { skin: 'emeraude' } },
   { id: 'run5', group: 'Course', label: 'Rapide', desc: '5 km en moins de 25 min', key: 'fast5', goal: 1, reward: { title: 'Le Rapide' } },
   { id: 'run10', group: 'Course', label: 'Fond', desc: 'Courir 10 km d’une traite', key: 'run10', goal: 1, reward: { title: 'Endurant' } },
-  { id: 'streak7', group: 'Régularité', label: 'Lancé', desc: 'Une flamme de 7 jours', key: 'streak', goal: 7, reward: { title: 'Inarrêtable' } },
-  { id: 'streak30', group: 'Régularité', label: 'Brasier', desc: 'Une flamme de 30 jours', key: 'streak', goal: 30, reward: { skin: 'violet' } },
+  { id: 'streak7', group: 'Régularité', label: 'Lancé', desc: 'Une flamme de 4 semaines', key: 'streak', goal: 4, reward: { title: 'Inarrêtable' } },
+  { id: 'streak30', group: 'Régularité', label: 'Brasier', desc: 'Une flamme de 12 semaines', key: 'streak', goal: 12, reward: { skin: 'violet' } },
   { id: 'cycle', group: 'Régularité', label: 'Discipline', desc: 'Finir un cycle complet du programme', key: 'cycles', goal: 1, reward: { title: 'Discipliné' } },
   { id: 'boss3', group: 'Combat', label: 'Chasseur', desc: 'Battre 3 boss', key: 'boss', goal: 3, reward: { title: 'Chasseur de boss' } },
   { id: 'boss10', group: 'Combat', label: 'Tueur de titans', desc: 'Battre 10 boss', key: 'boss', goal: 10, reward: { title: 'Tueur de titans' } },

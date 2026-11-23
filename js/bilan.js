@@ -31,12 +31,12 @@ export function equiv(kg) {
   for (const [w, one, many] of EQUIV) if (kg >= w) { const n = kg / w; return (n >= 10 ? sp(n) : fr(n, 1)) + ' ' + (n < 2 ? one : many); }
   return sp(kg) + ' kg';
 }
-const tonnes = (kg) => (kg >= 1000 ? fr(kg / 1000, 1) + ' t' : sp(kg) + ' kg');
+export const tonnes = (kg) => (kg >= 1000 ? fr(kg / 1000, 1) + ' t' : sp(kg) + ' kg');
 
 // Tous les records de l'historique, recalculés dans l'ordre : une série qui fait mieux que tout ce qui précède
 // (plus de répétitions ou de secondes avec un lest égal ou plus lourd). Un record par exercice et par séance.
 let recCache = null;
-function allRecords() {
+export function allRecords() {
   if (recCache && recCache.n === state.workouts.length) return recCache.list;
   const seen = {}, list = [];
   const amt = (x) => x.r || x.t || 0;
@@ -58,7 +58,7 @@ function allRecords() {
 }
 
 // Les chiffres d'une liste de séances
-function tally(ws) {
+export function tally(ws) {
   const t = { n: 0, train: 0, boss: 0, runs: 0, min: 0, sets: 0, reps: 0, kg: 0, km: 0, prs: 0, xp: 0, pompes: 0, dips: 0, jambes: 0, days: new Set(), exo: {}, recs: [], best: null };
   const p = bw();
   for (const w of ws) {

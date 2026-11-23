@@ -473,7 +473,7 @@ export function importHevy(text) {
 }
 
 // ---------- Sauvegarde complète ----------
-export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines, prefs: state.prefs, body: state.body, rankSeen: state.rankSeen, feats: state.feats, goals: state.goals, prog: state.prog, rankV: state.rankV, measures: state.measures }); }
+export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines, prefs: state.prefs, body: state.body, rankSeen: state.rankSeen, feats: state.feats, goals: state.goals, prog: state.prog, rankV: state.rankV, measures: state.measures, checkins: state.checkins, pains: state.pains }); }
 export function importJson(text) {
   const data = JSON.parse(text);
   if (!data || data.app !== 'ascension' || !Array.isArray(data.workouts)) throw new Error("Ce fichier n'est pas une sauvegarde de l'app.");
@@ -490,6 +490,7 @@ export function importJson(text) {
   if (Array.isArray(data.goals)) { const ids = new Set((state.goals || []).map((g) => g.id)); state.goals = (state.goals || []).concat(data.goals.filter((g) => !ids.has(g.id))); }
   if (data.prog && (!state.prog || added >= state.workouts.length - added)) state.prog = data.prog;
   if (data.rankV) state.rankV = data.rankV;
+  if (data.checkins && typeof data.checkins === 'object') state.checkins = Object.assign({}, data.checkins, state.checkins);
   if (Array.isArray(data.measures)) { const k = new Set((state.measures || []).map((m) => m.d + m.k)); state.measures = (state.measures || []).concat(data.measures.filter((m) => !k.has(m.d + m.k))); }
   save();
   return { added };

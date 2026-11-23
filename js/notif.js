@@ -36,7 +36,7 @@ export function planItems(withRest) {
   const today = atHour(t0, h);
   if (!st.todayDone && today > now) {
     items.push(st.n
-      ? { at: today, title: 'Ta flamme : ' + st.n + ' jour' + (st.n > 1 ? 's' : ''), body: st.danger ? 'Elle s’éteint ce soir si tu ne t’entraînes pas. ' + name + ' t’attend.' : 'Une séance aujourd’hui pour la faire grandir. ' + name + ' t’attend.', tag: 'day' }
+      ? { at: today, title: 'Ta flamme : ' + st.n + ' semaine' + (st.n > 1 ? 's' : ''), body: st.weekDone ? 'Objectif de la semaine déjà atteint. ' + name + ' en bonus ?' : 'Encore ' + st.need + ' séance' + (st.need > 1 ? 's' : '') + ' cette semaine' + (st.danger ? ', c’est serré' : '') + '. ' + name + ' t’attend.', tag: 'day' }
       : { at: today, title: 'Séance du jour', body: name + ' t’attend. Une séance courte suffit.', tag: 'day' });
   }
   // Les deux jours suivants, au cas où tu n'ouvres pas l'app

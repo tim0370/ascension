@@ -3,6 +3,7 @@
 import { EXOS, FICHES, WARMUP, GROUPES, AKA } from './data.js';
 import { figure } from './anim.js';
 import { progCard, progDone, progPlan, progOn } from './programme.js';
+import { predictions, whenTxt } from './forme.js';
 import { camOk } from './camera.js';
 import { dailyQuests, feats } from './quetes.js';
 import { beep, wakeAudio } from './sound.js';
@@ -558,7 +559,10 @@ function potential(name, list) {
     const max1 = Math.max(0, Math.round((L - bw * share) * 2) / 2);
     h += '<div class="exo grow"><span class="label">Ton potentiel</span><span class="num violet-text" style="font-size:22px">' + (r2 >= 1 ? r2 + ' rép.' : String(max1).replace('.', ',') + ' kg') + '</span><span class="small mut">' + (r2 >= 1 ? 'estimé avec ' + String(w2).replace('.', ',') + ' kg de lest' : 'de lest pour une seule répétition') + '</span></div>';
   }
-  return h + '</div>';
+  h += '</div>';
+  const pr = predictions(name)[0];
+  if (pr) h += '<div class="exo"><span class="label" style="color:var(--gold)">Prochain record prévu</span><span class="num gold-text" style="font-size:20px">' + esc(pr.text) + '</span><span class="small mut">' + esc(whenTxt(pr)) + ', d’après la courbe de tes ' + pr.n + ' dernières séances.</span></div>';
+  return h;
 }
 
 // Voix du coach (réglage « Voix du coach ») : annonce la série suivante à la fin du repos.
@@ -792,7 +796,7 @@ Object.assign(ACTIONS, {
   'prog-start': (el) => {
     if (state.active) { toast('Une séance est déjà en cours'); return; }
     startPlan(progPlan(el.dataset.type, el.dataset.mode || ''));
-    ui.progMode = '';
+    ui.progMode = null;
   },
   routine: (el) => sheetRoutine(el.dataset.id),
   routines: () => sheetRoutines(),

@@ -82,7 +82,7 @@ function sheetQuick() {
       + sets.slice().reverse().map((s) => '<div class="row between" style="padding:10px 0;border-bottom:1px solid var(--line)"><span style="font-weight:600">' + s.r + ' pompes' + (s.pr ? ' <span class="gold-text small">· record</span>' : '') + '</span><span class="small mut">' + new Date(s.at || w.start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + '</span></div>').join('')
       + '</section><button type="button" class="pill glass wide" data-act="quick-undo" style="color:var(--mut)">Annuler la dernière série</button>';
   }
-  h += '<span class="small mut">Ces séries comptent pour les quêtes, les hauts faits (100 puis 200 pompes dans la journée), tes records et la carte du corps. Elles gardent ta flamme à partir de ' + QUICK_MIN + ' pompes, mais ne comptent pas comme une séance de la semaine.</span>';
+  h += '<span class="small mut">Ces séries comptent pour les quêtes, les hauts faits (100 puis 200 pompes dans la journée), tes records et la carte du corps. Elles ne comptent pas comme une séance de la semaine (ni pour la flamme).</span>';
   sheet(h + '<button type="button" class="pill gold-btn wide" data-act="close">Fermer</button>');
 }
 

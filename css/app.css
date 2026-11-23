@@ -130,7 +130,7 @@ a { color: var(--gold); }
 .pill {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 48px; padding: 0 20px; border-radius: 999px;
-  font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap;
+  font-size: 15px; font-weight: 600; text-decoration: none; white-space: normal; text-align: center; line-height: 1.15; min-width: 0;
   transition: transform 0.12s var(--ease);
 }
 .pill.sm { min-height: 44px; padding: 0 16px; font-size: 13px; }
@@ -306,7 +306,7 @@ button.chip { height: 44px; min-width: 56px; font-size: 15px; }
 @keyframes fade { from { opacity: 0; } }
 @keyframes slideup { from { transform: translateY(60px); opacity: 0; } }
 
-.toast { position: fixed; z-index: 20; left: 50%; top: calc(env(safe-area-inset-top) + 16px); transform: translateX(-50%); padding: 12px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; white-space: nowrap; animation: drop 0.35s var(--ease); }
+.toast { position: fixed; z-index: 20; left: 50%; top: calc(env(safe-area-inset-top) + 16px); transform: translateX(-50%); padding: 12px 18px; font-size: 14px; font-weight: 600; white-space: normal; text-align: center; line-height: 1.3; width: max-content; max-width: calc(100vw - 32px); border-radius: 22px; animation: drop 0.35s var(--ease); }
 .toast.gold { border-color: #CDAA62; color: var(--gold); box-shadow: 0 0 30px rgba(205, 170, 98, 0.35); }
 @keyframes drop { from { transform: translate(-50%, -30px); opacity: 0; } }
 .burst { position: fixed; left: 50%; top: 36%; z-index: 30; pointer-events: none; }
@@ -684,3 +684,38 @@ select.textin option { background: #1A1530; color: #fff; }
 .hint { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: rgb(132 104 232 / 0.12); border: 1px solid rgb(132 104 232 / 0.35); color: var(--soft); }
 .hint .small { flex: 1; line-height: 1.4; }
 .hint .pill { flex: none; }
+
+/* v45 : forme du jour, bilan du matin, charge, plan de la semaine */
+.fring { position: relative; flex: none; display: flex; align-items: center; justify-content: center; }
+.fring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fring .num { position: relative; font-weight: 700; }
+.ciopt { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 0 18px; border-radius: 18px; color: var(--txt); font: inherit; font-size: 16px; font-weight: 600; text-align: left; border: 1px solid var(--line); cursor: pointer; transition: transform 0.15s var(--ease), background 0.15s; }
+.ciopt:active { transform: scale(0.98); background: rgba(139, 108, 246, 0.2); }
+.cidot { flex: none; width: 12px; height: 12px; border-radius: 999px; }
+.cidot.c1 { background: #FF5A6E; } .cidot.c2 { background: #FF8A4C; } .cidot.c3 { background: #FFB03B; } .cidot.c4 { background: #9ADB6A; } .cidot.c5 { background: #3FD69B; }
+.lbars { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; height: 92px; align-items: end; }
+.lb { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; }
+.lb i { display: block; width: 100%; border-radius: 6px 6px 3px 3px; background: rgba(139, 108, 246, 0.38); }
+.lb span { font-size: 10px; color: var(--dim); }
+.chips2 { display: flex; flex-wrap: wrap; gap: 8px; }
+.modes4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.modes4 .pill { padding-left: 4px; padding-right: 4px; min-width: 0; }
+button.ready { border: 0; font-family: inherit; cursor: pointer; max-width: 100%; text-align: left; line-height: 1.3; }
+.ready.ok i { background: #3AD68C; box-shadow: 0 0 8px #3AD68C; }
+.day .kd { display: block; width: 8px; height: 8px; border-radius: 999px; background: var(--violet); }
+.day .kd.run { background: var(--flamme); }
+.day.k-seance .dot, .day.k-course .dot { border-style: dashed; border-color: rgba(194, 179, 255, 0.45); }
+.day.k-course .dot { border-color: rgba(255, 154, 61, 0.55); }
+.kdot { flex: none; width: 10px; height: 10px; border-radius: 999px; border: 2px solid rgba(255, 255, 255, 0.2); }
+.kdot.done { background: var(--violet); border-color: var(--violet); }
+.kdot.seance { border-color: var(--violet); }
+.kdot.course { border-color: var(--flamme); }
+
+/* Petits écrans (iPhone SE, mode zoom) : rien ne doit sortir de l'écran. */
+h1, .h1, .h2, .big, .small, .label { overflow-wrap: break-word; }
+@media (max-width: 359px) {
+  .pill { padding: 0 12px; font-size: 14px; }
+  .pill.sm { padding: 0 10px; font-size: 12.5px; }
+  .modes4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .seg2 button { padding: 6px 6px; font-size: 11.5px; }
+}

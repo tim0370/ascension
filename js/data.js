@@ -905,6 +905,19 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 45, items: [
+    'Ta forme du jour : un bilan du matin en 4 touches (sommeil, courbatures, énergie, stress), mélangé à la fatigue de tes muscles et à ta charge. Chaque point du score est expliqué',
+    'Séance adaptée à ta forme : forme basse, l’app l’allège toute seule ; forme au top, c’est un jour de record',
+    'Le programme est repensé pour être fort partout : chaque séance commence par une figure (équilibre, L-sit, corbeau), puis force, explosivité, muscle et gainage',
+    'Séance « point faible » une fois par semaine, sur ta qualité la plus basse',
+    'Plan de la semaine : tes 7 jours remplis, refaits tout seuls si tu rates un jour',
+    'La flamme compte maintenant en semaines : une semaine compte quand ton objectif est atteint',
+    'Charge d’entraînement sur 8 semaines, avec une semaine légère conseillée quand il faut',
+    'Bilan du lundi, records prévus (« 18 pompes vers le 2 décembre ») et équivalents parlants',
+    'Ce qui te réussit : l’heure, le repos et le sommeil qui te rendent plus fort',
+    'Signaler une douleur : tes séances évitent la zone pendant 7 jours',
+    'Un coach bien plus complet : forme, motivation, sommeil, point faible, muscle, records',
+  ] },
   { v: 44, items: [
     'Boxe au sac de frappe et shadow boxing (en durée, comme la course)',
     'Nouvelle famille Étirements : ischios, quadriceps, mollets, pectoraux, épaules, pigeon, psoas, papillon, chat-vache, cobra, posture de l’enfant, chien tête en bas et d’autres',
