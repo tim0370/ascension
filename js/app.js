@@ -18,6 +18,7 @@ import { monthBanner } from './bilan.js';
 import { quickCard } from './jour.js';
 import './chrono.js';
 import './retour.js';
+import { coachCard } from './coach.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync } from './notif.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
@@ -82,6 +83,7 @@ function viewHome() {
   } else {
     const doneToday = state.workouts.find((w) => w.start >= t0 && !w.boss && !w.quick && w.exercises.some((e) => e.name !== 'Running'));
     h += progCard(true, !!doneToday);
+    if (has) h += coachCard();
   }
 
   if (has) {

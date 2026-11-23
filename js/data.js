@@ -416,6 +416,10 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 26, items: [
+    'Coach : il lit tout ton historique et te dit quoi faire (récupération, stagnation, progrès, semaine, course, rang). Sur l’accueil, et tu peux lui poser des questions : que faire aujourd’hui, 15 minutes seulement, fatigué, pourquoi je stagne, j’ai mal, quoi manger',
+    'Tout se calcule dans ton téléphone, sans internet',
+  ] },
   { v: 25, items: [
     'Boucliers de flamme : tous les 7 jours de flamme, tu gagnes un bouclier (2 au plus). Il protège tout seul ta flamme un jour manqué de plus',
   ] },

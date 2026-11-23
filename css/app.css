@@ -557,3 +557,25 @@ select.textin option { background: #1A1530; color: #fff; }
 /* Retour au calme et échauffement : grande silhouette */
 .cdfig { border-radius: 26px; overflow: hidden; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); }
 .cdfig .fig { width: 100%; height: auto; display: block; }
+
+/* Coach */
+.coachcard { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+.coachav { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 14px; background: linear-gradient(160deg, #9C84FF, #5B3FC4); color: #fff; box-shadow: 0 0 18px rgba(132, 104, 232, 0.4); }
+.coachav svg { width: 20px; height: 20px; }
+.coachav.big { width: 54px; height: 54px; border-radius: 18px; }
+.coachav.big svg { width: 26px; height: 26px; }
+.tip { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); }
+.tip > i { flex: none; width: 8px; align-self: stretch; border-radius: 4px; background: #8468E8; }
+.tip.good > i { background: #4CC59A; }
+.tip.warn > i { background: #FF9A3D; }
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.chat:empty { display: none; }
+.cb { align-self: flex-start; max-width: 92%; padding: 12px 14px; border-radius: 18px 18px 18px 6px; background: rgba(132, 104, 232, 0.14); border: 1px solid rgba(132, 104, 232, 0.3); font-size: 15px; line-height: 1.45; animation: cbIn 0.25s ease-out; }
+.cb p { margin: 0 0 6px; } .cb p:last-of-type { margin-bottom: 0; }
+.cb.me { align-self: flex-end; border-radius: 18px 18px 6px 18px; background: rgba(255, 255, 255, 0.08); border-color: var(--line); font-weight: 600; }
+.cb.typing { display: flex; gap: 5px; padding: 14px 16px; }
+.cb.typing i { width: 7px; height: 7px; border-radius: 50%; background: #B6A4FF; animation: dots 1s infinite ease-in-out; }
+.cb.typing i:nth-child(2) { animation-delay: 0.15s; } .cb.typing i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes dots { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+@keyframes cbIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.row.wrap { flex-wrap: wrap; }
