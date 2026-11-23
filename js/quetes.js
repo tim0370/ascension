@@ -3,6 +3,7 @@
 // (assez durs pour demander un effort, jamais impossibles), avec des exercices qui servent vraiment.
 import { EXOS } from './data.js';
 import { state, save, isRecord } from './store.js';
+import { seasonUnlocks } from './saison.js';
 
 const DAY = 864e5;
 const day0 = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
@@ -173,6 +174,7 @@ export const SKINS = {
   rubis: { name: 'Rubis', a: '#FFD0D4', b: '#E0566A', c: '#8A1F33' },
   emeraude: { name: 'Émeraude', a: '#CFF5E4', b: '#4CC59A', c: '#1C6E52' },
   obsidienne: { name: 'Obsidienne', a: '#E8E6F0', b: '#6D6880', c: '#25222F' },
+  aurore: { name: 'Aurore', a: '#FFE3F1', b: '#C77DFF', c: '#4B2C9E' },
 };
 
 function allStats() {
@@ -242,7 +244,7 @@ export function feats() {
 }
 export function featXp() { return Object.keys(state.feats || {}).length * 100; }
 
-export function titles() { return ['Aucun'].concat(FEATS.filter((f) => f.reward.title && (state.feats || {})[f.id]).map((f) => f.reward.title)); }
-export function skins() { return ['or'].concat(FEATS.filter((f) => f.reward.skin && (state.feats || {})[f.id]).map((f) => f.reward.skin)); }
+export function titles() { return ['Aucun'].concat(FEATS.filter((f) => f.reward.title && (state.feats || {})[f.id]).map((f) => f.reward.title), seasonUnlocks().titles); }
+export function skins() { return ['or'].concat(FEATS.filter((f) => f.reward.skin && (state.feats || {})[f.id]).map((f) => f.reward.skin), seasonUnlocks().skins); }
 export function skin() { const s = state.settings.skin; return SKINS[s] && skins().includes(s) ? SKINS[s] : SKINS.or; }
 export function myTitle() { const t = state.settings.title; return t && titles().includes(t) && t !== 'Aucun' ? t : ''; }

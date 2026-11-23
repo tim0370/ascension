@@ -19,6 +19,7 @@ import { quickCard } from './jour.js';
 import './chrono.js';
 import './retour.js';
 import { coachCard } from './coach.js';
+import { seasonCard, celebrateSeason, sheetSeason } from './saison.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync } from './notif.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
@@ -102,6 +103,7 @@ function viewHome() {
       + '</section></div>';
   }
 
+  if (has) { h += seasonCard(); celebrateSeason(); }
   if (has) h += quickCard();
 
   if (quests.length) {
@@ -228,7 +230,7 @@ function sheetProfile() {
   let h = '<div class="col center" style="gap:8px">' + rankSvg(info.rank.letter, false, null, 'emblem-sm') + '<h1 class="h1">Mon profil</h1><span class="small mut">' + (myTitle() ? esc(myTitle()) : 'Pas de titre') + ' · rang ' + info.rank.letter + '</span></div>'
     + '<span class="label">Couleur de l’emblème</span><div class="skins">'
     + Object.keys(SKINS).map((k) => { const on = ks.includes(k); return '<button type="button" class="skin' + (k === ck ? ' on' : '') + (on ? '' : ' lock') + '" data-act="' + (on ? 'set-skin' : 'feats') + '" data-k="' + k + '">' + rankSvg(info.rank.letter, false, SKINS[k], 'x') + esc(SKINS[k].name) + '</button>'; }).join('')
-    + '</div><span class="small mut">Les couleurs grisées se gagnent avec les hauts faits.</span>'
+    + '</div><span class="small mut">Les couleurs grisées se gagnent avec les hauts faits et la saison (palier 15).</span>'
     + '<span class="label">Titre</span><div class="row" style="flex-wrap:wrap;gap:8px">'
     + ts.map((t) => '<button type="button" class="pill sm ' + (t === cur ? 'gold-btn' : 'glass') + '" data-act="set-title" data-t="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>'
     + (ts.length < 2 ? '<span class="small mut">Pas encore de titre : réussis un haut fait pour en gagner un.</span>' : '');
@@ -361,10 +363,18 @@ function sheetSettings() {
 }
 
 // Liste des nouveautés de la version : montrée une fois après chaque mise à jour, et depuis les réglages.
-function sheetNews() {
-  const n = NEWS[0];
-  sheet('<div class="col"><span class="label violet">Version ' + n.v + '</span><h1 class="h1">Nouveautés</h1></div><div class="list">'
-    + n.items.map((t) => '<div class="item"><span class="qmark done"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#D8BD82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="grow">' + esc(t) + '</span></div>').join('') + '</div>' + closeBtn);
+// Les nouveautés depuis la dernière version vue (toutes, si plusieurs mises à jour d'un coup).
+function sheetNews(from) {
+  const list = NEWS.filter((n) => typeof from === 'number' && n.v > from);
+  const show = list.length ? list : [NEWS[0]];
+  const check = '<span class="qmark done"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke="#D8BD82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+  const n = show.reduce((k, x) => k + x.items.length, 0);
+  let h = '<div class="col"><span class="label violet">' + (show.length > 1 ? 'Versions ' + show[show.length - 1].v + ' à ' + show[0].v + ' · ' + n + ' nouveautés' : 'Version ' + show[0].v) + '</span><h1 class="h1">' + (show.length > 2 ? 'Grosse mise à jour' : 'Nouveautés') + '</h1></div>';
+  for (const x of show) {
+    if (show.length > 1) h += '<span class="label">Version ' + x.v + '</span>';
+    h += '<div class="list">' + x.items.map((t) => '<div class="item">' + check + '<span class="grow">' + esc(t) + '</span></div>').join('') + '</div>';
+  }
+  sheet(h + closeBtn, 1, show.length > 2 ? 'full' : '');
 }
 
 function pickFile(accept, onText) {
@@ -428,6 +438,7 @@ Object.assign(ACTIONS, {
     });
   },
   news: () => sheetNews(),
+  season: () => sheetSeason(),
   update: async () => {
     if (!('serviceWorker' in navigator) || local) { toast('Mise à jour indisponible ici'); return; }
     toast('Recherche d’une mise à jour…');
@@ -471,8 +482,9 @@ export function render() {
   // Après une mise à jour, on montre une fois ce qui a changé.
   if (ui.tab === 'home' && state.seenVersion !== VERSION && !$('sheet').firstElementChild && !state.active) {
     const first = state.seenVersion === undefined && !state.workouts.length;
+    const from = state.seenVersion;
     state.seenVersion = VERSION; save();
-    if (!first) sheetNews();
+    if (!first) sheetNews(from);
   }
 }
 

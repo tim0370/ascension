@@ -92,6 +92,7 @@ export function insights() {
   // Équilibre
   const b = balance();
   const up = b.push + b.pull, low = b.legs;
+  if (b.push > 30 && b.pull * 3 < b.push) out.push({ tone: 'warn', title: 'Dos en retard', text: 'Sur 4 semaines : ' + b.push + ' séries de poussée pour ' + b.pull + ' de tirage. Le rowing protège tes épaules : ne saute pas « Dips et dos », et ajoute une série de rowing à l’élastique quand tu peux.' });
   if (up > 30 && low * 3 < up) out.push({ tone: 'warn', title: 'Jambes en retard', text: 'Sur 4 semaines : ' + up + ' séries pour le haut du corps, ' + low + ' pour les jambes. Ne saute pas « Jambes et abdos ».' });
 
   // Course
