@@ -40,8 +40,8 @@ export const EXOS = {
   'Wall Handstand Push Up Negative': { fr: 'Descente lente en équilibre', kind: 'reps', g: 'epaules' },
   'Wall Handstand Push Up': { fr: 'Pompes en équilibre contre le mur', kind: 'reps', g: 'epaules' },
   'Planche Lean': { fr: 'Planche lean', kind: 'time', g: 'epaules' },
-  'Overhead Press (Dumbbell)': { fr: 'Développé militaire haltères', kind: 'weight', g: 'epaules' },
-  'Seated Overhead Press (Dumbbell)': { fr: 'Développé épaules haltères', kind: 'weight', g: 'epaules' },
+  'Overhead Press (Dumbbell)': { fr: 'Développé militaire debout', kind: 'weight', g: 'epaules' },
+  'Seated Overhead Press (Dumbbell)': { fr: 'Développé militaire haltères', kind: 'weight', g: 'epaules' },
   'Arnold Press (Dumbbell)': { fr: 'Développé Arnold', kind: 'weight', g: 'epaules' },
   'Lateral Raise (Dumbbell)': { fr: 'Élévations latérales', kind: 'weight', g: 'epaules' },
   'Front Raise (Dumbbell)': { fr: 'Élévations frontales', kind: 'weight', g: 'epaules' },
@@ -149,8 +149,8 @@ export const AKA = {
   'Wall Walk': ['Marche au mur', 'Wall walks'],
   'Handstand Hold': ['Équilibre', 'Handstand', 'Poirier', 'Équilibre contre le mur', 'Wall Handstand Hold'],
   'Wall Handstand Push Up': ['Pompe en équilibre', 'Handstand Push Up', 'HSPU', 'Pompes en poirier'],
-  'Overhead Press (Dumbbell)': ['Développé militaire', 'Développé militaire (haltère)', 'Développé militaire haltère', 'Développé militaire debout', 'Développé épaules debout', 'Shoulder Press (Dumbbell)', 'Standing Overhead Press (Dumbbell)', 'Military Press (Dumbbell)', 'Dumbbell Shoulder Press'],
-  'Seated Overhead Press (Dumbbell)': ['Développé épaules assis', 'Développé militaire assis', 'Développé assis (haltère)', 'Seated Shoulder Press (Dumbbell)'],
+  'Overhead Press (Dumbbell)': ['Développé militaire debout (haltère)', 'Développé épaules debout', 'Standing Overhead Press (Dumbbell)', 'Standing Shoulder Press (Dumbbell)', 'Push press (haltère)'],
+  'Seated Overhead Press (Dumbbell)': ['Développé militaire', 'Développé militaire (haltère)', 'Développé militaire assis', 'Développé militaire assis (haltère)', 'Développé épaules haltères', 'Développé épaules assis', 'Développé assis (haltère)', 'Seated Shoulder Press (Dumbbell)', 'Shoulder Press (Dumbbell)', 'Military Press (Dumbbell)', 'Dumbbell Shoulder Press'],
   'Arnold Press (Dumbbell)': ['Développé Arnold (haltère)', 'Arnold press'],
   'Lateral Raise (Dumbbell)': ['Élévation latérale', 'Élévation latérale (haltère)', 'Élévations latérales haltères', 'Side Lateral Raise'],
   'Front Raise (Dumbbell)': ['Élévation frontale', 'Élévation frontale (haltère)'],
@@ -517,6 +517,9 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 42, items: [
+    'Le développé militaire est maintenant la version assise (comme tu le fais). Tes séances ont été remises dessus. La version debout s’appelle « Développé militaire debout »',
+  ] },
   { v: 41, items: [
     'Nouvel exercice : développé militaire haltères (debout), avec sa fiche et son personnage',
     'Les autres noms d’un exercice sont reconnus : « Pompe en pique », « Développé militaire (haltère) », « Flexion latérale du cou »… Tes séances Hevy avec ces noms sont reliées toutes seules, et la recherche les trouve aussi',

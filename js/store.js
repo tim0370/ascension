@@ -85,6 +85,23 @@ function migrate() {
     for (const [a, b] of Object.entries(moved)) if (prefs[a]) { prefs[b] = Object.assign({}, prefs[a], prefs[b] || {}); delete prefs[a]; }
     state.v = 5; fixed = true;
   }
+  if ((state.v || 0) < 6) {
+    // v42 : son développé militaire se fait ASSIS. La v41 l'avait relié à la version debout : on le remet.
+    const A = 'Overhead Press (Dumbbell)', B = 'Seated Overhead Press (Dumbbell)';
+    const move = (o) => {
+      if (!o || !Array.isArray(o.exercises)) return;
+      const src = o.exercises.find((e) => e.name === A);
+      if (!src) return;
+      const dst = o.exercises.find((e) => e.name === B);
+      if (dst) { dst.sets.push(...src.sets); o.exercises.splice(o.exercises.indexOf(src), 1); } else src.name = B;
+    };
+    for (const w of state.workouts) move(w);
+    for (const r of state.routines || []) move(r);
+    move(state.active);
+    const prefs = state.prefs || {};
+    if (prefs[A]) { prefs[B] = Object.assign({}, prefs[A], prefs[B] || {}); delete prefs[A]; }
+    state.v = 6; fixed = true;
+  }
   if (fixed) save();
 }
 
