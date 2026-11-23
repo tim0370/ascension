@@ -71,7 +71,7 @@ export function insights() {
   if (doneToday) out.push({ tone: 'good', title: 'Séance faite', text: 'C’est fait pour aujourd’hui. Mange des protéines, bois, et dors au moins 8 heures : c’est là que le muscle se construit.' });
   else if (rd.pct < 65) out.push({ tone: 'warn', title: 'Corps encore fatigué', text: 'Prêt à ' + rd.pct + ' % pour « ' + (TYPES[type] ? TYPES[type].label : 'le re-test') + ' »' + (rd.tired.length ? ' (' + rd.tired.slice(0, 2).join(', ') + ')' : '') + '. Fais la version courte, ou une course facile à la place.', act: 'today' });
   else if (since >= 3) out.push({ tone: 'warn', title: plural(since, 'jour', 'jours') + ' sans séance', text: 'Pas besoin d’une grosse séance pour repartir : la version courte suffit aujourd’hui.', act: 'today' });
-  else out.push({ tone: 'good', title: 'Prêt à ' + rd.pct + ' %', text: 'Ton corps est récupéré : c’est le bon jour pour « ' + (TYPES[type] ? TYPES[type].label : 'le re-test') + ' » en entier.', act: 'today' });
+  else out.push({ ready: true, tone: 'good', title: 'Prêt à ' + rd.pct + ' %', text: 'Ton corps est récupéré : c’est le bon jour pour « ' + (TYPES[type] ? TYPES[type].label : 'le re-test') + ' » en entier.', act: 'today' });
 
   if (st.danger) out.push({ tone: 'warn', title: 'Flamme en danger', text: 'Ta flamme de ' + plural(st.n, 'jour', 'jours') + ' s’éteint ce soir sans entraînement. 30 pompes du jour suffisent à la garder.', act: 'quick' });
 
@@ -121,7 +121,8 @@ export function insights() {
 
 // La phrase du jour sur l'accueil
 export function coachCard() {
-  const i = insights()[0];
+  const L = insights();
+  const i = L.find((x) => !x.ready) || L[0]; // « prêt à X % » est déjà sur la carte du programme
   return '<section class="glass card coachcard tap" role="button" tabindex="0" data-act="coach"><span class="coachav">' + ICON.bolt + '</span><div class="col grow" style="gap:3px;min-width:0"><span class="label violet">Coach · ' + esc(i.title) + '</span><span class="small" style="color:var(--soft)">' + esc(i.text) + '</span></div>' + ICON.chev + '</section>';
 }
 

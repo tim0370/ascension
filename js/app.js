@@ -24,6 +24,7 @@ import { seasonCard, celebrateSeason, sheetSeason } from './saison.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync } from './notif.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
+import { routeSvg } from './course.js';
 
 const DAY = 864e5;
 const local = ['localhost', '127.0.0.1'].includes(location.hostname); // tests sur le PC
@@ -310,6 +311,7 @@ export function sheetDetail(id) {
     + '<span class="small mut">' + esc(summary(w)) + ' · <span class="gold-text" style="font-weight:600">+' + xpOf(w) + ' XP</span>' + (w.prs ? ' · ' + plural(w.prs, 'record', 'records') : '') + '</span></div>'
     + '<div class="list">' + w.exercises.map((e) => '<button type="button" class="item" data-act="exo" data-name="' + esc(e.name) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(e.name)) + (e.sets.some((x) => x.pr) ? ' <span class="gold-text small">· record</span>' : '') + '</span><span class="small mut">'
       + esc(e.name === 'Running' ? e.sets.map((s) => setText(s) + ' · ' + pace(s.d, s.t)).join(', ') : e.sets.map(setText).join(', ')) + '</span>' + (e.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(e.note) + '</span>' : '') + '</div>' + ICON.chev + '</button>').join('') + '</div>'
+    + (w.path && w.path.length > 1 ? '<section class="glass card col" style="gap:8px"><span class="label violet">Ton tracé</span>' + routeSvg(w.path) + '<span class="small dim">Départ en vert, arrivée en or. Le tracé reste dans ton téléphone.</span></section>' : '')
     + (w.splits && w.splits.length ? '<section class="glass card col" style="gap:6px"><span class="label violet">Temps par kilomètre (GPS)</span>' + w.splits.map((x, i) => { const b = Math.min(...w.splits); return '<div class="row between small"><span class="mut">Km ' + (i + 1) + '</span><span class="num"' + (x === b && w.splits.length > 1 ? ' style="color:var(--vert)"' : '') + '>' + Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0') + '</span></div>'; }).join('') + '</section>' : '')
     + '<div class="col" style="gap:8px"><span class="label">Ressenti</span><div class="row" id="feel-row">' + feelPills(w) + '</div></div>'
     + '<div class="row"><button type="button" class="pill glass grow" data-act="share" data-id="' + esc(w.id) + '">Partager en image</button>'

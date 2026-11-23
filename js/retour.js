@@ -13,6 +13,7 @@ export const STRETCHES = [
 ];
 
 let cd = null;
+let lock = null;
 function say(t) { try { const u = new SpeechSynthesisUtterance(t); u.lang = 'fr-FR'; u.rate = 1; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); } catch (e) { /* pas de voix */ } }
 
 export function startCooldown() {
@@ -20,10 +21,11 @@ export function startCooldown() {
   cd = { i: 0, end: Date.now() + STRETCHES[0].secs * 1000, half: false, paused: 0 };
   say(STRETCHES[0].name + '. ' + STRETCHES[0].tip);
   cd.timer = setInterval(tick, 250);
+  try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then((l) => { lock = l; }).catch(() => {}); } catch (e) { /* rien */ }
   draw();
 }
 
-function stop() { if (cd) { clearInterval(cd.timer); cd = null; } }
+function stop() { if (cd) { clearInterval(cd.timer); cd = null; } try { if (lock) lock.release(); } catch (e) { /* rien */ } lock = null; }
 
 function tick() {
   if (!cd || cd.paused) return;

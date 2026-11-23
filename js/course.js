@@ -73,7 +73,7 @@ export function sheetGps() {
 // ---------- Pendant la course ----------
 function start() {
   if (!navigator.geolocation) { toast('Ce téléphone ne donne pas le GPS à l’app'); return; }
-  live = { started: Date.now(), paused: 0, pauseAt: 0, d: 0, last: null, win: [], splits: [], hare: ui.hare, goal: ui.runGoal || 0, voice: state.settings.runVoice !== false, acc: null, ahead: null, aheadAt: 0, done: false };
+  live = { started: Date.now(), paused: 0, pauseAt: 0, d: 0, last: null, win: [], splits: [], path: [], hare: ui.hare, goal: ui.runGoal || 0, voice: state.settings.runVoice !== false, acc: null, ahead: null, aheadAt: 0, done: false };
   state.settings.harePace = ui.hare; state.settings.runGoal = ui.runGoal; save();
   // La voix doit être lancée pendant le toucher pour être autorisée sur iPhone.
   say('C’est parti. Le lièvre court à ' + spokenTime(live.hare) + ' au kilomètre.');
@@ -107,6 +107,9 @@ export function onPos(p) {
     if (km > Math.floor(before / 1000)) kmDone(km);
   }
   live.last = pt;
+  // Le tracé : un point tous les 15 m environ (gardé seulement dans ton téléphone).
+  const lp = live.path[live.path.length - 1];
+  if (!lp || haversine({ lat: lp[0], lon: lp[1] }, pt) >= 15) live.path.push([Math.round(pt.lat * 1e5) / 1e5, Math.round(pt.lon * 1e5) / 1e5]);
   const t = elapsed();
   live.win.push([t, live.d]);
   while (live.win.length > 2 && t - live.win[0][0] > 30) live.win.shift();
@@ -200,6 +203,7 @@ function stop(saveIt) {
     const now = Date.now();
     const w = { id: 'r' + now, title: 'Course', start: live.started, end: now, gps: true, exercises: [{ name: 'Running', sets: [{ d, t, done: true }] }] };
     if (live.splits.length) w.splits = live.splits.map((x) => Math.round(x));
+    if (live.path.length >= 2) { const P = live.path, k = Math.ceil(P.length / 600); w.path = P.filter((_, i) => i % k === 0 || i === P.length - 1); }
     state.workouts.push(w);
     save();
     say('Course terminée. ' + fr(d) + ' kilomètres en ' + spokenTime(t) + '.');
@@ -234,3 +238,22 @@ Object.assign(ACTIONS, {
     if (confirm('Terminer et enregistrer la course ?')) stop(true);
   },
 });
+
+// Dessin du tracé d'une course (sans carte : juste ta ligne, départ en vert, arrivée en or).
+export function routeSvg(path) {
+  if (!path || path.length < 2) return '';
+  const lat0 = path[0][0] * Math.PI / 180, k = Math.cos(lat0);
+  const pts = path.map(([la, lo]) => [lo * k, -la]);
+  const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const W = 320, H = 220, pad = 16;
+  const sc = Math.min((W - 2 * pad) / Math.max(1e-9, maxX - minX), (H - 2 * pad) / Math.max(1e-9, maxY - minY));
+  const ox = (W - (maxX - minX) * sc) / 2, oy = (H - (maxY - minY) * sc) / 2;
+  const P = pts.map(([x, y]) => [(ox + (x - minX) * sc).toFixed(1), (oy + (y - minY) * sc).toFixed(1)]);
+  const line = P.map((p) => p.join(',')).join(' ');
+  const a = P[0], b = P[P.length - 1];
+  return '<svg class="route" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Tracé de la course"><defs><filter id="rglow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3"/></filter></defs>'
+    + '<polyline points="' + line + '" fill="none" stroke="#8468E8" stroke-opacity="0.55" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" filter="url(#rglow)"/>'
+    + '<polyline points="' + line + '" fill="none" stroke="#C9BBFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" pathLength="100" class="rline"/>'
+    + '<circle cx="' + a[0] + '" cy="' + a[1] + '" r="6" fill="#4CC59A" stroke="#0D0A18" stroke-width="2"/><circle cx="' + b[0] + '" cy="' + b[1] + '" r="6" fill="#D8BD82" stroke="#0D0A18" stroke-width="2"/></svg>';
+}

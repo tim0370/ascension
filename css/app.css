@@ -628,3 +628,8 @@ select.textin option { background: #1A1530; color: #fff; }
 .switch i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform 0.2s; }
 .switch.on { background: #8468E8; }
 .switch.on i { transform: translateX(20px); }
+
+/* Tracé de course */
+.route { width: 100%; height: auto; border-radius: 16px; background: radial-gradient(circle at 50% 40%, rgba(132, 104, 232, 0.12), transparent 70%), rgba(255, 255, 255, 0.03); }
+.route .rline { stroke-dasharray: 100; stroke-dashoffset: 100; animation: rdraw 1.6s ease-out 0.2s forwards; }
+@keyframes rdraw { to { stroke-dashoffset: 0; } }

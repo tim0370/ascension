@@ -416,6 +416,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 32, items: [
+    'Course GPS : ton tracé est enregistré et dessiné dans le détail de la course (départ en vert, arrivée en or). Il reste dans ton téléphone',
+    'L’écran reste allumé pendant le retour au calme',
+    'Le coach de l’accueil montre son conseil le plus utile au lieu de répéter « prêt à X % »',
+  ] },
   { v: 31, items: [
     'Voix du coach (Réglages, partie Son) : à la fin de chaque repos, elle annonce l’exercice, la série et ton objectif, et fête tes records',
     'Personnaliser l’accueil (bouton en bas de l’accueil) : choisis les cartes que tu veux voir',
