@@ -1,6 +1,6 @@
 // Tout ce qui concerne une séance : routines, échauffement, vue d'ensemble, exercice en grand,
 // repos, choix et fiche d'un exercice, modification d'une routine ou d'une séance passée, bilan de fin.
-import { EXOS, FICHES, WARMUP, GROUPES } from './data.js';
+import { EXOS, FICHES, WARMUP, GROUPES, AKA } from './data.js';
 import { figure } from './anim.js';
 import { progCard, progDone, progPlan } from './programme.js';
 import { camOk } from './camera.js';
@@ -304,6 +304,7 @@ export function sheetExo(name) {
   h += figure(name, 'big');
   if (f) {
     h += '<div class="exo"><span class="label">Muscles</span><span style="color:var(--soft)">' + esc(f.muscles) + '</span></div>';
+    if (AKA[name] && AKA[name].length) h += '<div class="exo"><span class="label">Aussi appelé</span><span class="small mut">' + esc(AKA[name].slice(0, 6).join(', ')) + '</span></div>';
     h += '<div class="exo"><span class="label violet">Comment faire</span>'
       + f.steps.map((x, i) => '<div class="row" style="align-items:flex-start"><span class="num gold-text" style="width:18px;font-size:16px">' + (i + 1) + '</span><span class="grow" style="color:var(--soft)">' + esc(x) + '</span></div>').join('') + '</div>';
     h += '<div class="exo"><span class="label">Erreurs fréquentes</span>'
@@ -346,7 +347,7 @@ function sheetPicker() {
   others.delete('Running');
   const q = norm(ui.pickerQuery);
   const fam = ui.pickerFam || '';
-  const match = (n) => (!q || norm(exoName(n)).includes(q) || norm(n).includes(q)) && (!fam || (EXOS[n] && EXOS[n].g === fam));
+  const match = (n) => (!q || norm(exoName(n)).includes(q) || norm(n).includes(q) || (AKA[n] || []).some((a) => norm(a).includes(q))) && (!fam || (EXOS[n] && EXOS[n].g === fam));
   const card = (n) => '<button type="button" class="pcard" data-act="add-exo" data-name="' + esc(n) + '">' + figure(n) + '<span class="pname">' + esc(exoName(n)) + '</span>'
     + '<span class="small mut">' + esc((EXOS[n] && GROUPES[EXOS[n].g]) || 'Perso') + (measureOf(n) === 'time' ? ' · durée' : '') + '</span></button>';
   const row = (n) => '<button type="button" class="item" data-act="add-exo" data-name="' + esc(n) + '"><span class="grow" style="font-weight:500">' + esc(exoName(n)) + '</span><span class="small mut">' + (measureOf(n) === 'time' ? 'durée' : 'répétitions') + '</span></button>';
@@ -362,7 +363,7 @@ function sheetPicker() {
   const a3 = [...others].filter((n) => !fam && match(n)).sort((x, y) => exoName(x).localeCompare(exoName(y), 'fr'));
   if (a3.length) items += '<span class="label" style="padding:14px 0 2px">Anciens et perso</span><div class="list">' + a3.map(row).join('') + '</div>';
   const all = cat.concat([...others]);
-  const exact = all.some((n) => norm(exoName(n)) === q || norm(n) === q);
+  const exact = all.some((n) => norm(exoName(n)) === q || norm(n) === q || (AKA[n] || []).some((a) => norm(a) === q));
   // Créer son propre exercice : proposé en dernier, pour ne pas le toucher par erreur.
   if (q && !exact) {
     const typed = clean(ui.pickerQuery);
@@ -413,7 +414,7 @@ function sheetEditor() {
     + (type === 'workout' ? '<label class="col" style="gap:6px;margin-top:8px"><span class="label">Date et heure</span><input class="textin" type="datetime-local" id="edit-date" value="' + esc(draft.when) + '"></label>' : '') + '</div>';
   draft.exercises.forEach((e, ei) => {
     const kind = e.name === 'Running' ? 'run' : kindOf(e.name);
-    const two = kind === 'weight' || kind === 'run';
+    const two = kind !== 'time'; // le lest se note aussi sur les exercices au poids du corps
     h += '<div class="exo"><div class="row"><span class="grow" style="font-weight:600">' + esc(exoName(e.name)) + '</span>'
       + '<button type="button" class="iconbtn" data-act="ed-up" data-e="' + ei + '" aria-label="Monter"' + (ei === 0 ? ' disabled' : '') + '>' + ICON.up + '</button>'
       + '<button type="button" class="iconbtn" data-act="ed-down" data-e="' + ei + '" aria-label="Descendre"' + (ei === n - 1 ? ' disabled' : '') + '>' + ICON.down + '</button>'
@@ -424,7 +425,7 @@ function sheetEditor() {
       if (kind === 'run') fields = '<label class="field"><input inputmode="decimal" data-ef="d"' + at + ' value="' + (s.d ? fr(s.d) : '') + '" aria-label="Distance"><span class="unit">km</span></label><label class="field"><input inputmode="text" data-ef="clock"' + at + ' value="' + (s.t ? clock(s.t) : '') + '" placeholder="min:s" aria-label="Durée"></label>';
       else if (kind === 'time') fields = '<label class="field"><input inputmode="numeric" data-ef="t"' + at + ' value="' + (s.t || '') + '" aria-label="Durée"><span class="unit">s</span></label>';
       else fields = '<label class="field"><input inputmode="numeric" data-ef="r"' + at + ' value="' + (s.r || '') + '" aria-label="Répétitions"><span class="unit">rép.</span></label>'
-        + (two ? '<label class="field"><input inputmode="decimal" data-ef="w"' + at + ' value="' + (s.w ? fr(s.w, 1) : '') + '" aria-label="Charge"><span class="unit">kg</span></label>' : '');
+        + (two ? '<label class="field"><input inputmode="decimal" data-ef="w"' + at + ' value="' + (s.w ? fr(s.w, 1) : '') + '"' + (kind === 'weight' ? '' : ' placeholder="lest"') + ' aria-label="Charge ou lest"><span class="unit">kg</span></label>' : '');
       h += '<div class="sets ' + (two ? '' : 'one') + '"><span class="idx">' + (i + 1) + '</span>' + fields
         + '<button type="button" class="iconbtn" data-act="ed-del-set"' + at + ' aria-label="Retirer la série ' + (i + 1) + '">' + ICON.x + '</button></div>';
     });

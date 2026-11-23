@@ -147,6 +147,7 @@ const FIG = {
   'Planche Lean': { f: [line(PU_F, [55, 39], [48, G - 0.6]), line(PU_F, [59.5, 40], [48, G - 0.6])], m: ['shoulder', 'abs'], d: 3 },
   'Seated Overhead Press (Dumbbell)': { f: [SEAT({ a1: [62, -94], a2: [58, -90] }), SEAT({ a1: [-86, -86], a2: [-90, -90] })], m: ['shoulder', 'ua'], eq: [bench(30, 58)], db: 3 },
   'Arnold Press (Dumbbell)': { f: [SEAT({ a1: [78, -100], a2: [74, -96] }), SEAT({ a1: [-86, -86], a2: [-90, -90] })], m: ['shoulder'], eq: [bench(30, 58)], db: 3, d: 3 },
+  'Overhead Press (Dumbbell)': { f: [st({ a1: [62, -94], a2: [58, -90] }), st({ a1: [-86, -86], a2: [-90, -90] })], m: ['shoulder', 'ua'], db: 3 },
   'Lateral Raise (Dumbbell)': { f: [fr({ a1: [78, 86], a2: [102, 94] }), fr({ a1: [-4, -2], a2: [184, 182] })], m: ['shoulder'], db: 3 },
   'Front Raise (Dumbbell)': { f: [st({ a1: [86, 86], a2: [92, 92] }), st({ a1: [-4, -4], a2: [92, 92] })], m: ['shoulder'], db: 3 },
   // Dos

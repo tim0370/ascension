@@ -1,7 +1,7 @@
 // Données de l'app : sauvegarde dans le téléphone (localStorage), XP, import Hevy, export.
 // Une séance : { id, title, start, end, prs, exercises: [{ name, sets: [{ r, w, t, d, done }] }] }
 //   r = répétitions, w = charge (kg), t = durée (secondes), d = distance (km). start/end en millisecondes.
-import { EXOS, ROUTINES, ALIAS } from './data.js';
+import { EXOS, ROUTINES, ALIAS, AKA } from './data.js';
 
 const KEY = 'ascension.v1';
 
@@ -14,9 +14,30 @@ const SYN = { 'pompe': 'Push Up', 'pompes classiques': 'Push Up', 'dips triceps'
 let FRMAP = null;
 export function frenchName(name) {
   if (EXOS[name] || ALIAS[name]) return null;
-  if (!FRMAP) { FRMAP = {}; const put = (key, v) => { FRMAP[key] = FRMAP[key] || v; FRMAP[key.replace(/s\b/g, '')] = FRMAP[key.replace(/s\b/g, '')] || v; }; for (const k of Object.keys(SYN)) put(k, SYN[k]); for (const k of Object.keys(EXOS)) if (!EXOS[k].old) { put(plain(EXOS[k].fr), k); put(plain(k), k); } for (const k of Object.keys(EXOS)) { put(plain(EXOS[k].fr), k); put(plain(k), k); } }
+  if (!FRMAP) {
+    FRMAP = {}; LOOSE = {};
+    const put = (key, v) => {
+      for (const k of [key, key.replace(/s/g, '')]) FRMAP[k] = FRMAP[k] || v;
+      const l = loose(key); if (l) LOOSE[l] = LOOSE[l] === undefined ? v : LOOSE[l] === v ? v : null; // null = ambigu
+    };
+    for (const k of Object.keys(SYN)) put(k, SYN[k]);
+    for (const k of Object.keys(EXOS)) if (!EXOS[k].old) { put(plain(EXOS[k].fr), k); put(plain(k), k); for (const a of AKA[k] || []) put(plain(a), k); }
+    for (const k of Object.keys(EXOS)) { put(plain(EXOS[k].fr), k); put(plain(k), k); }
+  }
   const p = plain(name);
-  return FRMAP[p] || FRMAP[p.replace(/s\b/g, '')] || null;
+  const hit = FRMAP[p] || FRMAP[p.replace(/s/g, '')];
+  if (hit) return hit;
+  // Second essai, plus large : sans le matériel entre parenthèses ni les petits mots (« Pompe en pique (poids du corps) »).
+  const l = loose(name);
+  return (l && LOOSE[l]) || null;
+}
+// Version « large » d'un nom : sans parenthèses, sans matériel ni petits mots, au singulier, mots triés.
+let LOOSE = null;
+const STOP = new Set(['de', 'du', 'des', 'la', 'le', 'les', 'en', 'a', 'au', 'aux', 'sur', 'avec', 'et', 'un', 'une', 'haltere', 'dumbbell', 'poids', 'corps', 'bodyweight', 'machine', 'leste', 'weighted']);
+function loose(x) {
+  const w = plain(String(x).replace(/\([^)]*\)/g, ' ')).replace(/push up/g, 'pushup').split(' ')
+    .map((m) => (m.length > 3 ? m.replace(/[sx]$/, '') : m)).filter((m) => m && !STOP.has(m));
+  return w.sort().join(' ');
 }
 
 // Regroupe les variantes d'un même exercice (avec ou sans lest) sous un seul nom, voir ALIAS dans data.js.
@@ -53,6 +74,17 @@ function migrate() {
     for (const r of state.routines || []) canon(r);
     state.v = 4; fixed = true;
   }
+  if ((state.v || 0) < 5) {
+    // v41 : beaucoup plus de noms reconnus (noms Hevy en français, « Pompe en pique », « Développé militaire »…).
+    const moved = {};
+    for (const w of state.workouts) for (const e of w.exercises || []) { const n = frenchName(e.name); if (n) moved[e.name] = n; }
+    for (const w of state.workouts) if ((w.exercises || []).some((e) => moved[e.name])) canon(w);
+    for (const r of state.routines || []) canon(r);
+    // Les réglages d'un exercice (lest, repos…) suivent son nouveau nom.
+    const prefs = state.prefs || {};
+    for (const [a, b] of Object.entries(moved)) if (prefs[a]) { prefs[b] = Object.assign({}, prefs[a], prefs[b] || {}); delete prefs[a]; }
+    state.v = 5; fixed = true;
+  }
   if (fixed) save();
 }
 
@@ -84,7 +116,7 @@ export function guessExo(name) {
   let best = null, bs = 0;
   for (const k of Object.keys(EXOS)) {
     if (EXOS[k].old) continue;
-    const v = plain(EXOS[k].fr + ' ' + k).split(' ').map((x) => x.replace(/s$/, ''));
+    const v = plain(EXOS[k].fr + ' ' + k + ' ' + (AKA[k] || []).join(' ')).split(' ').map((x) => x.replace(/s$/, ''));
     const sc = w.filter((x) => v.includes(x)).length / Math.max(w.length, 1);
     if (sc > bs) { bs = sc; best = k; }
   }
@@ -448,7 +480,6 @@ export function weekQuest() {
 }
 
 // Mise à niveau des données, en dernier : elle utilise des tables définies plus haut (noms français…).
-try { migrate(); } catch (e) { console.error('migrate', e); }
 // Filet de sécurité : une séance abîmée (liste d'exercices ou de séries manquante) ne doit jamais bloquer l'app.
 try {
   if (!Array.isArray(state.workouts)) state.workouts = [];
@@ -460,3 +491,4 @@ try {
     for (const e of w.exercises) { e.name = String(e.name); if (!Array.isArray(e.sets)) e.sets = []; e.sets = e.sets.filter((x) => x && typeof x === 'object'); }
   }
 } catch (e) { console.error('nettoyage', e); }
+try { migrate(); } catch (e) { console.error('migrate', e); }
