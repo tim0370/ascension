@@ -1,8 +1,8 @@
 // Service worker : garde l'app dans le téléphone pour qu'elle s'ouvre tout de suite, même sans réseau.
 // À chaque mise à jour : augmenter VERSION ici, VERSION dans js/ui.js, et ajouter les nouveautés dans js/data.js.
 // L'app compare elle-même son numéro à celui de ce fichier en ligne et se met à jour (voir la fin de js/app.js).
-const VERSION = 'ascension-18';
-const FILES = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/ui.js', 'js/seance.js', 'js/progress.js', 'js/stats.js', 'js/photos.js', 'js/store.js', 'js/data.js', 'js/anim.js', 'js/sound.js', 'js/programme.js', 'js/quetes.js', 'js/boss.js', 'js/course.js', 'js/camera.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png'];
+const VERSION = 'ascension-19';
+const FILES = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/ui.js', 'js/seance.js', 'js/progress.js', 'js/stats.js', 'js/photos.js', 'js/store.js', 'js/data.js', 'js/anim.js', 'js/sound.js', 'js/programme.js', 'js/quetes.js', 'js/boss.js', 'js/course.js', 'js/camera.js', 'js/notif.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png'];
 
 // À l'installation, on télécharge tous les fichiers avec le numéro de version dans l'adresse :
 // ça oblige le site à donner la toute dernière copie, jamais une ancienne gardée en route.
@@ -27,4 +27,20 @@ self.addEventListener('fetch', (e) => {
       return res;
     })))
   );
+});
+
+// Notifications envoyées par le programme Cloudflare (dossier ascension-push).
+self.addEventListener('push', (e) => {
+  let m = {};
+  try { m = e.data ? e.data.json() : {}; } catch (err) { m = { body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(m.title || 'Ascension', {
+    body: m.body || '', tag: m.tag || 'ascension', renotify: true, icon: 'icons/icon-180.png', badge: 'icons/icon-180.png',
+  }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    for (const c of list) if ('focus' in c) return c.focus();
+    return self.clients.openWindow('./');
+  }));
 });

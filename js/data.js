@@ -416,6 +416,12 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 19, items: [
+    'Notifications : active-les dans les Réglages (ouvre Ascension depuis son icône)',
+    'Fin du repos annoncée même quand tu es sur TikTok ou une autre app',
+    'Rappel de la séance du jour à l’heure que tu choisis, seulement si elle n’est pas faite',
+    'Ta flamme en danger, et le nouveau boss chaque lundi',
+  ] },
   { v: 18, items: [
     'Compteur de pompes par la caméra (essai) : pose le téléphone sous ta poitrine, il compte et annonce chaque répétition',
     'Le bouton « Compter avec la caméra » apparaît sur les exercices de pompes pendant la séance',

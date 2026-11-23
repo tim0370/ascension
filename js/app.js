@@ -14,6 +14,7 @@ import { progCard } from './programme.js';
 import { dailyQuests, streak, feats, myTitle, titles, skins, SKINS } from './quetes.js';
 import { bossCard } from './boss.js';
 import './course.js';
+import { enablePush, disablePush, initPush, pushOn, notifHour, resync } from './notif.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
 
 const DAY = 864e5;
@@ -314,6 +315,13 @@ function sheetSettings() {
     + '<button type="button" class="pill sm glass wide' + (state.settings.soundSilent === false ? ' on' : '') + '" data-act="toggle-silent">' + (state.settings.soundSilent === false ? 'Bip discret (garde la musique) : oui' : 'Bip discret (garde la musique) : non') + '</button>'
     + '<button type="button" class="pill sm glass wide" data-act="test-sound">Tester le son</button>'
     + '<span class="small mut">Le bip sonne même si ton iPhone est en silencieux ; le volume se règle avec les boutons sur le côté. Si ta musique se coupe à chaque bip, mets « Bip discret : oui » (il ne sonne alors plus en silencieux). Le son ne marche que si l’app est ouverte à l’écran.</span></div>'
+    + '<div class="col" style="gap:8px"><span class="label">Notifications</span>'
+    + (pushOn()
+      ? '<button type="button" class="pill sm glass wide on" data-act="notif-off">Notifications : oui</button>'
+        + '<div class="row" style="gap:10px"><button type="button" class="stepbtn sm" data-act="notif-hour" data-d="-1" aria-label="Plus tôt">' + ICON.minus + '</button><div class="col grow center" style="gap:0"><span class="num" style="font-size:26px">' + notifHour() + ' h</span><span class="small mut">rappel de la séance du jour</span></div><button type="button" class="stepbtn sm" data-act="notif-hour" data-d="1" aria-label="Plus tard">' + ICON.plus + '</button></div>'
+        + '<button type="button" class="pill sm glass wide" data-act="notif-test">Recevoir une notification d’essai</button>'
+      : '<button type="button" class="pill gold-btn wide" data-act="notif-on">Activer les notifications</button>')
+    + '<span class="small mut">Fin du repos même quand tu es sur une autre app, rappel de la séance du jour s’il n’est pas encore faite, flamme en danger, nouveau boss le lundi. Sur iPhone, ouvre Ascension depuis son icône de l’écran d’accueil.</span></div>'
     + '<div class="col" style="gap:8px"><span class="label">Toi</span><div class="row">'
     + '<label class="field grow" style="height:52px"><input id="set-age" inputmode="numeric" placeholder="Âge" aria-label="Ton âge" value="' + (state.settings.age || '') + '"><span class="unit">ans</span></label>'
     + '<button type="button" class="pill glass grow" data-act="body" style="height:52px">' + (bodyLog().length ? 'Poids : ' + fr(bodyLog()[0].kg, 1) + ' kg' : 'Noter mon poids') + '</button></div>'
@@ -543,3 +551,11 @@ if ('serviceWorker' in navigator && window.isSecureContext && !local) {
   setTimeout(checkUpdate, 1500);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 }
+
+// Notifications : abonnement renvoyé et rappels mis à jour à chaque ouverture.
+initPush();
+Object.assign(ACTIONS, {
+  'notif-on': () => enablePush(() => sheetSettings()),
+  'notif-off': async () => { await disablePush(); sheetSettings(); toast('Notifications désactivées'); },
+  'notif-hour': (el) => { state.settings.notifHour = Math.max(6, Math.min(22, notifHour() + Number(el.dataset.d))); save(); resync(); sheetSettings(); },
+});
