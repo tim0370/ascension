@@ -110,6 +110,7 @@ export function totalXp() {
   let n = state.workouts.reduce((k, w) => k + xpOf(w), 0);
   for (const day of Object.values(state.quests || {})) for (const xp of Object.values(day)) n += xp;
   n += Object.keys(state.feats || {}).length * 100; // hauts faits
+  n += (state.goals || []).filter((g) => g.done).length * 150; // objectifs atteints (objectifs.js)
   return n;
 }
 

@@ -4,6 +4,7 @@
 // semaine 3 encore une série de plus et la dernière série au maximum, semaine 4 = re-test de tes qualités.
 // Chaque exercice principal monte tout seul à sa version plus dure quand tu as atteint le cap (ex. 10 pistols assistés → pistol).
 import { ALIAS } from './data.js';
+import { bodyStats, musclesOf, ZONES } from './corps.js';
 import { figure } from './anim.js';
 import { state, save, exoName, measureOf } from './store.js';
 import { esc, plural, ui, ACTIONS, ICON, sheet, setsSummary } from './ui.js';
@@ -158,9 +159,26 @@ function weeksBar() {
 }
 
 // La carte du programme (accueil et onglet Séance). main = grande carte dorée.
+// Récupération des muscles que la séance va travailler (moyenne pondérée par les séries).
+export function readiness(list) {
+  const z = bodyStats();
+  let sum = 0, wsum = 0;
+  const tired = {};
+  for (const e of list) {
+    const m = musclesOf(e.name);
+    for (const k of Object.keys(m)) {
+      const wt = m[k] * e.sets.length;
+      sum += z[k].rec * wt; wsum += wt;
+      if (z[k].rec < 70 && m[k] >= 1) tired[k] = true;
+    }
+  }
+  return { pct: wsum ? Math.round(sum / wsum) : 100, tired: Object.keys(tired).map((k) => ZONES[k].name.toLowerCase()) };
+}
+
 export function progCard(main, doneToday) {
   const type = testDue() ? 'test' : nextType();
   const list = plan(type, '');
+  const rd = readiness(list);
   const fresh = list.find((e) => e.fresh);
   const names = list.slice(0, 4).map((e) => exoName(e.name)).join(' · ') + (list.length > 4 ? ' · +' + (list.length - 4) : '');
   return '<section class="' + (main ? 'cta' : 'glass card') + ' hud tap" role="button" tabindex="0" data-act="prog" style="display:flex;flex-direction:column;gap:14px">'
@@ -169,7 +187,8 @@ export function progCard(main, doneToday) {
     + '<span class="h1">' + esc(title(type)) + '</span>'
     + '<span class="small" style="color:var(--soft)">' + plural(list.length, 'exercice', 'exercices') + ' · environ ' + minutes(list, type === 'test') + ' min</span>'
     + (main ? '' : '<span class="small mut">' + esc(names) + '</span>')
-    + (fresh ? '<span class="small gold-text">Nouveau : ' + esc(exoName(fresh.name)) + '</span>' : '') + '</div>'
+    + (fresh ? '<span class="small gold-text">Nouveau : ' + esc(exoName(fresh.name)) + '</span>' : '')
+    + (main && !doneToday ? '<span class="ready ' + (rd.pct >= 85 ? 'ok' : rd.pct >= 65 ? 'mid' : 'low') + '"><i></i>Corps prêt à ' + rd.pct + ' %' + (rd.tired.length ? ' · ' + esc(rd.tired.slice(0, 2).join(', ')) + ' encore fatigués' : '') + '</span>' : '') + '</div>'
     + weeksBar()
     + '<div class="row">' + (type === 'test' ? '' : '<button type="button" class="pill glass" data-act="prog-start" data-type="' + type + '" data-mode="court">Courte</button>')
     + '<button type="button" class="pill gold-btn grow" data-act="prog-start" data-type="' + type + '">' + (type === 'test' ? 'Faire le re-test' : 'Commencer') + '</button></div></section>';

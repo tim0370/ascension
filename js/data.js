@@ -416,6 +416,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 21, items: [
+    'Mes objectifs (onglet Progrès) : 50 pompes d’affilée, dips à 20 kg, 5 km en 25 min… L’app te dit quand tu y seras, à ton rythme. +150 XP à l’arrivée',
+    'Ton objectif en cours est aussi sur l’accueil',
+    'Corps prêt à X % : la carte de la séance du jour regarde si les muscles qu’elle travaille sont récupérés',
+  ] },
   { v: 20, items: [
     'Carte du corps (onglet Progrès) : chaque muscle en vert, orange ou rouge selon sa récupération, ou en violet selon ton travail de la semaine. Touche un muscle pour son détail',
     'Ma carrière : tes pompes et tes dips à vie, les tonnes soulevées depuis le début, tes km, et les prochains caps à passer',

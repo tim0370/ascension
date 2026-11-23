@@ -15,6 +15,7 @@ import { dailyQuests, streak, feats, myTitle, titles, skins, SKINS } from './que
 import { bossCard } from './boss.js';
 import './course.js';
 import { monthBanner } from './bilan.js';
+import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync } from './notif.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
 
@@ -43,6 +44,7 @@ function viewHome() {
   const has = state.workouts.length > 0;
   const quests = has ? dailyQuests() : []; // avant le calcul d'XP : une quête réussie rapporte tout de suite
   const fx = feats(); // hauts faits (et ceux qui viennent d'être réussis)
+  celebrateGoals(checkGoals()); // objectifs atteints
   const wq = has ? weekQuest() : null;
   const xp = totalXp();
   const lv = levelInfo(xp);
@@ -97,6 +99,12 @@ function viewHome() {
     const doneCount = quests.filter((q) => q.done).length;
     h += '<div class="sechead"><span class="h2">Quêtes du jour</span><span class="small mut">' + doneCount + ' sur ' + quests.length + '</span></div>'
       + '<section class="glass card tap" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + quests.map(questRow).join('') + '</section>';
+  }
+
+  const goal = (state.goals || []).find((g) => !g.done);
+  if (goal) {
+    h += '<div class="sechead"><span class="h2">Objectif</span><button type="button" class="small mut row" style="gap:4px" data-act="goals-all">Tous' + ICON.chev + '</button></div>'
+      + '<section class="glass card" style="padding:2px 16px">' + goalRow(goal, true) + '</section>';
   }
 
   if (has) {
@@ -385,6 +393,7 @@ Object.assign(ACTIONS, {
   week: (el) => sheetWeek(el.dataset.m ? +el.dataset.m : 0),
   quests: () => sheetQuests(),
   flame: () => sheetFlame(),
+  'goals-all': () => { ui.tab = 'progress'; render(); setTimeout(() => { const el = document.querySelector('[data-act="goal-new"]'); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 350); },
   feats: () => sheetFeats(),
   profile: () => sheetProfile(),
   'set-skin': (el) => { state.settings.skin = el.dataset.k; save(); sheetProfile(); render(); },

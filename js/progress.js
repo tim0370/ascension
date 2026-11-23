@@ -7,6 +7,7 @@ import { addPhoto, listPhotos, deletePhoto, setPhotoDate, photoFiles } from './p
 import { $, esc, plural, toNum, ui, ACTIONS, ICON, rankSvg, toast, sheet, closeSheet, closeBtn, burst, chartSvg } from './ui.js';
 import { render } from './app.js';
 import { bodyCard } from './corps.js';
+import { goalsCard } from './objectifs.js';
 
 let photos = null; // chargées une fois, puis gardées en mémoire
 
@@ -142,6 +143,7 @@ export function viewProgress() {
   h += '<div class="tiles">'
     + '<section class="glass tile tap" role="button" tabindex="0" data-act="career"><span class="label" style="color:var(--gold)">Ma carrière</span><span class="ico gold">' + ICON.medal + '</span><span class="small mut" style="margin-top:auto">Pompes à vie, tonnes soulevées, km</span></section>'
     + '<section class="glass tile tap" role="button" tabindex="0" data-act="bilan"><span class="label violet">Bilan du mois</span><span class="ico">' + ICON.star + '</span><span class="small mut" style="margin-top:auto">Ton mois en plein écran</span></section></div>';
+  h += goalsCard();
   h += bodyCard();
 
   h += '<div class="sec"><span class="h2">Arbres de progression</span></div>';

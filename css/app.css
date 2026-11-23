@@ -507,3 +507,16 @@ button.chip { height: 44px; min-width: 56px; font-size: 15px; }
 .st-grid div { display: flex; flex-direction: column; padding: 14px; border-radius: 18px; background: rgba(255, 255, 255, 0.1); }
 .st-grid b { font-family: 'Space Grotesk', sans-serif; font-size: 26px; }
 .st-grid span { font-size: 12px; color: rgba(255, 255, 255, 0.7); }
+
+/* Objectifs */
+.goal { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 0; text-align: left; }
+.goal + .goal { border-top: 1px solid var(--line); }
+.goal .bar { height: 5px; }
+select.textin { -webkit-appearance: none; appearance: none; padding: 0 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); color: var(--txt); }
+select.textin option { background: #1A1530; color: #fff; }
+
+/* Corps prêt à X % (carte de la séance du jour) */
+.ready { display: inline-flex; align-items: center; gap: 7px; align-self: flex-start; margin-top: 6px; padding: 5px 11px 5px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; background: rgba(255, 255, 255, 0.16); color: #fff; }
+.ready i { width: 8px; height: 8px; border-radius: 999px; background: #3AD68C; box-shadow: 0 0 8px #3AD68C; }
+.ready.mid i { background: #FFB03B; box-shadow: 0 0 8px #FFB03B; }
+.ready.low i { background: #FF5468; box-shadow: 0 0 8px #FF5468; }
