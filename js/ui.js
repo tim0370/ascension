@@ -1,5 +1,5 @@
 // Briques communes à tous les écrans : petits outils, icônes, fenêtres, messages, graphiques.
-import { routines, setText, dur } from './store.js';
+import { routines, setText, dur, state, save } from './store.js';
 import { skin } from './quetes.js';
 
 export const $ = (id) => document.getElementById(id);
@@ -10,7 +10,7 @@ export const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
 export const toNum = (v) => parseFloat(String(v).replace(',', '.')) || 0;
 
 // Numéro de version affiché dans les réglages. À augmenter avec VERSION dans sw.js et NEWS dans data.js.
-export const VERSION = 42;
+export const VERSION = 43;
 
 // État de l'interface (pas enregistré). hFilter = filtre de l'historique. edit = brouillon en cours ; pick = à quoi sert le choix d'exercice.
 export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null, hQuery: '' };
@@ -190,3 +190,15 @@ export function chartSvg(values, unit) {
     + '<circle cx="' + x(n - 1).toFixed(1) + '" cy="' + y(values[n - 1]).toFixed(1) + '" r="5" fill="#D8BD82"/></svg>'
     + '<div class="row between small mut"><span>Plus bas : ' + show(min) + unit + '</span><span>Plus haut : ' + show(max) + unit + '</span></div>';
 }
+
+// Astuce affichée la première fois sur un écran (pour qui débute dans l'app), avec « Compris » pour la cacher.
+export function hint(key, text) {
+  const seen = state.settings.hints || {};
+  if (seen[key] || state.workouts.length >= 30) return '';
+  return '<section class="hint"><span class="small">' + text + '</span><button type="button" class="pill sm glass" data-act="hint-ok" data-k="' + key + '">Compris</button></section>';
+}
+ACTIONS['hint-ok'] = (el) => {
+  state.settings.hints = Object.assign({}, state.settings.hints, { [el.dataset.k]: 1 });
+  save();
+  const box = el.closest('.hint'); if (box) box.remove();
+};

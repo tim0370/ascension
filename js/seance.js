@@ -2,7 +2,7 @@
 // repos, choix et fiche d'un exercice, modification d'une routine ou d'une séance passée, bilan de fin.
 import { EXOS, FICHES, WARMUP, GROUPES, AKA } from './data.js';
 import { figure } from './anim.js';
-import { progCard, progDone, progPlan } from './programme.js';
+import { progCard, progDone, progPlan, progOn } from './programme.js';
 import { camOk } from './camera.js';
 import { dailyQuests, feats } from './quetes.js';
 import { beep, wakeAudio } from './sound.js';
@@ -10,7 +10,7 @@ import {
   state, save, exoName, lastSets, kindOf, sorted, xpOf, totalXp, levelInfo, countPrs, isRecord,
   fr, dur, clock, dateFr, setText, exoHistory, routines, measureOf, lestOf, restOf, setPref,
 } from './store.js';
-import { $, esc, norm, clean, plural, toNum, ui, ACTIONS, ICON, checkDark, toast, sheet, closeSheet, closeSheet2, closeBtn, burst, setsSummary, chartSvg, xpFly, levelUp as levelUp_ } from './ui.js';
+import { hint, $, esc, norm, clean, plural, toNum, ui, ACTIONS, ICON, checkDark, toast, sheet, closeSheet, closeSheet2, closeBtn, burst, setsSummary, chartSvg, xpFly, levelUp as levelUp_ } from './ui.js';
 import { render, sheetDetail } from './app.js';
 
 const curExo = () => state.active && state.active.exercises[state.active.idx];
@@ -45,8 +45,18 @@ export function usualTime(r) {
 }
 
 // Fenêtre « Mes routines » : tes anciennes routines, en secours, et la séance libre.
+// Sans programme guidé : la grande carte de l'accueil et de l'onglet Séance montre tes routines.
+export function routinesCard() {
+  const list = routines();
+  let h = '<section class="cta hud" style="display:flex;flex-direction:column;gap:12px"><div class="col" style="gap:4px"><span class="label violet">Tes séances</span><span class="h1">' + (list.length ? 'Choisis ta séance' : 'Crée ta première séance') + '</span>'
+    + '<span class="small" style="color:var(--soft)">' + (list.length ? 'Touche une routine pour la voir, la modifier ou la commencer.' : 'Une routine = ta liste d’exercices. Tu la refais quand tu veux.') + '</span></div>';
+  if (list.length) h += '<div class="list">' + list.map((r) => '<button type="button" class="item" data-act="routine" data-id="' + esc(r.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(r.label) + '</span><span class="small mut">' + plural(r.exercises.length, 'exercice', 'exercices') + ' · ' + usualTime(r) + '</span></div>' + ICON.chev + '</button>').join('') + '</div>';
+  h += '<div class="row"><button type="button" class="pill glass grow" data-act="new-routine">' + ICON.plus + 'Nouvelle routine</button><button type="button" class="pill gold-btn grow" data-act="start" data-id="">Séance libre</button></div></section>';
+  return h;
+}
+
 function sheetRoutines() {
-  let h = '<div class="col"><span class="label">En secours</span><h1 class="h1">Mes routines</h1><span class="small mut">Le programme choisit ta séance. Tes routines restent ici si tu veux en faire une.</span></div><div class="list">';
+  let h = '<div class="col"><span class="label">' + (progOn() ? 'En secours' : 'Tes séances') + '</span><h1 class="h1">Mes routines</h1><span class="small mut">' + (progOn() ? 'Le programme choisit ta séance. Tes routines restent ici si tu veux en faire une.' : 'Touche une routine pour la voir, la modifier ou la commencer.') + '</span></div><div class="list">';
   for (const r of routines()) {
     h += '<button type="button" class="item" data-act="routine" data-id="' + esc(r.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(r.label) + '</span><span class="small mut">' + plural(r.exercises.length, 'exercice', 'exercices') + ' · ' + usualTime(r) + '</span></div>' + ICON.chev + '</button>';
   }
@@ -71,7 +81,7 @@ export function sheetRoutine(id) {
       + '<button type="button" class="pill gold-btn grow" data-act="start" data-id="' + esc(r.id) + '">Commencer</button></div>'
       + '<span class="small mut" style="text-align:center">Express : la même séance en version courte, quand tu n’as pas le temps.</span>';
   }
-  h += '<div class="row"><button type="button" class="pill sm glass grow" data-act="edit-routine" data-id="' + esc(r.id) + '">Modifier</button><button type="button" class="pill sm glass grow" data-act="close" style="color:var(--mut)">Fermer</button></div>';
+  h += '<div class="row"><button type="button" class="pill sm glass grow" data-act="edit-routine" data-id="' + esc(r.id) + '">Modifier les exercices</button><button type="button" class="pill sm glass grow" data-act="close" style="color:var(--mut)">Fermer</button></div>';
   sheet(h);
 }
 
@@ -145,8 +155,8 @@ export function startPlan(p) {
 export function viewWorkout() {
   const a = state.active;
   if (!a) {
-    let h = '<div class="col" style="gap:2px"><span class="small mut">Ton programme guidé</span><h1 class="h1">Séance</h1></div>';
-    h += progCard(true);
+    let h = '<div class="col" style="gap:2px"><span class="small mut">' + (progOn() ? 'Ton programme guidé' : 'Tes routines') + '</span><h1 class="h1">Séance</h1></div>';
+    h += progOn() ? progCard(true) : routinesCard();
     // Le reste (routines, séance libre, course) est rangé derrière deux tuiles, pour laisser la place au programme.
     const T = (act, t, label, fig, title, sub) => '<section class="glass tile tap tint figtile ' + t + '" role="button" tabindex="0" data-act="' + act + '"><span class="label violet">' + label + '</span><div class="tilefig">' + figure(fig) + '</div>' + (title ? '<span class="h2">' + title + '</span>' : '') + '<span class="small mut">' + sub + '</span></section>';
     h += '<div class="tiles">' + T('routines', 't-violet', 'Mes routines', 'Triceps Dip', plural(routines().length, 'routine', 'routines'), 'Full Body, séance libre')
@@ -188,6 +198,7 @@ function viewList(a) {
   let h = '<div class="row between"><div class="col" style="gap:2px"><span class="small mut">Séance en cours</span><h1 class="h1">' + esc(a.label) + '</h1></div>'
     + '<span class="num" id="elapsed" style="font-size:22px;color:var(--soft)">' + clock((Date.now() - a.start) / 1000) + '</span></div>';
   h += feelCard(a);
+  h += hint('seance', 'Touche un exercice pour l’ouvrir en grand. Le bouton ⋯ à droite d’un exercice permet de le retirer, le remplacer ou changer son repos. Le + entre deux exercices en ajoute un.');
   h += '<section class="glass card hud col" style="gap:10px"><div class="row between"><span class="h2">' + done + ' sur ' + plural(total, 'série', 'séries') + '</span><span class="gold-text num" style="font-size:17px">+' + (done * 10) + ' XP</span></div>'
     + '<div class="bar gold"><div style="width:' + (total ? Math.round((done / total) * 100) : 0) + '%"></div></div>'
     + (a.tip ? '<span class="small" style="color:var(--violet-soft)">' + esc(a.tip) + '</span>' : '') + '</section>';
@@ -412,13 +423,14 @@ function sheetEditor() {
   let h = '<div class="col"><span class="label">' + (type === 'routine' ? (id ? 'Modifier la routine' : 'Nouvelle routine') : 'Modifier la séance') + '</span>'
     + '<input class="textin" id="edit-label" placeholder="Nom" aria-label="Nom" value="' + esc(draft.label) + '" style="margin-top:6px">'
     + (type === 'workout' ? '<label class="col" style="gap:6px;margin-top:8px"><span class="label">Date et heure</span><input class="textin" type="datetime-local" id="edit-date" value="' + esc(draft.when) + '"></label>' : '') + '</div>';
+  h += hint('editeur', 'Flèches = changer l’ordre. « Retirer » enlève l’exercice. La croix au bout d’une ligne enlève la série. « Ajouter un exercice » est tout en bas. N’oublie pas « Enregistrer ».');
   draft.exercises.forEach((e, ei) => {
     const kind = e.name === 'Running' ? 'run' : kindOf(e.name);
     const two = kind !== 'time'; // le lest se note aussi sur les exercices au poids du corps
     h += '<div class="exo"><div class="row"><span class="grow" style="font-weight:600">' + esc(exoName(e.name)) + '</span>'
       + '<button type="button" class="iconbtn" data-act="ed-up" data-e="' + ei + '" aria-label="Monter"' + (ei === 0 ? ' disabled' : '') + '>' + ICON.up + '</button>'
       + '<button type="button" class="iconbtn" data-act="ed-down" data-e="' + ei + '" aria-label="Descendre"' + (ei === n - 1 ? ' disabled' : '') + '>' + ICON.down + '</button>'
-      + '<button type="button" class="iconbtn" data-act="ed-del-exo" data-e="' + ei + '" aria-label="Retirer l’exercice">' + ICON.x + '</button></div>';
+      + '<button type="button" class="pill sm glass" data-act="ed-del-exo" data-e="' + ei + '" style="color:var(--rouge)">Retirer</button></div>';
     e.sets.forEach((s, i) => {
       const at = ' data-e="' + ei + '" data-i="' + i + '"';
       let fields;

@@ -4,7 +4,7 @@ import { state, save, fr, dateFr, routines, exoHistory, exoName, setText, isHevy
 import { rankInfo, testStatus, allTrees, treeStatus, balance, bodyLog, addWeight, delWeight, bodyInfo, letterOf } from './stats.js';
 import { figure } from './anim.js';
 import { addPhoto, listPhotos, deletePhoto, setPhotoDate, photoFiles } from './photos.js';
-import { $, esc, plural, toNum, ui, ACTIONS, ICON, rankSvg, toast, sheet, closeSheet, closeBtn, burst, chartSvg } from './ui.js';
+import { $, esc, plural, toNum, ui, ACTIONS, ICON, rankSvg, toast, sheet, closeSheet, closeBtn, burst, chartSvg, hint } from './ui.js';
 import { render } from './app.js';
 import { bodyCard } from './corps.js';
 import { goalsCard } from './objectifs.js';
@@ -149,6 +149,7 @@ export function hevyCard() {
 export function viewProgress() {
   const info = rankInfo();
   let h = '<div class="col" style="gap:2px"><span class="small mut">Rang ' + info.rank.letter + ' · ' + esc(info.rank.name) + '</span><h1 class="h1">Progression</h1></div>';
+  h += hint('progres', 'Ton rang vient de tes 5 qualités (force, explosivité, vitesse, endurance, maîtrise), calculées d’après tes meilleures séries. Touche n’importe quelle carte pour voir le détail.');
   h += hevyCard();
   h += rankCard(info);
   const car = careerTotals();

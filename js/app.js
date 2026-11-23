@@ -8,9 +8,9 @@ import {
 import { NEWS, EXOS } from './data.js';
 import { rankInfo, heat, bodyLog } from './stats.js';
 import { beep, wakeAudio, initSound, soundError } from './sound.js';
-import { $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst } from './ui.js';
-import { viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
-import { progCard } from './programme.js';
+import { hint, $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst } from './ui.js';
+import { routinesCard, viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
+import { progCard, progOn, isBeginner } from './programme.js';
 import { dailyQuests, streak, SHIELD_MAX, feats, myTitle, titles, skins, SKINS } from './quetes.js';
 import { bossCard } from './boss.js';
 import './course.js';
@@ -80,8 +80,9 @@ function viewHome() {
       + '<button type="button" class="pill gold-btn wide" data-tab="workout">Reprendre la séance</button></section>';
   } else {
     const doneToday = state.workouts.find((w) => w.start >= t0 && !w.boss && !w.quick && w.exercises.some((e) => e.name !== 'Running'));
-    h += progCard(true, !!doneToday);
-    if (has && show('coach')) h += coachCard();
+    if (!state.settings.modeSet && state.workouts.length < 30) h += modeCard();
+    h += progOn() ? progCard(true, !!doneToday) : routinesCard();
+    if (has && show('coach') && progOn()) h += coachCard();
   }
 
   if (has) h += monthBanner();
@@ -160,7 +161,8 @@ function sheetUnknown() {
 const GUIDE = [
   ['S’entraîner', [
     ['prog', 'Programme guidé', 'L’app choisit ta séance du jour (4 séances qui tournent), monte les exercices quand tu es prêt, et te fait un re-test toutes les 4 semaines.'],
-    ['routines', 'Mes routines', 'Full Body A et B, et la séance libre.'],
+    ['settings', 'Choisir son programme', 'Dans les Réglages : programme complet, programme débutant (3 séances faciles au poids du corps) ou sans programme (tes routines sur l’accueil).'],
+    ['routines', 'Mes routines', 'Tes listes d’exercices : touche une routine, puis « Modifier les exercices » pour en ajouter ou en retirer. Et la séance libre.'],
     ['quick', 'Pompes du jour', 'Note une série en une touche, n’importe quand, pour viser 100 pompes dans la journée.'],
     ['chrono2', 'Chrono', 'Tabata, EMOM, AMRAP et intervalles, avec voix.'],
     ['cooldown', 'Retour au calme', '6 étirements guidés en 3 minutes.'],
@@ -352,6 +354,7 @@ function historyList() {
 function viewHistory() {
   const all = sorted();
   let h = '<div class="col" style="gap:2px"><span class="small mut">' + plural(all.length, 'séance enregistrée', 'séances enregistrées') + '</span><h1 class="h1">Historique</h1></div>';
+  if (all.length) h += hint('historique', 'Touche une séance pour la revoir. En bas de la séance : « Modifier » (répétitions, kilos, exercices, date) ou « Supprimer ».');
   if (!all.length) return h + '<section class="glass card col" style="gap:12px"><span class="mut">Aucune séance pour le moment.</span><button type="button" class="pill gold-btn wide" data-act="pick-hevy">Importer depuis Hevy</button></section>';
 
   // Calendrier de régularité : 18 semaines, une colonne par semaine.
@@ -411,6 +414,7 @@ function sheetSettings() {
   const rest = state.settings.rest || 90;
   sheet('<h1 class="h1">Réglages</h1>'
     + '<button type="button" class="glass card row tap" data-act="guide" style="gap:12px;align-items:center;width:100%;text-align:left;color:inherit;font:inherit"><span class="ico">' + ICON.star + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Tout ce que fait Ascension</span><span class="small mut">Le guide de l’app, fonction par fonction</span></div>' + ICON.chev + '</button>'
+    + modeSettings()
     + '<div class="col" style="gap:8px"><span class="label">Temps de repos par défaut</span><div class="row" style="flex-wrap:wrap;gap:8px">'
     + [60, 90, 120, 150, 180].map((s) => '<button type="button" class="pill sm ' + (s === rest ? 'gold-btn' : 'glass') + '" data-act="set-rest" data-s="' + s + '">' + clock(s) + '</button>').join('') + '</div>'
     + '<span class="small mut">Tu peux aussi régler un repos différent pour chaque exercice pendant la séance.</span>'
@@ -576,6 +580,23 @@ Object.assign(ACTIONS, {
 });
 
 // ---------- Affichage général ----------
+// Comment s'entraîner : programme complet, programme débutant ou ses propres routines (settings.level, settings.noProg).
+const MODES = [
+  ['full', 'Programme complet', 'L’app choisit ta séance : pompes, dips, pistols, avec des exercices qui deviennent plus durs.'],
+  ['debutant', 'Programme débutant', 'Pour commencer : 3 séances courtes au poids du corps (pompes sur les genoux, squats, gainage…).'],
+  ['libre', 'Mes propres séances', 'Pas de programme : tu crées tes routines et tu choisis quoi faire.'],
+];
+const modeNow = () => (state.settings.noProg ? 'libre' : isBeginner() ? 'debutant' : 'full');
+function modeCard() {
+  return '<section class="glass card col tint t-violet" style="gap:10px"><div class="col" style="gap:2px"><span class="label violet">Pour commencer</span><span class="h2">Comment veux-tu t’entraîner ?</span><span class="small mut">Tu pourras changer quand tu veux dans les Réglages.</span></div>'
+    + '<div class="list">' + MODES.map(([k, t, d]) => '<button type="button" class="item" data-act="set-mode" data-m="' + k + '"><div class="col grow" style="gap:2px"><span style="font-weight:700">' + t + '</span><span class="small mut">' + d + '</span></div>' + ICON.chev + '</button>').join('') + '</div></section>';
+}
+function modeSettings() {
+  return '<div class="col" style="gap:8px"><span class="label">Programme</span>'
+    + MODES.map(([k, t, d]) => '<button type="button" class="pill sm wide ' + (modeNow() === k ? 'gold-btn' : 'glass') + '" data-act="set-mode" data-m="' + k + '" data-from="settings">' + t + '</button>').join('')
+    + '<span class="small mut">' + esc(MODES.find((x) => x[0] === modeNow())[2]) + '</span></div>';
+}
+
 export function render() {
   const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory };
   // L'animation d'arrivée ne joue que quand on change d'écran, pas à chaque série cochée.
@@ -704,6 +725,17 @@ if ('serviceWorker' in navigator && window.isSecureContext && !local) {
 
 // Notifications : abonnement renvoyé et rappels mis à jour à chaque ouverture.
 initPush();
+Object.assign(ACTIONS, {
+  'set-mode': (el) => {
+    const m = el.dataset.m;
+    state.settings.modeSet = true;
+    state.settings.noProg = m === 'libre';
+    state.settings.level = m === 'debutant' ? 'debutant' : undefined;
+    save();
+    if (el.dataset.from === 'settings') { render(); sheetSettings(); } else { render(); window.scrollTo(0, 0); }
+    toast(m === 'libre' ? 'Sans programme : tes routines sont sur l’accueil' : m === 'debutant' ? 'Programme débutant choisi' : 'Programme complet choisi');
+  },
+});
 Object.assign(ACTIONS, {
   'notif-on': () => enablePush(() => sheetSettings()),
   'notif-off': async () => { await disablePush(); sheetSettings(); toast('Notifications désactivées'); },

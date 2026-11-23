@@ -99,6 +99,8 @@ const LIE = (o) => Object.assign({ h: [50, G - 3], t: 180, a1: [0, 0], l1: [0, 0
 const SEAT = (o) => Object.assign({ h: [46, G - 15.5], t: -90, l1: [0, 90, 0], l2: [-4, 88, 0] }, o);
 const benchLie = (o) => Object.assign({ h: [32, G - 15.5], t: 0, hd: -10, l1: [172, 96], l2: [168, 92] }, o);
 const squatLow = (o) => st(Object.assign({ h: [41, 45], t: -52, hd: -70, a1: [-2, -2], a2: [2, 2] }, o));
+// À quatre pattes : genoux et mains au sol.
+const QUAD = (o) => Object.assign({ h: [36, 45.4], t: -22, hd: -10, a1: [90, 90], a2: [90, 90], l1: [90, 180, 180], l2: [88, 178, 178] }, o);
 const HOLD = (p, dy) => [p, Object.assign({}, p, { h: [p.h[0], p.h[1] + (dy || 0.6)], t: p.t + 0.8 })];
 
 const FIG = {
@@ -163,6 +165,8 @@ const FIG = {
   'Reverse Fly (Dumbbell)': { f: [hinge({ a1: [88, 88], a2: [92, 92] }), hinge({ a1: [190, 186], a2: [186, 180] })], m: ['back', 'shoulder'], db: 3 },
   'Dumbbell Pullover': { f: [benchLie({ a1: [12, 20], a2: [8, 16] }), benchLie({ a1: [-80, -80], a2: [-84, -84] })], m: ['back', 'chest'], eq: [bench(20, 56)], db: 1, d: 3 },
   'Superman': { f: [LIE({ t: 182, a1: [182, 182], l1: [-1, -1], l2: [1, 1] }), LIE({ t: 196, hd: 200, a1: [204, 204], l1: [-14, -14], l2: [-11, -11] })], m: ['back', 'glute'], d: 3 },
+  // Tractions (barre fixée en haut, à y = 3) : genoux pliés pour ne pas toucher le sol.
+  'Pull Up': { f: [fromSh([50, 21.5], -90, { hd: -90, a1: { to: [50, 3], s: 'fwd' }, l1: [100, 150, 180], l2: [96, 146, 176] }), fromSh([50, 9.5], -90, { hd: -84, a1: { to: [50, 3], s: 'fwd' }, l1: [100, 150, 180], l2: [96, 146, 176] })], m: ['back', 'ua'], eq: [['bar', 50, 3]] },
   // Bras
   'Bicep Curl (Dumbbell)': { f: [st({ a1: [94, 90], a2: [90, 86] }), st({ a1: [96, -72], a2: [92, -76] })], m: ['ua'], db: 3 },
   'Hammer Curl (Dumbbell)': { f: [st({ a1: [94, 90], a2: [90, 86] }), st({ a1: [96, -72], a2: [92, -76] })], m: ['ua', 'fa'], db: 3 },
@@ -223,6 +227,119 @@ const FIG = {
     st({ h: [50, AY - 25.2], t: -80, a1: [100, 30], a2: [88, 0], l1: [28, 104, 8], l2: [108, 196, 220] }),
   ], m: ['th', 'calf'], d: 0.8 },
 };
+
+// Exercices ajoutés en v43 : chacun part de la silhouette d'un exercice proche (même posture), avec ses propres réglages
+// (bb = barre, cable = poulie, positions f quand le mouvement est différent).
+const MORE = {
+  'Push Up (Weighted)': ['Push Up', {  }],
+  'Ring Push Up': ['Push Up', {  }],
+  'Typewriter Push Up': ['Archer Push Up', {  }],
+  'Pike Push Up (Weighted)': ['Pike Pushup', {  }],
+  'Knuckle Push Up': ['Push Up', {  }],
+  'Plyometric Push Up (Feet Elevated)': ['Decline Push Up', {  }],
+  'Tiger Bend Push Up': ['Push Up', {  }],
+  'Ring Dip': ['Triceps Dip', {  }],
+  'Straight Bar Dip': ['Triceps Dip', {  }],
+  'Korean Dip': ['Bench Dip', {  }],
+  'Bench Press (Barbell)': ['Bench Press (Dumbbell)', { bb: 1 }],
+  'Incline Bench Press (Dumbbell)': ['Bench Press (Dumbbell)', {  }],
+  'Incline Bench Press (Barbell)': ['Bench Press (Dumbbell)', { bb: 1 }],
+  'Decline Bench Press (Barbell)': ['Bench Press (Dumbbell)', { bb: 1 }],
+  'Floor Press (Dumbbell)': ['Bench Press (Dumbbell)', {  }],
+  'Incline Dumbbell Fly': ['Dumbbell Fly', {  }],
+  'Chest Fly (Band)': ['Band Pull Apart', {  }],
+  'Cable Fly Crossovers': ['Band Pull Apart', {  }],
+  'Chest Press (Machine)': ['Seated Overhead Press (Dumbbell)', { f: [SEAT({ a1: [140, -20], a2: [136, -24] }), SEAT({ a1: [-4, -4], a2: [0, 0] })] }],
+  'Butterfly (Pec Deck)': ['Seated Overhead Press (Dumbbell)', { f: [SEAT({ a1: [170, -100], a2: [166, -104] }), SEAT({ a1: [-6, -80], a2: [-2, -84] })] }],
+  'Overhead Press (Barbell)': ['Overhead Press (Dumbbell)', { bb: 1 }],
+  'Seated Overhead Press (Barbell)': ['Seated Overhead Press (Dumbbell)', { bb: 1 }],
+  'Upright Row (Dumbbell)': ['Front Raise (Dumbbell)', { f: [st({ a1: [86, 86], a2: [92, 92] }), st({ a1: [-170, 20], a2: [-166, 24] })] }],
+  'Lateral Raise (Band)': ['Lateral Raise (Dumbbell)', { db: 0, eq: [['band', 'f1', 'h1'], ['band', 'f2', 'h2']] }],
+  'Lateral Raise (Cable)': ['Lateral Raise (Dumbbell)', { db: 0, eq: [['cable', [70, 60], 'h1']] }],
+  'Shrug (Dumbbell)': ['Farmers Walk', { f: [st({ a1: [91, 90], a2: [89, 90] }), st({ h: [50, AY - 24.6], a1: [91, 90], a2: [89, 90] })], db: 3 }],
+  'Handstand Push Up (Freestanding)': ['Wall Handstand Push Up', { eq: [] }],
+  'Crow Pose': ['Pseudo Planche Push Up', {  }],
+  'Chin Up': ['Pull Up', {  }],
+  'Negative Pull Up': ['Pull Up', {  }],
+  'Band Assisted Pull Up': ['Pull Up', { eq: [['bar', 50, 3], ['band', [50, 3], 'f1']] }],
+  'Scapula Pull Up': ['Pull Up', {  }],
+  'Dead Hang': ['Pull Up', {  }],
+  'Muscle Up': ['Pull Up', {  }],
+  'Front Lever': ['Pull Up', { f: HOLD({ h: [33, 22], t: 0, hd: 0, a1: { to: [50, 3] }, l1: [180, 180], l2: [178, 178] }, 0.3), d: 3.5 }],
+  'Tuck Front Lever': ['Pull Up', { f: HOLD({ h: [33, 22], t: 0, hd: 0, a1: { to: [50, 3] }, l1: [-20, 100], l2: [-16, 104] }, 0.3), d: 3.5 }],
+  'Back Lever': ['Pull Up', { f: HOLD({ h: [67, 22], t: 180, hd: 180, a1: { to: [50, 3] }, l1: [0, 0], l2: [2, 2] }, 0.3), d: 3.5 }],
+  'Bent Over Row (Barbell)': ['Bent Over Row (Dumbbell)', { bb: 1, db: 0 }],
+  'Lat Pulldown (Cable)': ['Seated Overhead Press (Dumbbell)', { db: 0, f: [SEAT({ a1: [-80, -84], a2: [-84, -88] }), SEAT({ a1: [120, -86], a2: [116, -90] })], eq: [bench(30, 58), ['cable', [50, 2], 'h1']] }],
+  'Seated Cable Row': ['Seated Overhead Press (Dumbbell)', { db: 0, f: [SEAT({ a1: [-2, -2], a2: [2, 2] }), SEAT({ a1: [130, -10], a2: [126, -14] })], eq: [bench(30, 58), ['cable', [96, 44], 'h1']] }],
+  'T Bar Row': ['Bent Over Row (Dumbbell)', { bb: 1, db: 0 }],
+  'Renegade Row (Dumbbell)': ['Push Up', { db: 1, f: [pu(18.8), pu(18.8, { p: { a1: { to: 'hip', off: [8, -2], s: 'up' } } })] }],
+  'Good Morning': ['Romanian Deadlift (Dumbbell)', { db: 0 }],
+  'Back Extension': ['Superman', {  }],
+  'Deadlift (Barbell)': ['Romanian Deadlift (Dumbbell)', { bb: 1, db: 0 }],
+  'Pull Over (Band)': ['Face Pull (Band)', { eq: [['band', [92, 4], 'h1']], f: [st({ a1: [-40, -40], a2: [-36, -36] }), st({ a1: [80, 80], a2: [84, 84] })] }],
+  'Bicep Curl (Barbell)': ['Bicep Curl (Dumbbell)', { bb: 1, db: 0 }],
+  'Concentration Curl': ['Bicep Curl (Dumbbell)', { eq: [bench(30, 58)], db: 1, f: [SEAT({ t: -60, a1: [70, 90] }), SEAT({ t: -60, a1: [70, -60] })] }],
+  'Preacher Curl (Dumbbell)': ['Bicep Curl (Dumbbell)', {  }],
+  'Incline Curl (Dumbbell)': ['Bicep Curl (Dumbbell)', {  }],
+  'Reverse Curl (Dumbbell)': ['Bicep Curl (Dumbbell)', {  }],
+  'Zottman Curl': ['Bicep Curl (Dumbbell)', {  }],
+  'Wrist Curl (Dumbbell)': ['Bicep Curl (Dumbbell)', { eq: [bench(30, 58)], f: [SEAT({ t: -70, a1: [60, 30] }), SEAT({ t: -70, a1: [60, -10] })] }],
+  'Triceps Pushdown (Cable)': ['Bicep Curl (Dumbbell)', { db: 0, f: [st({ a1: [94, -60], a2: [90, -64] }), st({ a1: [94, 90], a2: [90, 86] })], eq: [['cable', [70, 2], 'h1']] }],
+  'Triceps Pushdown (Band)': ['Bicep Curl (Dumbbell)', { db: 0, f: [st({ a1: [94, -60], a2: [90, -64] }), st({ a1: [94, 90], a2: [90, 86] })], eq: [['band', [66, 2], 'h1']] }],
+  'Close Grip Bench Press': ['Bench Press (Dumbbell)', { bb: 1 }],
+  'Bench Dip (Weighted)': ['Bench Dip', {  }],
+  'Squat (Barbell)': ['Squat (Bodyweight)', { bb: 1, f: [st({ a1: [140, -50], a2: [136, -54] }), squatLow({ a1: [150, -40], a2: [146, -44] })] }],
+  'Front Squat (Barbell)': ['Goblet Squat', { bb: 1, db: 0, f: [st({ a1: [40, -140], a2: [44, -136] }), squatLow({ a1: [20, -150], a2: [24, -146] })] }],
+  'Squat (Dumbbell)': ['Squat (Bodyweight)', { db: 3, f: [st({ a1: [91, 90], a2: [89, 90] }), squatLow({ a1: [88, 88], a2: [92, 92] })] }],
+  'Sumo Squat (Dumbbell)': ['Goblet Squat', {  }],
+  'Box Jump': ['Step Up', {  }],
+  'Leg Press': ['Squat (Bodyweight)', { eq: [bench(30, 58)], f: [SEAT({ t: -130, a1: [60, 20], l1: [-70, 10, -80], l2: [-74, 6, -84] }), SEAT({ t: -130, a1: [60, 20], l1: [-38, -38, -128], l2: [-42, -42, -132] })], m: ['th', 'glute'] }],
+  'Leg Extension (Machine)': ['Seated Overhead Press (Dumbbell)', { db: 0, eq: [bench(30, 58)], f: [SEAT({ a1: [80, 20], a2: [84, 24] }), SEAT({ a1: [80, 20], a2: [84, 24], l1: [0, 0, -90], l2: [-4, -4, -90] })] }],
+  'Lying Leg Curl (Machine)': ['Superman', { f: [LIE({ t: 182, a1: [182, 182], l1: [-1, -1], l2: [1, 1] }), LIE({ t: 182, a1: [182, 182], l1: [-1, -120], l2: [1, -116] })] }],
+  'Nordic Hamstring Curl': ['Knee Push Up', { f: [{ h: [40, 45.4], t: -90, hd: -90, a1: [90, 90], l1: [90, 180, 180], l2: [88, 178, 178] }, { h: [40, 45.4], t: -25, hd: -25, a1: [60, 60], l1: [90, 180, 180], l2: [88, 178, 178] }] }],
+  'Lateral Lunge': ['Cossack Squat', {  }],
+  'Curtsy Lunge': ['Reverse Lunge', {  }],
+  'Walking Lunge (Dumbbell)': ['Lunge', { db: 3 }],
+  'Hip Thrust (Barbell)': ['Hip Thrust', {  }],
+  'Hip Thrust (Single Leg)': ['Hip Thrust', {  }],
+  'Donkey Kick': ['Knee Push Up', { f: [QUAD(), QUAD({ l1: [200, 100, 10] })], m: ['glute'] }],
+  'Fire Hydrant': ['Knee Push Up', { f: [QUAD(), QUAD({ l1: [150, 190, 190] })], m: ['glute'] }],
+  'Clamshell': ['Lying Neck Side Raise', {  }],
+  'Hip Abduction (Band)': ['Jumping Jack', {  }],
+  'Seated Calf Raise': ['Seated Overhead Press (Dumbbell)', { db: 0, eq: [bench(30, 58)], f: [SEAT({ a1: [60, 10], a2: [64, 14] }), SEAT({ h: [46, G - 17], a1: [60, 10], a2: [64, 14] })] }],
+  'Jump Rope': ['High Knees', { f: [st({ h: [50, AY - 25], a1: [80, 20], a2: [100, 160], l1: { to: [52, AY - 2], s: 'fwd', f: 40 }, l2: { to: [49, AY - 2], s: 'fwd', f: 40 } }), st({ a1: [80, 20], a2: [100, 160] })], d: 0.7 }],
+  'Sprint': ['Running', { d: 0.55 }],
+  'Skater Jump': ['Jumping Lunge', {  }],
+  'Bear Crawl': ['Mountain Climber', { d: 1.4 }],
+  'Battle Rope': ['High Knees', { f: [squatLow({ h: [46, 40], t: -70, a1: [10, 10], a2: [40, 40] }), squatLow({ h: [46, 40], t: -70, a1: [40, 40], a2: [10, 10] })], d: 0.6 }],
+  'Rowing Machine': ['Seated Overhead Press (Dumbbell)', { db: 0, eq: [], f: [SEAT({ h: [40, G - 6], t: -60, a1: [-10, -10], l1: [-70, 60, 0], l2: [-74, 56, 0] }), SEAT({ h: [56, G - 6], t: -110, a1: [120, -20], l1: [0, 0, -90], l2: [-4, -4, -90] })] }],
+  'Cycling': ['Seated Overhead Press (Dumbbell)', { db: 0, eq: [bench(38, 54)], f: [SEAT({ a1: [40, 20], l1: [-20, 80, 0], l2: [20, 120, 0] }), SEAT({ a1: [40, 20], l1: [20, 120, 0], l2: [-20, 80, 0] })], d: 0.8 }],
+  'Walking': ['Farmers Walk', { db: 0 }],
+  'Swimming': ['Superman', { f: [LIE({ t: 182, a1: [182, 182], a2: [0, 0], l1: [-4, -4], l2: [4, 4] }), LIE({ t: 182, a1: [0, 0], a2: [182, 182], l1: [4, 4], l2: [-4, -4] })], d: 1.6 }],
+  'L-Sit Hold': ['Knee Raise (Dip Station)', { f: HOLD(dipTop({ t: -90, l1: [0, 0], l2: [2, 2] }), 0.3), d: 3.5 }],
+  'Tuck L-Sit': ['Knee Raise (Dip Station)', { f: HOLD(dipTop({ t: -90, l1: [-26, 78], l2: [-22, 80] }), 0.3), d: 3.5 }],
+  'V-Sit': ['Knee Raise (Dip Station)', { f: HOLD(dipTop({ t: -96, l1: [-40, -40], l2: [-38, -38] }), 0.3), d: 3.5 }],
+  'Pike Compression Hold': ['V Up', {  }],
+  'Planche Hold (Tuck)': ['Pseudo Planche Push Up', {  }],
+  'Full Planche': ['Pseudo Planche Push Up', {  }],
+  'Human Flag': ['Side Plank', {  }],
+  'Ab Wheel': ['Knee Push Up', { f: [QUAD({ a1: { to: [54, 55.5] }, a2: { to: [54, 55.5] } }), QUAD({ h: [42, 48.3], t: 5, hd: 5, a1: { to: [74, 55.5] }, a2: { to: [74, 55.5] }, l1: [131, 180, 180], l2: [129, 178, 178] })], d: 3 }],
+  'Bicycle Crunch': ['Dead Bug', {  }],
+  'Sit Up': ['Crunch', {  }],
+  'Reverse Crunch': ['Lying Leg Raise', {  }],
+  'Flutter Kicks': ['Hollow Hold', {  }],
+  'Toes To Bar': ['Hanging Leg Raise', {  }],
+  'Hanging Knee Raise': ['Knee Raise (Dip Station)', {  }],
+  'Windshield Wipers': ['Lying Leg Raise', {  }],
+  'Plank (Weighted)': ['Plank', {  }],
+  'Bird Dog': ['Knee Push Up', { f: [QUAD(), QUAD({ a1: [-12, -12], l1: [176, 176, 86] })], m: ['back', 'abs'], d: 3 }],
+  'Side Plank Hip Dip': ['Side Plank', {  }],
+  'Cable Crunch': ['Crunch', {  }],
+  'Neck Bridge': ['Glute Bridge', {  }],
+  'Neck Harness Extension': ['Lying Neck Extension', {  }],
+  'Neck Isometric (Band)': ['Face Pull (Band)', {  }],
+};
+for (const [k, [base, o]] of Object.entries(MORE)) FIG[k] = Object.assign({}, FIG[base], o);
 
 // Exercices sans dessin à eux (anciens ou créés par l'utilisateur) : silhouette debout qui respire.
 const IDLE = { f: HOLD(st(), 0.4), m: [], d: 3.5 };
@@ -334,6 +451,7 @@ function staticEq(e) {
   const c = 'stroke="var(--fig-eq)" fill="none" stroke-linecap="round"';
   if (e[0] === 'bars') return '<path ' + c + ' stroke-width="2.2" d="M' + e[1] + ' ' + e[3] + 'H' + e[2] + 'M' + (e[1] + 1.5) + ' ' + e[3] + 'V' + G + 'M' + (e[2] - 1.5) + ' ' + e[3] + 'V' + G + '"/>';
   if (e[0] === 'bench') return '<path ' + c + ' stroke-width="2" d="M' + e[1] + ' ' + f2(e[3]) + 'H' + e[2] + 'M' + (e[1] + 3) + ' ' + f2(e[3]) + 'V' + G + 'M' + (e[2] - 3) + ' ' + f2(e[3]) + 'V' + G + '"/><rect x="' + e[1] + '" y="' + f2(e[3] - 1.5) + '" width="' + (e[2] - e[1]) + '" height="3" rx="1.5" fill="var(--fig-eq2)"/>';
+  if (e[0] === 'bar') return '<path ' + c + ' stroke-width="2.2" d="M' + (e[1] - 13) + ' ' + e[2] + 'H' + (e[1] + 13) + 'M' + (e[1] - 13) + ' ' + e[2] + 'V0M' + (e[1] + 13) + ' ' + e[2] + 'V0"/>';
   if (e[0] === 'wall') return '<path ' + c + ' stroke-width="1.8" d="M' + e[1] + ' 0V' + G + '"/>';
   if (e[0] === 'post') return '<path ' + c + ' stroke-width="2" d="M' + e[1] + ' 20V' + G + '"/>';
   if (e[0] === 'box') return '<rect x="' + e[1] + '" y="' + (G - e[3]) + '" width="' + (e[2] - e[1]) + '" height="' + e[3] + '" rx="0.8" fill="none" stroke="var(--fig-eq)" stroke-width="1.6"/>';
@@ -387,6 +505,11 @@ export function figure(name, cls) {
   s += arm('e1', 'h1', false);
   for (const m of spec.m || []) if (['shoulder', 'ua', 'fa'].includes(m)) s += muscle(m);
   for (const e of spec.eq || []) {
+    if (e[0] === 'cable') {
+      s += '<circle cx="' + e[1][0] + '" cy="' + e[1][1] + '" r="2" fill="none" stroke="var(--fig-eq)" stroke-width="1.2"/>';
+      s += pth((J) => 'M' + pt2(e[1]) + 'L' + pt2(J[e[2]]), 'fill="none" stroke="var(--fig-eq)" stroke-width="0.9" stroke-linecap="round"');
+      continue;
+    }
     if (e[0] !== 'band') continue;
     const end = (k) => (J) => (typeof k === 'string' ? J[k] : k);
     s += pth((J) => 'M' + pt2(end(e[1])(J)) + 'L' + pt2(end(e[2])(J)), 'fill="none" stroke="var(--fig-band)" stroke-width="1.5" stroke-linecap="round"');
@@ -394,6 +517,8 @@ export function figure(name, cls) {
   const dbAt = (k) => dot((J) => J[k], 'r="2.6" fill="var(--fig-db)" stroke="var(--fig-eq2)" stroke-width="1.2"');
   if (spec.db & 2) s += dbAt('h2');
   if (spec.db & 1) s += dbAt('h1');
+  // Barre vue de profil : le disque au bout de la barre, dans la main.
+  if (spec.bb) s += dot((J) => J.h1, 'r="4.4" fill="var(--fig-db)" stroke="var(--fig-eq2)" stroke-width="1.4"') + dot((J) => J.h1, 'r="1" fill="var(--fig-eq2)"');
   s += '</g>';
   const label = (EXOS[name] && EXOS[name].fr) || name;
   return (cache[key] = '<svg class="fig' + (cls ? ' ' + cls : '') + '" viewBox="0 0 100 64" role="img" aria-label="Animation : ' + label.replace(/"/g, '') + '">' + s + '</svg>');

@@ -10,7 +10,13 @@ import { state, save, exoName, measureOf } from './store.js';
 import { esc, plural, ui, ACTIONS, ICON, sheet, setsSummary } from './ui.js';
 
 const DAY = 86400000;
-const ORDER = ['push', 'legs', 'dips', 'full'];
+const ORDER_FULL = ['push', 'legs', 'dips', 'full'];
+const ORDER_DEB = ['d-haut', 'd-bas', 'd-tout'];
+// Niveau choisi dans les réglages (settings.level) : 'debutant' = programme facile, sinon le programme complet.
+export const isBeginner = () => state.settings.level === 'debutant';
+const order = () => (isBeginner() ? ORDER_DEB : ORDER_FULL);
+// Sans programme (settings.noProg) : l'accueil montre les routines à la place.
+export const progOn = () => !state.settings.noProg;
 
 // Une ligne = un exercice. ladder = du plus facile au plus dur, up = le cap à atteindre pour passer au suivant.
 // main = exercice principal (une série de plus en semaines 2 et 3).
@@ -54,6 +60,41 @@ export const TYPES = {
   ], bonus: [{ ladder: ['Russian Twist (Bodyweight)'], sets: 2, r: 40, w: 10 }, Object.assign({ sets: 2, r: 8 }, PIKE)] },
 };
 
+// Programme débutant : 3 séances courtes au poids du corps, qui tournent. Les exercices montent tout seuls
+// (pompes sur les genoux, puis inclinées, puis normales…) quand le cap est atteint.
+const POMPES_DEB = { ladder: ['Knee Push Up', 'Incline Push Up', 'Push Up', 'Decline Push Up'], up: [15, 15, 15] };
+const SQUAT_DEB = { ladder: ['Squat (Bodyweight)', 'Jump Squat'], up: [20] };
+const PONT_DEB = { ladder: ['Glute Bridge', 'Single Leg Glute Bridge'], up: [20] };
+Object.assign(TYPES, {
+  'd-haut': { label: 'Haut du corps', desc: 'Pompes, dos, épaules, gainage', slots: [
+    Object.assign({ main: true, sets: 3, r: 8 }, POMPES_DEB),
+    { main: true, ladder: ['Bench Dip'], sets: 3, r: 8 },
+    { ladder: ['Superman'], sets: 3, r: 10 },
+    { ladder: ['Shoulder Taps'], sets: 2, r: 16 },
+    { ladder: ['Plank'], sets: 2, t: 20 },
+  ], bonus: [{ ladder: ['Wide Push Up'], sets: 2, r: 8 }, { ladder: ['Dead Bug'], sets: 2, r: 10 }] },
+  'd-bas': { label: 'Bas du corps', desc: 'Squats, fessiers, fentes, abdos', slots: [
+    Object.assign({ main: true, sets: 3, r: 12 }, SQUAT_DEB),
+    Object.assign({ main: true, sets: 3, r: 12 }, PONT_DEB),
+    { ladder: ['Reverse Lunge'], sets: 2, r: 8 },
+    { ladder: ['Wall Sit'], sets: 2, t: 20 },
+    { ladder: ['Crunch'], sets: 2, r: 12 },
+  ], bonus: [{ ladder: ['Single Leg Standing Calf Raise'], sets: 2, r: 12 }, { ladder: ['Side Plank'], sets: 2, t: 15 }] },
+  'd-tout': { label: 'Tout le corps', desc: 'Un peu de tout, avec du cardio', slots: [
+    Object.assign({ main: true, sets: 3, r: 8 }, POMPES_DEB),
+    Object.assign({ main: true, sets: 3, r: 12 }, SQUAT_DEB),
+    { ladder: ['Jumping Jack'], sets: 2, t: 30 },
+    { ladder: ['Mountain Climber'], sets: 2, t: 20 },
+    Object.assign({ sets: 2, r: 12 }, PONT_DEB),
+    { ladder: ['Plank'], sets: 2, t: 20 },
+  ], bonus: [{ ladder: ['Burpee'], sets: 2, r: 6 }, { ladder: ['Superman'], sets: 2, r: 10 }] },
+});
+const TEST_DEB = [
+  Object.assign({ label: 'Max de pompes' }, POMPES_DEB, { r: 10 }),
+  Object.assign({ label: 'Max de squats' }, SQUAT_DEB, { r: 20 }),
+  { ladder: ['Plank'], label: 'Gainage le plus long', t: 30 },
+];
+
 // Re-test (semaine 4) : une seule série au maximum par exercice, avec un long repos.
 const TEST = [
   { ladder: ['Push Up'], label: 'Max de pompes', r: 20 },
@@ -93,14 +134,15 @@ function pickLevel(slot) {
 
 // La prochaine séance de la rotation : celle qui suit la dernière faite dans le programme.
 export function nextType() {
-  const last = [...state.workouts].sort((a, b) => b.start - a.start).find((w) => w.prog && ORDER.includes(w.prog.type));
-  return last ? ORDER[(ORDER.indexOf(last.prog.type) + 1) % ORDER.length] : 'push';
+  const last = [...state.workouts].sort((a, b) => b.start - a.start).find((w) => w.prog && order().includes(w.prog.type));
+  const O = order();
+  return last && O.includes(last.prog.type) ? O[(O.indexOf(last.prog.type) + 1) % O.length] : O[0];
 }
 
 // Les exercices d'une séance. mode : '' (normale), 'court' ou 'gros'.
 export function plan(type, mode) {
   if (type === 'test') {
-    return TEST.map((s) => { const p = pickLevel(s); return { name: p.name, label: s.label, fresh: p.fresh, sets: [s.t ? { t: s.t } : { r: s.r }] }; });
+    return (isBeginner() ? TEST_DEB : TEST).map((s) => { const p = pickLevel(s); return { name: p.name, label: s.label, fresh: p.fresh, sets: [s.t ? { t: s.t } : { r: s.r }] }; });
   }
   const T = TYPES[type], wk = Math.min(2, weekIdx());
   let slots = T.slots.slice();
@@ -213,8 +255,8 @@ export function sheetProg(type) {
     + planList(list);
   if (!state.active) h += '<button type="button" class="pill gold-btn wide big" data-act="prog-start" data-type="' + t + '" data-mode="' + (t === 'test' ? '' : mode) + '">Commencer</button>';
   h += '<div class="col" style="gap:8px"><span class="label">Changer de séance</span><div class="list">'
-    + ORDER.concat('test').filter((x) => x !== t).map((x) => '<button type="button" class="item" data-act="prog" data-type="' + x + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(title(x)) + '</span><span class="small mut">' + esc(x === 'test' ? 'Tes max, pour mettre à jour tes lettres' : TYPES[x].desc) + '</span></div>' + ICON.chev + '</button>').join('')
-    + '</div><span class="small mut">Le programme tourne : pompes, jambes, dips, complet. Un cycle dure 4 semaines : 3 semaines où ça monte, puis le re-test.</span></div>'
+    + order().concat('test').filter((x) => x !== t).map((x) => '<button type="button" class="item" data-act="prog" data-type="' + x + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(title(x)) + '</span><span class="small mut">' + esc(x === 'test' ? 'Tes max, pour mettre à jour tes lettres' : TYPES[x].desc) + '</span></div>' + ICON.chev + '</button>').join('')
+    + '</div><span class="small mut">' + (isBeginner() ? 'Le programme débutant tourne : haut du corps, bas du corps, tout le corps.' : 'Le programme tourne : pompes, jambes, dips, complet.') + ' Un cycle dure 4 semaines : 3 semaines où ça monte, puis le re-test. Tu peux changer de niveau dans les Réglages.</span></div>'
     + '<button type="button" class="pill sm glass wide" data-act="close" style="color:var(--mut)">Fermer</button>';
   sheet(h);
 }

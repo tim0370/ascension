@@ -679,3 +679,8 @@ select.textin option { background: #1A1530; color: #fff; }
 .figtile .tilefig { margin: -4px -8px 0; }
 /* Sur la carte violette du programme, t-shirt clair pour que le personnage ressorte */
 .cta .fig { --fig-shirt: #F4F1FF; --fig-shirt2: #CFC4FF; --fig-floor: rgba(255, 255, 255, 0.25); }
+
+/* Astuce de première fois */
+.hint { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 18px; background: rgb(132 104 232 / 0.12); border: 1px solid rgb(132 104 232 / 0.35); color: var(--soft); }
+.hint .small { flex: 1; line-height: 1.4; }
+.hint .pill { flex: none; }
