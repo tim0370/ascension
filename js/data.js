@@ -430,7 +430,7 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
-  { v: 39, items: [
+  { v: 40, items: [
     'L’app démarre de façon plus solide : si un écran plante, il affiche le problème au lieu de rester vide',
   ] },
   { v: 38, items: [

@@ -48,7 +48,8 @@
     } catch (e) { done(); }
   };
   setTimeout(function () {
-    if (window.__ascOk) return;
+    var main = document.getElementById('app');
+    if (window.__ascOk || (main && main.children.length && !errs.length)) return;
     var app = document.createElement('div');
     app.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0D0A18;overflow:auto;padding-top:env(safe-area-inset-top)';
     document.body.appendChild(app);
