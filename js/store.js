@@ -33,6 +33,10 @@ function migrate() {
   // v3 : nouvelle règle des records, recalculée pour les séances faites dans l'app.
   if (v < 3) for (const w of state.workouts) if (w.src !== 'hevy') w.prs = countPrs(w);
   if (v < 3) { state.v = 3; save(); }
+  // Séances importées de Hevy avant que l'app les marque : leur identifiant commence par h suivi de la date.
+  let fixed = false;
+  for (const w of state.workouts) if (!w.src && /^h\d{9,}/.test(String(w.id))) { w.src = 'hevy'; fixed = true; }
+  if (fixed) save();
 }
 
 function load() {
@@ -46,6 +50,25 @@ function load() {
 
 export function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* stockage plein ou bloqué */ }
+}
+
+// Séances venues de Hevy (marquées, ou déjà importées avant la v34)
+export const isHevy = (w) => w.src === 'hevy' || /^h\d{9,}/.test(String(w.id));
+
+// Exercices de l'historique absents du catalogue : ils ne comptent ni comme pompes, ni comme dips, ni dans les qualités.
+export function unknownExos() {
+  const m = {};
+  for (const w of state.workouts) for (const e of w.exercises) if (!EXOS[e.name]) { const x = m[e.name] || (m[e.name] = { name: e.name, sets: 0, n: 0, last: 0 }); x.sets += e.sets.length; x.n += 1; x.last = Math.max(x.last, w.start); }
+  return Object.values(m).sort((a, b) => b.sets - a.sets);
+}
+// Relie un exercice inconnu à un exercice du catalogue, dans toutes les séances (et les routines).
+export function renameExo(from, to) {
+  const fix = (o) => { if (!o || !o.exercises) return; for (const e of o.exercises) if (e.name === from) e.name = to; canon(o); };
+  for (const w of state.workouts) fix(w);
+  for (const r of state.routines || []) fix(r);
+  fix(state.active);
+  if (state.prefs && state.prefs[from] && !state.prefs[to]) state.prefs[to] = state.prefs[from];
+  save();
 }
 
 // ---------- Exercices ----------
@@ -348,7 +371,7 @@ export function importHevy(text) {
   }
   for (const w of map.values()) canon(w);
   let added = 0, skipped = 0;
-  const mine = state.workouts.filter((w) => w.src !== 'hevy').map((w) => w.start);
+  const mine = state.workouts.filter((w) => !isHevy(w)).map((w) => w.start);
   for (const [key, w] of map) {
     // Déjà là, ou même séance notée aussi dans Ascension (moins de 90 minutes d'écart) : pas de doublon.
     if (known.has(key) || mine.some((t) => Math.abs(t - w.start) < 90 * 60000)) { skipped += 1; continue; }

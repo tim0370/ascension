@@ -416,6 +416,12 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 35, items: [
+    'Les personnages sont habillés : peau, t-shirt violet, short, baskets et cheveux, au lieu d’être tout blancs',
+    'Animations refaites : les bras et les jambes tournent autour des articulations au lieu de glisser, ils ne rétrécissent plus en plein mouvement, et les mouvements lents (pompes lentes…) ne buguent plus',
+    'Hevy : tes séances déjà importées sont bien reconnues (la carte orange disparaît), et la carrière dit combien viennent de Hevy',
+    'Réglages : « Exercices non reconnus » liste les noms de ton historique absents du catalogue (ils ne comptaient ni dans tes pompes à vie ni dans ton rang) et te laisse les relier au bon exercice',
+  ] },
   { v: 34, items: [
     'Nouvelles silhouettes : un vrai corps en volume (membres épais, ombre au sol, côté éloigné plus sombre) au lieu des bonhommes bâton',
     'Plus de couleurs : chaque famille de carte a la sienne (quêtes en vert, pompes du jour en orange, défis en rouge, saison en or, semaine en bleu, coach en cyan)',

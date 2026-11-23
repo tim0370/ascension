@@ -232,79 +232,130 @@ const MUSCLE = {
   calf: (J) => seg(J.k1, J.f1, 0.25, 0.85),
 };
 
-// Valeurs animées : une valeur par position, plus la première à la fin pour boucler.
-function animate(attr, vals, spec) {
-  if (vals.every((v) => v === vals[0])) return '';
-  const n = vals.length;
-  const kt = spec.kt || vals.map((_, i) => f2(i / n * 1000) / 1000).concat([1]);
-  const ease = spec.hold ? '0.4 0 0.6 1' : '0.45 0 0.55 1';
-  return '<animate attributeName="' + attr + '" dur="' + (spec.d || 2.4) + 's" repeatCount="indefinite" calcMode="spline" keyTimes="' + kt.join(';') + '" keySplines="' + kt.slice(1).map(() => ease).join(';') + '" values="' + vals.concat([vals[0]]).join(';') + '"/>';
+// ---------- Mouvement ----------
+// Entre deux positions clés, on ne fait pas glisser les points en ligne droite (les membres rétréciraient) :
+// on fait tourner les articulations. Une main ou un pied posé sur un point y reste.
+const lerp = (a, b, u) => a + (b - a) * u;
+const lerpA = (a, b, u) => a + ((((b - a) % 360) + 540) % 360 - 180) * u;
+const lerpP = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u)];
+const LIMBS = { a1: ['sh', 'e1', 'h1', null], a2: ['sh', 'e2', 'h2', null], l1: ['hip', 'k1', 'f1', 't1'], l2: ['hip', 'k2', 'f2', 't2'] };
+const limbOf = (p, k) => p[k] || p[k[0] + '1'];
+function asAngles(J, k) {
+  const [r, m, e, t] = LIMBS[k];
+  return [ang(J[r], J[m]), ang(J[m], J[e]), t ? ang(J[e], J[t]) : undefined];
 }
-function path(frames, fn, attrs, spec) {
-  const vals = frames.map(fn);
-  return '<path ' + attrs + ' d="' + vals[0] + '">' + animate('d', vals, spec) + '</path>';
+function lerpLimb(A, B, u, JA, JB, k) {
+  if (Array.isArray(A) && Array.isArray(B)) {
+    const fa = A[2] === undefined ? (B[2] === undefined ? undefined : A[1] - 90) : A[2];
+    const fb = B[2] === undefined ? (A[2] === undefined ? undefined : B[1] - 90) : B[2];
+    return [lerpA(A[0], B[0], u), lerpA(A[1], B[1], u), fa === undefined ? undefined : lerpA(fa, fb, u)];
+  }
+  if (!Array.isArray(A) && !Array.isArray(B) && A.s === B.s) {
+    const f = A.f === undefined || B.f === undefined ? (A.f === undefined && B.f === undefined ? undefined : null) : lerpA(A.f, B.f, u);
+    if (f !== null) {
+      if (Array.isArray(A.to) && Array.isArray(B.to)) return { to: lerpP(A.to, B.to, u), s: A.s, f };
+      if (typeof A.to === 'string' && A.to === B.to) return { to: A.to, off: lerpP(A.off || [0, 0], B.off || [0, 0], u), s: A.s, f };
+    }
+  }
+  const a = asAngles(JA, k), b = asAngles(JB, k);
+  return [lerpA(a[0], b[0], u), lerpA(a[1], b[1], u), a[2] === undefined ? undefined : lerpA(a[2], b[2], u)];
 }
-function circle(frames, fn, attrs, spec) {
-  const ps = frames.map(fn);
-  return '<circle ' + attrs + ' cx="' + f2(ps[0][0]) + '" cy="' + f2(ps[0][1]) + '">' + animate('cx', ps.map((p) => f2(p[0])), spec) + animate('cy', ps.map((p) => f2(p[1])), spec) + '</circle>';
+function lerpPose(p, q, u, JA, JB) {
+  const hd = (x) => (x.hd === undefined ? x.t : x.hd);
+  const o = { h: lerpP(p.h, q.h, u), t: lerpA(p.t, q.t, u), hd: lerpA(hd(p), hd(q), u) };
+  for (const k of ['a1', 'a2', 'l1', 'l2']) o[k] = lerpLimb(limbOf(p, k), limbOf(q, k), u, JA, JB, k);
+  return o;
 }
-// Une position supplémentaire ajoutée entre deux pour l'effet « tenir » (exercice lent).
+// Positions clés de la boucle. hold = on tient la position du bas.
 function framesOf(spec) {
-  if (spec.hold && spec.f.length === 2) return [spec.f[0], spec.f[1], spec.f[1], spec.f[0]];
+  if (spec.hold && spec.f.length === 2) return [spec.f[0], spec.f[1], spec.f[1]];
   return spec.f;
+}
+const STEPS = 8;
+// Toute la boucle en petites images : { J: articulations, k: instant de 0 à 1 }
+function timeline(spec) {
+  const F = framesOf(spec), n = F.length;
+  let kt = spec.kt && spec.kt.length === n + 1 ? spec.kt : null;
+  if (!kt) kt = spec.hold && n === 3 ? [0, 0.4, 0.6, 1] : F.map((_, i) => i / n).concat([1]);
+  const KJ = F.map(joints);
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    const same = JSON.stringify(F[i]) === JSON.stringify(F[j]);
+    for (let s = 0; s < (same ? 1 : STEPS); s++) {
+      const u = s / STEPS, e = 0.5 - 0.5 * Math.cos(Math.PI * u);
+      out.push({ J: s ? joints(lerpPose(F[i], F[j], e, KJ[i], KJ[j])) : KJ[i], k: f2((kt[i] + (kt[i + 1] - kt[i]) * u) * 1000) / 1000 });
+    }
+  }
+  out.push({ J: KJ[0], k: 1 });
+  return out;
+}
+function animate(attr, vals, tl, dur) {
+  if (vals.every((v) => v === vals[0])) return '';
+  return '<animate attributeName="' + attr + '" dur="' + dur + 's" repeatCount="indefinite" calcMode="linear" keyTimes="' + tl.map((x) => x.k).join(';') + '" values="' + vals.join(';') + '"/>';
 }
 function staticEq(e) {
   const c = 'stroke="var(--fig-eq)" fill="none" stroke-linecap="round"';
   if (e[0] === 'bars') return '<path ' + c + ' stroke-width="2.2" d="M' + e[1] + ' ' + e[3] + 'H' + e[2] + 'M' + (e[1] + 1.5) + ' ' + e[3] + 'V' + G + 'M' + (e[2] - 1.5) + ' ' + e[3] + 'V' + G + '"/>';
-  if (e[0] === 'bench') return '<path ' + c + ' stroke-width="2" d="M' + e[1] + ' ' + f2(e[3]) + 'H' + e[2] + 'M' + (e[1] + 3) + ' ' + f2(e[3]) + 'V' + G + 'M' + (e[2] - 3) + ' ' + f2(e[3]) + 'V' + G + '"/><rect x="' + e[1] + '" y="' + f2(e[3] - 1.2) + '" width="' + (e[2] - e[1]) + '" height="3" rx="1.5" fill="var(--fig-eq2)"/>';
-  if (e[0] === 'wall') return '<path ' + c + ' stroke-width="1.6" d="M' + e[1] + ' 0V' + G + '"/>';
-  if (e[0] === 'post') return '<path ' + c + ' stroke-width="1.8" d="M' + e[1] + ' 20V' + G + '"/>';
-  if (e[0] === 'box') return '<rect x="' + e[1] + '" y="' + (G - e[3]) + '" width="' + (e[2] - e[1]) + '" height="' + e[3] + '" rx="0.8" fill="none" stroke="var(--fig-eq)" stroke-width="1.4"/>';
-  if (e[0] === 'db') return '<circle cx="' + e[1] + '" cy="' + e[2] + '" r="2.2" fill="var(--fig-bg)" stroke="var(--fig-eq)" stroke-width="1.4"/>';
+  if (e[0] === 'bench') return '<path ' + c + ' stroke-width="2" d="M' + e[1] + ' ' + f2(e[3]) + 'H' + e[2] + 'M' + (e[1] + 3) + ' ' + f2(e[3]) + 'V' + G + 'M' + (e[2] - 3) + ' ' + f2(e[3]) + 'V' + G + '"/><rect x="' + e[1] + '" y="' + f2(e[3] - 1.5) + '" width="' + (e[2] - e[1]) + '" height="3" rx="1.5" fill="var(--fig-eq2)"/>';
+  if (e[0] === 'wall') return '<path ' + c + ' stroke-width="1.8" d="M' + e[1] + ' 0V' + G + '"/>';
+  if (e[0] === 'post') return '<path ' + c + ' stroke-width="2" d="M' + e[1] + ' 20V' + G + '"/>';
+  if (e[0] === 'box') return '<rect x="' + e[1] + '" y="' + (G - e[3]) + '" width="' + (e[2] - e[1]) + '" height="' + e[3] + '" rx="0.8" fill="none" stroke="var(--fig-eq)" stroke-width="1.6"/>';
+  if (e[0] === 'db') return '<circle cx="' + e[1] + '" cy="' + e[2] + '" r="2.2" fill="var(--fig-db)" stroke="var(--fig-eq2)" stroke-width="1.4"/>';
   return '';
 }
 
 const cache = {};
-// Corps en volume : chaque segment a son épaisseur (cuisse plus large que le tibia, bras plus fin que la jambe),
-// le côté lointain est plus sombre, une ombre suit le corps au sol, les muscles travaillés sont colorés par-dessus.
-const W = { tor: 7, neck: 3.2, th: 5.4, sh: 4.2, foot: 2.6, ua: 3.8, fa: 3.1 };
-const MW = { chest: 6.4, abs: 5, back: 5.6, glute: 4.6, shoulder: 3.6, ua: 3.1, fa: 2.5, th: 4.4, calf: 3.2 };
+// Un personnage habillé : peau, t-shirt violet, short sombre, baskets claires, cheveux.
+// Le côté lointain est plus sombre, une ombre suit le corps au sol, les muscles travaillés sont en orange.
+const W = { tor: 7, neck: 3.2, th: 5.4, sh: 4.2, foot: 2.8, ua: 3.8, fa: 3.1 };
+const MW = { chest: 5.2, abs: 4.4, back: 5, glute: 4.6, shoulder: 3.6, ua: 3, fa: 2.4, th: 4.2, calf: 3.1 };
 export function figure(name, cls) {
   const key = name + '|' + (cls || '');
   if (cache[key]) return cache[key];
   const spec = FIG[name] || IDLE;
-  const frames = framesOf(spec).map(joints);
+  const tl = timeline(spec), dur = spec.d || 2.4;
   const cap = 'fill="none" stroke-linecap="round" stroke-linejoin="round"';
-  const segP = (a, b) => (J) => 'M' + pt2(J[a]) + 'L' + pt2(J[b]);
-  const part = (a, b, w, col) => path(frames, segP(a, b), cap + ' stroke="' + col + '" stroke-width="' + w + '"', spec);
-  const leg = (k, f, t, col) => part('hip', k, W.th, col) + part(k, f, W.sh, col) + part(f, t, W.foot, col);
-  const arm = (e, h, col) => part('sh', e, W.ua, col) + part(e, h, W.fa, col);
+  const pth = (fn, attrs) => { const v = tl.map((x) => fn(x.J)); return '<path ' + attrs + ' d="' + v[0] + '">' + animate('d', v, tl, dur) + '</path>'; };
+  const dot = (fn, attrs) => { const v = tl.map((x) => fn(x.J)); return '<circle ' + attrs + ' cx="' + f2(v[0][0]) + '" cy="' + f2(v[0][1]) + '">' + animate('cx', v.map((p) => f2(p[0])), tl, dur) + animate('cy', v.map((p) => f2(p[1])), tl, dur) + '</circle>'; };
+  const part = (a, b, w, col, u0, u1) => pth((J) => seg(J[a], J[b], u0 || 0, u1 === undefined ? 1 : u1), cap + ' stroke="var(' + col + ')" stroke-width="' + w + '"');
+  const leg = (k, f, t, far) => {
+    const x = far ? '2' : '';
+    return part('hip', k, W.th, '--fig-skin' + x) + part(k, f, W.sh, '--fig-skin' + x) + part(f, t, W.foot, '--fig-shoe' + x, -0.15, 1)
+      + part('hip', k, W.th + 0.5, '--fig-shorts' + x, 0, 0.58);
+  };
+  const arm = (e, h, far) => {
+    const x = far ? '2' : '';
+    return part('sh', e, W.ua, '--fig-skin' + x) + part(e, h, W.fa, '--fig-skin' + x) + part('sh', e, W.ua + 0.5, '--fig-shirt' + x, 0, 0.4)
+      + dot((J) => J[h], 'r="' + (far ? 1.6 : 1.8) + '" fill="var(--fig-skin' + x + ')"');
+  };
+  const muscle = (m) => (MUSCLE[m] ? pth(MUSCLE[m], cap + ' stroke="var(--fig-gold)" stroke-width="' + MW[m] + '" opacity="0.85"') : '');
   let s = '<line x1="2" y1="' + (G + 0.6) + '" x2="98" y2="' + (G + 0.6) + '" stroke="var(--fig-floor)" stroke-width="1.2"/>';
   const sc = spec.sc || 1;
   s += '<g' + (sc !== 1 ? ' transform="translate(50 ' + G + ') scale(' + sc + ') translate(-50 -' + G + ')"' : '') + '>';
-  // Ombre au sol, sous le centre du corps
-  const shx = frames.map((J) => f2((J.hip[0] + J.sh[0]) / 2));
-  const shy = frames.map((J) => Math.max(J.hip[1], J.sh[1]));
-  const op = shy.map((y) => f2(Math.max(0.12, 0.5 - (G - y) / 70)));
-  s += '<ellipse cx="' + shx[0] + '" cy="' + (G + 0.4) + '" rx="15" ry="1.8" fill="var(--fig-shadow)" opacity="' + op[0] + '">' + animate('cx', shx, spec) + animate('opacity', op, spec) + '</ellipse>';
+  const shx = tl.map((x) => f2((x.J.hip[0] + x.J.sh[0]) / 2));
+  const op = tl.map((x) => f2(Math.max(0.12, 0.5 - (G - Math.max(x.J.hip[1], x.J.sh[1])) / 70)));
+  s += '<ellipse cx="' + shx[0] + '" cy="' + (G + 0.4) + '" rx="15" ry="1.8" fill="var(--fig-shadow)" opacity="' + op[0] + '">' + animate('cx', shx, tl, dur) + animate('opacity', op, tl, dur) + '</ellipse>';
   for (const e of spec.eq || []) s += staticEq(e);
-  s += leg('k2', 'f2', 't2', 'var(--fig-far)') + arm('e2', 'h2', 'var(--fig-far)');
-  s += part('sh', 'neck', W.neck, 'var(--fig-skin)');
-  s += part('hip', 'sh', W.tor, 'var(--fig-line)');
-  s += path(frames, (J) => seg(J.hip, J.sh, 0.55, 0.92), cap + ' stroke="var(--fig-line)" stroke-width="8.6"', spec); // cage thoracique, plus large que la taille
-  s += circle(frames, (J) => J.head, 'r="' + (L.head + 0.4) + '" fill="var(--fig-skin)"', spec);
-  s += leg('k1', 'f1', 't1', 'var(--fig-line)');
-  for (const m of spec.m || []) if (MUSCLE[m] && m !== 'shoulder' && m !== 'ua' && m !== 'fa') s += path(frames, MUSCLE[m], cap + ' stroke="var(--fig-gold)" stroke-width="' + MW[m] + '"', spec);
-  s += arm('e1', 'h1', 'var(--fig-line)');
-  for (const m of spec.m || []) if (MUSCLE[m] && (m === 'shoulder' || m === 'ua' || m === 'fa')) s += path(frames, MUSCLE[m], cap + ' stroke="var(--fig-gold)" stroke-width="' + MW[m] + '"', spec);
-  // Reflet le long du buste : donne du relief
-  s += path(frames, (J) => seg(J.hip, J.sh, 0.15, 0.85), cap + ' stroke="var(--fig-shine)" stroke-width="1.2" transform="translate(-0.9 -0.9)"', spec);
+  s += leg('k2', 'f2', 't2', true) + arm('e2', 'h2', true);
+  s += part('sh', 'neck', W.neck, '--fig-skin');
+  s += part('hip', 'sh', W.tor, '--fig-shirt');
+  s += pth((J) => seg(J.hip, J.sh, 0.55, 0.92), cap + ' stroke="var(--fig-shirt)" stroke-width="8.6"');
+  s += part('hip', 'sh', W.tor + 0.6, '--fig-shorts', 0, 0.16);
+  // Tête : les cheveux sont un cercle décalé vers l'arrière du crâne, la peau passe devant.
+  const dirOf = (J) => { const d = dist(J.neck, J.head) || 1; return [(J.head[0] - J.neck[0]) / d, (J.head[1] - J.neck[1]) / d]; };
+  s += dot((J) => { const [dx, dy] = dirOf(J); return [J.head[0] + dx * 0.7 + dy * 0.8, J.head[1] + dy * 0.7 - dx * 0.8]; }, 'r="' + (L.head + 0.3) + '" fill="var(--fig-hair)"');
+  s += dot((J) => { const [dx, dy] = dirOf(J); return [J.head[0] - dy * 0.35, J.head[1] + dx * 0.35]; }, 'r="' + (L.head + 0.1) + '" fill="var(--fig-skin)"');
+  s += leg('k1', 'f1', 't1', false);
+  for (const m of spec.m || []) if (!['shoulder', 'ua', 'fa'].includes(m)) s += muscle(m);
+  s += arm('e1', 'h1', false);
+  for (const m of spec.m || []) if (['shoulder', 'ua', 'fa'].includes(m)) s += muscle(m);
   for (const e of spec.eq || []) {
     if (e[0] !== 'band') continue;
     const end = (k) => (J) => (typeof k === 'string' ? J[k] : k);
-    s += path(frames, (J) => 'M' + pt2(end(e[1])(J)) + 'L' + pt2(end(e[2])(J)), 'fill="none" stroke="var(--fig-band)" stroke-width="1.5" stroke-linecap="round"', spec);
+    s += pth((J) => 'M' + pt2(end(e[1])(J)) + 'L' + pt2(end(e[2])(J)), 'fill="none" stroke="var(--fig-band)" stroke-width="1.5" stroke-linecap="round"');
   }
-  const dbAt = (k) => circle(frames, (J) => J[k], 'r="2.6" fill="var(--fig-db)" stroke="var(--fig-eq2)" stroke-width="1.2"', spec);
+  const dbAt = (k) => dot((J) => J[k], 'r="2.6" fill="var(--fig-db)" stroke="var(--fig-eq2)" stroke-width="1.2"');
   if (spec.db & 2) s += dbAt('h2');
   if (spec.db & 1) s += dbAt('h1');
   s += '</g>';

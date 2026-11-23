@@ -3,9 +3,9 @@
 import {
   state, save, exoName, sorted, runs, xpOf, totalXp, levelInfo, weekStreak,
   fr, dur, clock, pace, dateFr, setText, workoutText, importHevy, exportJson, importJson,
-  weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines,
+  weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines, isHevy, unknownExos, renameExo,
 } from './store.js';
-import { NEWS } from './data.js';
+import { NEWS, EXOS } from './data.js';
 import { rankInfo, heat, bodyLog } from './stats.js';
 import { beep, wakeAudio, initSound, soundError } from './sound.js';
 import { $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst } from './ui.js';
@@ -142,6 +142,18 @@ function viewHome() {
   if (!state.installed) { state.installed = Date.now(); save(); }
   if (has) h += '<button type="button" class="pill glass wide" data-act="home-edit" style="color:var(--mut)">Personnaliser l’accueil</button>';
   return h;
+}
+
+// ---------- Exercices non reconnus ----------
+// Un nom venu de Hevy (ou tapé à la main) qui n'est pas dans le catalogue ne compte ni comme pompes ni dans les qualités.
+function sheetUnknown() {
+  const list = unknownExos();
+  const opts = '<option value="">Choisir…</option>' + Object.keys(EXOS).filter((k) => !EXOS[k].old).sort((a, b) => exoName(a).localeCompare(exoName(b), 'fr')).map((k) => '<option value="' + esc(k) + '">' + esc(exoName(k)) + '</option>').join('');
+  let h = '<div class="col" style="gap:4px"><span class="label violet">Historique</span><h1 class="h1">Exercices non reconnus</h1><span class="small mut">Ces noms ne sont pas dans le catalogue d’Ascension : leurs séries ne comptent pas dans tes pompes à vie, tes dips ni ton rang. Relie chacun à l’exercice qui correspond, ou laisse-le s’il n’a rien à voir.</span></div>';
+  if (!list.length) h += '<section class="glass card"><span class="mut">Tout ton historique est reconnu.</span></section>';
+  h += list.map((x, i) => '<section class="glass card col" style="gap:10px"><div class="col" style="gap:2px"><span style="font-weight:700">' + esc(x.name) + '</span><span class="small mut">' + plural(x.sets, 'série', 'séries') + ' · ' + plural(x.n, 'séance', 'séances') + ' · dernière le ' + dateFr(x.last, true) + '</span></div>'
+    + '<div class="row" style="gap:8px"><label class="field grow" style="height:48px"><select id="unk-' + i + '" aria-label="Exercice correspondant" style="width:100%;background:none;border:0;color:inherit;font:inherit">' + opts + '</select></label><button type="button" class="pill gold-btn" data-act="unknown-set" data-i="' + i + '" data-name="' + esc(x.name) + '">Relier</button></div></section>').join('');
+  sheet(h + closeBtn, 1, 'full');
 }
 
 // ---------- Guide de l'app ----------
@@ -423,8 +435,8 @@ function sheetSettings() {
     + '<div class="col" style="gap:8px"><span class="label">Objectif de séances par semaine</span><div class="row" style="flex-wrap:wrap;gap:8px">'
     + [2, 3, 4, 5, 6].map((n) => '<button type="button" class="pill sm ' + (n === weekGoal() ? 'gold-btn' : 'glass') + '" data-act="set-goal" data-n="' + n + '">' + n + '</button>').join('') + '</div>'
     + '<span class="small mut">Les courses comptent. L’atteindre valide la quête de la semaine (+150 XP).</span></div>'
-    + '<div class="col" style="gap:8px"><span class="label">Hevy</span><button type="button" class="pill glass wide" data-act="pick-hevy">Importer mon historique Hevy</button>'
-    + '<span class="small mut">' + (state.workouts.some((w) => w.src === 'hevy') ? plural(state.workouts.filter((w) => w.src === 'hevy').length, 'séance Hevy importée', 'séances Hevy importées') + '. Tu peux réimporter un fichier plus récent : rien ne sera en double.' : 'Dans Hevy : Profil, Réglages, Exporter les données. Choisis ensuite le fichier workouts.csv ici.') + '</span></div>'
+    + '<div class="col" style="gap:8px"><span class="label">Hevy</span><button type="button" class="pill glass wide" data-act="pick-hevy">Importer mon historique Hevy</button>' + (unknownExos().length ? '<button type="button" class="pill glass wide" data-act="unknown" style="color:var(--flamme)">' + plural(unknownExos().length, 'exercice non reconnu', 'exercices non reconnus') + '</button>' : '')
+    + '<span class="small mut">' + (state.workouts.some(isHevy) ? plural(state.workouts.filter(isHevy).length, 'séance Hevy importée', 'séances Hevy importées') + ', comptées partout (rang, records, carrière). Tu peux réimporter un fichier plus récent : rien ne sera en double.' : 'Dans Hevy : Profil, Réglages, Exporter les données. Choisis ensuite le fichier workouts.csv ici.') + '</span></div>'
     + '<div class="col" style="gap:8px"><span class="label">Sauvegarde</span><div class="row"><button type="button" class="pill glass grow" data-act="export">Exporter</button><button type="button" class="pill glass grow" data-act="pick-backup">Restaurer</button></div>'
     + '<span class="small mut">Tes données restent sur ce téléphone. Exporte une sauvegarde de temps en temps pour ne rien perdre.</span></div>'
     + '<div class="col" style="gap:8px"><span class="label">Version ' + VERSION + '</span><div class="row"><button type="button" class="pill glass grow" data-act="news">Nouveautés</button><button type="button" class="pill glass grow" data-act="update">Mettre à jour</button></div></div>' + closeBtn);
@@ -526,7 +538,7 @@ Object.assign(ACTIONS, {
     let r;
     try { r = importHevy(text); } catch (e) { toast(e.message); return; }
     ui.enter = true; render();
-    if (!r.added) { toast(r.skipped ? 'Tout était déjà là (' + r.skipped + ' séances)' : 'Aucune séance trouvée dans ce fichier'); return; }
+    if (!r.added) { toast(r.skipped ? 'Déjà fait : tes ' + r.skipped + ' séances Hevy sont dans l’app et comptent partout' : 'Aucune séance trouvée dans ce fichier'); return; }
     burst();
     sheet('<div class="col center" style="gap:8px;padding-top:10px"><span class="label violet">Historique importé</span><span class="num" style="font-size:64px;line-height:1">' + r.added + '</span><span class="h2">séances ramenées de Hevy</span>'
       + '<span class="small mut" style="text-align:center">Depuis le ' + dateFr(r.first, true) + (r.skipped ? '. ' + r.skipped + ' déjà présentes ont été laissées de côté' : '') + '. Ton rang, tes records, ton niveau, tes pompes à vie et ton parcours comptent maintenant tout depuis le début.</span></div>'
@@ -536,6 +548,14 @@ Object.assign(ACTIONS, {
     + '<section class="glass card col steps" style="gap:14px">' + ['Ouvre Hevy, va sur ton <b>Profil</b> puis la roue des <b>Réglages</b>.', 'Touche <b>Exporter et importer des données</b>, puis <b>Exporter les séances</b>.', 'Choisis <b>Enregistrer dans Fichiers</b> (garde le nom workouts.csv).', 'Reviens ici et touche le bouton ci-dessous, puis choisis ce fichier.']
       .map((t, i) => '<div class="row" style="gap:12px;align-items:flex-start"><span class="stepn">' + (i + 1) + '</span><span>' + t + '</span></div>').join('') + '</section>'
     + '<button type="button" class="pill gold-btn wide" data-act="pick-hevy">Choisir le fichier Hevy</button><button type="button" class="pill glass wide" data-act="close">Plus tard</button>', 1),
+  unknown: () => sheetUnknown(),
+  'unknown-set': (el) => {
+    const to = ($('unk-' + el.dataset.i) || {}).value;
+    if (!to) { toast('Choisis l’exercice qui correspond'); return; }
+    renameExo(el.dataset.name, to);
+    toast(exoName(to) + ' : historique relié');
+    sheetUnknown();
+  },
   'no-hevy': () => { state.settings.noHevy = true; save(); render(); },
   'pick-backup': () => pickFile('.json,application/json', (text) => {
     try { const r = importJson(text); closeSheet(); ui.enter = true; render(); toast(r.added + ' séances restaurées'); } catch (e) { toast('Ce fichier n’est pas une sauvegarde valide'); }

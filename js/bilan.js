@@ -1,6 +1,6 @@
 // Ta carrière (les compteurs depuis le début) et le bilan du mois, à faire défiler en plein écran.
 import { EXOS } from './data.js';
-import { state, save, sorted, xpOf, exoName, setText, dur, fr } from './store.js';
+import { state, save, sorted, xpOf, exoName, setText, dur, fr, isHevy } from './store.js';
 import { bodyLog } from './stats.js';
 import { figure } from './anim.js';
 import { $, esc, plural, ui, ACTIONS, ICON, sheet, closeSheet, toast, burst } from './ui.js';
@@ -108,7 +108,7 @@ export function sheetCareer() {
   const first = ws.length ? ws[ws.length - 1].start : Date.now();
   const big = (v, k, sub) => '<div class="career"><span class="num">' + v + '</span><span class="small mut">' + k + '</span>' + (sub ? '<span class="small" style="color:var(--violet-soft)">' + sub + '</span>' : '') + '</div>';
   const cap = (n, label) => { const c = nextCap(n); return '<div class="col" style="gap:6px"><div class="row between"><span class="small" style="font-weight:600">' + label + '</span><span class="small mut">' + sp(n) + ' / ' + sp(c) + '</span></div><div class="bar thin gold"><div style="width:' + Math.min(100, Math.round((n / c) * 100)) + '%"></div></div></div>'; };
-  let h = '<div class="col" style="gap:4px"><span class="label violet">Depuis le ' + new Date(first).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + '</span><h1 class="h1">Ta carrière</h1></div>';
+  let h = '<div class="col" style="gap:4px"><span class="label violet">Depuis le ' + new Date(first).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + '</span><h1 class="h1">Ta carrière</h1><span class="small mut">' + plural(ws.length, 'séance', 'séances') + ' comptées' + (ws.some(isHevy) ? ', dont ' + ws.filter(isHevy).length + ' venues de Hevy' : '') + '.</span></div>';
   h += '<section class="glass card col center" style="gap:4px;padding:24px 16px"><span class="label" style="color:var(--gold)">Soulevé en tout</span><span class="num gold-text" style="font-size:52px;line-height:1.1">' + tonnes(t.kg) + '</span><span class="small mut">soit environ ' + equiv(t.kg) + '</span></section>';
   h += '<div class="careers">' + big(sp(t.pompes), 'pompes') + big(sp(t.dips), 'dips') + big(sp(t.reps), 'répétitions') + big(fr(t.km, 1), 'km courus') + big(sp(t.n), 'séances') + big(sp(t.min / 60), 'heures') + big(sp(t.days.size), 'jours actifs') + big(sp(t.prs), 'records') + '</div>';
   h += '<section class="glass card col" style="gap:14px"><span class="h2">Prochains caps</span>' + cap(t.pompes, 'Pompes à vie') + cap(t.dips, 'Dips à vie') + cap(Math.round(t.km), 'Kilomètres à vie') + '</section>';

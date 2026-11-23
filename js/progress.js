@@ -1,6 +1,6 @@
 // Onglet Progression : examens de rang, arbres de progression, équilibre du corps, poids et photos.
 import { RANKS, TREES, CATS, LETTRES, QUALITES, EXOS } from './data.js';
-import { state, save, fr, dateFr, routines, exoHistory, exoName, setText } from './store.js';
+import { state, save, fr, dateFr, routines, exoHistory, exoName, setText, isHevy } from './store.js';
 import { rankInfo, testStatus, allTrees, treeStatus, balance, bodyLog, addWeight, delWeight, bodyInfo, letterOf } from './stats.js';
 import { figure } from './anim.js';
 import { addPhoto, listPhotos, deletePhoto, setPhotoDate, photoFiles } from './photos.js';
@@ -140,7 +140,7 @@ function sheetTree(id) {
 // ---------- Écran ----------
 // Tant que l'historique Hevy n'est pas importé, tout ne compte que depuis Ascension : on le dit clairement.
 export function hevyCard() {
-  if (state.workouts.some((w) => w.src === 'hevy') || state.settings.noHevy) return '';
+  if (state.workouts.some(isHevy) || state.settings.noHevy) return '';
   return '<section class="glass card col hevycard tint t-orange" style="gap:12px"><div class="row" style="gap:12px;align-items:flex-start"><span class="ico">' + ICON.stack + '</span><div class="col grow" style="gap:3px"><span style="font-weight:700">Ton passé chez Hevy ne compte pas encore</span>'
     + '<span class="small mut">Rang, records, pompes à vie, parcours : tout sera recalculé depuis ta toute première séance.</span></div></div>'
     + '<div class="row" style="gap:8px"><button type="button" class="pill glass" data-act="no-hevy">Pas de Hevy</button><button type="button" class="pill gold-btn grow" data-act="hevy-how">Importer Hevy</button></div></section>';
