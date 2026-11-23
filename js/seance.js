@@ -323,6 +323,7 @@ export function sheetExo(name) {
     h += '<div class="row" style="align-items:stretch"><div class="exo grow"><span class="label">' + (time ? 'Le plus long' : 'Le plus de répétitions') + '</span><span class="num gold-text" style="font-size:22px">' + esc(setText(most.set)) + '</span><span class="small mut">' + dateFr(most.date, true) + '</span></div>'
       + (heavy ? '<div class="exo grow"><span class="label">Le plus lourd</span><span class="num gold-text" style="font-size:22px">' + esc(setText(heavy.set)) + '</span><span class="small mut">' + dateFr(heavy.date, true) + '</span></div>' : '') + '</div>';
   }
+  if (list.length && !time && name !== 'Running') h += potential(name, list);
   if (list.length) {
     h += '<span class="label">' + plural(list.length, 'séance', 'séances') + ' · les dernières</span><div class="list">' + list.slice(0, 12).map((x) => '<button type="button" class="item" data-act="detail" data-id="' + esc(x.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + dateFr(x.date, true) + '</span><span class="small mut">' + esc(x.sets.map(setText).join(', ')) + '</span></div>' + ICON.chev + '</button>').join('') + '</div>';
   } else {
@@ -525,6 +526,27 @@ function finishWorkout() {
   if (progMsg) toast(progMsg);
 }
 
+// Ton potentiel sur un exercice : total à vie, et ce que tu ferais avec plus de lest (formule d'Epley).
+const BODY_SHARE = { dips: 0.95, pompes: 0.65, pecs: 0.65, jambes: 0.9, dos: 0.6 };
+function potential(name, list) {
+  let reps = 0, kg = 0;
+  for (const x of list) for (const s of x.sets) { reps += s.r || 0; kg += (s.w || 0) * (s.r || 0); }
+  let h = '<div class="row" style="align-items:stretch"><div class="exo grow"><span class="label">À vie</span><span class="num" style="font-size:22px">' + reps.toLocaleString('fr-FR') + '</span><span class="small mut">répétitions' + (kg ? ' · ' + Math.round(kg).toLocaleString('fr-FR') + ' kg de lest soulevés' : '') + '</span></div>';
+  const share = /Pistol/.test(name) ? 0 : BODY_SHARE[(EXOS[name] || {}).g];
+  const recent = list.filter((x) => Date.now() - x.date < 42 * 864e5).flatMap((x) => x.sets).filter((s) => s.r >= 3 && s.r <= 20);
+  if (share && recent.length) {
+    const bw = (state.body && state.body.length) ? state.body.slice().sort((a, b) => b.d - a.d)[0].kg : 70;
+    const base = (s) => bw * share + (s.w || 0);
+    const best = recent.reduce((m, s) => (base(s) * (1 + s.r / 30) > base(m) * (1 + m.r / 30) ? s : m), recent[0]);
+    const L = base(best) * (1 + best.r / 30);
+    const w2 = (best.w || 0) + 5;
+    const r2 = Math.max(0, Math.floor(30 * (L / (bw * share + w2) - 1)));
+    const max1 = Math.max(0, Math.round((L - bw * share) * 2) / 2);
+    h += '<div class="exo grow"><span class="label">Ton potentiel</span><span class="num violet-text" style="font-size:22px">' + (r2 >= 1 ? r2 + ' rép.' : String(max1).replace('.', ',') + ' kg') + '</span><span class="small mut">' + (r2 >= 1 ? 'estimé avec ' + String(w2).replace('.', ',') + ' kg de lest' : 'de lest pour une seule répétition') + '</span></div>';
+  }
+  return h + '</div>';
+}
+
 // Ressenti de la séance : trois boutons, celui choisi passe en or.
 export function feelPills(w) {
   return ['Facile', 'Bien', 'Dur'].map((f) => '<button type="button" class="pill sm grow ' + (w.feel === f ? 'gold-btn' : 'glass') + '" data-act="feel" data-id="' + esc(w.id) + '" data-v="' + f + '">' + f + '</button>').join('');
@@ -701,7 +723,7 @@ export function renderRest() {
   // Si le bandeau est déjà affiché dans le bon état, on ne met à jour que le chrono (sinon les boutons rateraient des appuis).
   const box = $('rest').firstElementChild;
   if (box && box.dataset.over === String(over)) {
-    if (!over) { $('rest-time').textContent = clock(left); $('rest-ring').setAttribute('stroke-dashoffset', offset); }
+    if (!over) { $('rest-time').textContent = clock(left); $('rest-ring').setAttribute('stroke-dashoffset', offset); box.classList.toggle('soon', left <= 5); }
     return;
   }
   $('rest').innerHTML = '<div class="rest glass row' + (over ? ' end' : '') + '" data-over="' + over + '" style="gap:14px">'
@@ -800,6 +822,13 @@ Object.assign(ACTIONS, {
     const at = chip || document.querySelector('.chips') || document.getElementById('app');
     if (chip) chip.classList.add('pop');
     xpFly(at, record ? '+35 XP' : '+10 XP');
+    // La barre du repos ne doit pas cacher le bouton « Valider » de la série suivante.
+    setTimeout(() => {
+      const v = document.querySelector('[data-act="validate"]'), rb = document.querySelector('.rest');
+      if (!v || !rb) return;
+      const over = v.getBoundingClientRect().bottom + 12 - rb.getBoundingClientRect().top;
+      if (over > 0) window.scrollBy({ top: over, behavior: 'smooth' });
+    }, 80);
   },
   unvalidate: () => { const s = curSet(); s.done = false; delete s.pr; delete s.gh; state.active.rest = null; save(); render(); renderRest(); },
   'add-set': () => { const ex = curExo(); const last = ex.sets[ex.sets.length - 1] || {}; ex.sets.push({ r: last.r || 0, w: last.w || 0, t: last.t || 0, done: false }); if (ex.goals) ex.goals.push(null); state.active.setIdx = ex.sets.length - 1; save(); render(); },

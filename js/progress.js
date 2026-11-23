@@ -8,6 +8,7 @@ import { $, esc, plural, toNum, ui, ACTIONS, ICON, rankSvg, toast, sheet, closeS
 import { render } from './app.js';
 import { bodyCard } from './corps.js';
 import { goalsCard } from './objectifs.js';
+import { measuresCard } from './mesures.js';
 
 let photos = null; // chargées une fois, puis gardées en mémoire
 
@@ -179,6 +180,7 @@ export function viewProgress() {
   const log = bodyLog();
   h += '<div class="sec"><span class="h2">Corps</span></div><section class="glass card row tap" role="button" tabindex="0" data-act="body"><div class="col grow"><span class="label">Poids</span>'
     + '<span class="h2">' + (log.length ? fr(log[0].kg, 1) + ' kg' : 'Pas encore noté') + '</span><span class="small mut">' + (log.length ? 'Noté ' + dateFr(log[0].d) + (log.length > 1 ? ' · ' + (log[0].kg - log[log.length - 1].kg >= 0 ? '+' : '') + fr(log[0].kg - log[log.length - 1].kg, 1) + ' kg depuis le début' : '') : 'Touche pour ajouter une pesée') + '</span></div>' + ICON.chev + '</section>';
+  h += measuresCard();
   h += '<section class="glass card col tap" role="button" tabindex="0" data-act="photos" style="gap:10px"><div class="row between"><div class="col"><span class="label">Photos</span><span class="h2" id="photo-count">' + (photos ? plural(photos.length, 'photo', 'photos') : 'Photos de suivi') + '</span></div>' + ICON.chev + '</div>'
     + '<span class="small mut">' + photoHint() + '</span></section>';
   if (!photos) listPhotos().then((p) => { photos = p; const el = $('photo-count'); if (el) el.textContent = plural(p.length, 'photo', 'photos'); }).catch(() => { photos = []; });

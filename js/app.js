@@ -106,6 +106,12 @@ function viewHome() {
 
   if (has) { h += seasonCard(); celebrateSeason(); }
   if (has) h += quickCard();
+  // Rappel de sauvegarde : sur iPhone, les données ne vivent que dans le téléphone.
+  const DAYMS = 864e5;
+  if (state.workouts.length >= 5 && Date.now() - (state.lastExport || state.installed || 0) > 14 * DAYMS && Date.now() > (state.settings.backupSnooze || 0)) {
+    h += '<section class="glass card col backupcard" style="gap:10px"><div class="row" style="gap:12px;align-items:center"><span class="ico">' + ICON.save + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Sauvegarde tes progrès</span><span class="small mut">' + (state.lastExport ? 'Dernière sauvegarde il y a ' + Math.floor((Date.now() - state.lastExport) / DAYMS) + ' jours.' : 'Tu n’as jamais sauvegardé.') + ' Tes ' + state.workouts.length + ' séances ne sont que dans ce téléphone. Un fichier dans Fichiers ou iCloud, et rien ne se perd.</span></div></div>'
+      + '<div class="row"><button type="button" class="pill glass" data-act="backup-later">Plus tard</button><button type="button" class="pill gold-btn grow" data-act="export">Sauvegarder</button></div></section>';
+  }
 
   if (quests.length) {
     const doneCount = quests.filter((q) => q.done).length;
@@ -130,9 +136,6 @@ function viewHome() {
   }
   // Rappel de sauvegarde : toutes les deux semaines, tant que rien n'a été exporté.
   if (!state.installed) { state.installed = Date.now(); save(); }
-  if (has && Date.now() - (state.lastExport || state.installed) > 14 * DAY) {
-    h += '<section class="glass card row tap" role="button" tabindex="0" data-act="settings"><span class="ico gold">' + ICON.save + '</span><div class="col grow"><span class="h2">Pense à sauvegarder</span><span class="small mut">Tes séances n’existent que dans ce téléphone.</span></div>' + ICON.chev + '</section>';
-  }
   return h;
 }
 
@@ -397,6 +400,7 @@ async function exportBackup() {
   const file = new File([exportJson()], name, { type: 'application/json' });
   state.lastExport = Date.now();
   save();
+  render();
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
   } catch (e) { if (e && e.name === 'AbortError') return; }
@@ -457,6 +461,7 @@ Object.assign(ACTIONS, {
     try { const r = importJson(text); closeSheet(); ui.enter = true; render(); toast(r.added + ' séances restaurées'); } catch (e) { toast('Ce fichier n’est pas une sauvegarde valide'); }
   }),
   export: () => exportBackup(),
+  'backup-later': () => { state.settings.backupSnooze = Date.now() + 3 * 864e5; save(); render(); },
   'add-run': () => {
     const d = toNum($('run-d').value), t = Math.round(toNum($('run-m').value) * 60 + toNum($('run-s').value));
     if (d <= 0 || t <= 0) { toast('Indique la distance et la durée'); return; }

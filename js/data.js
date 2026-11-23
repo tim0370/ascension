@@ -416,6 +416,12 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 30, items: [
+    'Mensurations (onglet Progrès) : bras, poitrine, épaules, taille, cuisse, mollet, avec une courbe pour chaque zone',
+    'Fiche d’un exercice : ton total à vie et ton potentiel (par exemple combien de dips tu ferais avec 5 kg de plus)',
+    'Pendant le repos, le bouton Valider n’est plus caché par le minuteur, et le minuteur prévient 5 secondes avant la fin',
+    'La sauvegarde garde maintenant aussi tes hauts faits, objectifs, cycle du programme et mensurations, avec un rappel sur l’accueil toutes les deux semaines',
+  ] },
   { v: 29, items: [
     'Mon parcours (onglet Progrès) : la frise de tes grands moments depuis le début. Première séance, 10e, 50e, 100e séance, niveaux, paliers de pompes et de dips, courses, hauts faits, objectifs et médailles',
   ] },

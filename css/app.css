@@ -615,3 +615,11 @@ select.textin option { background: #1A1530; color: #fff; }
 .k-feat .tld, .k-medal .tld, .k-goal .tld { border-color: rgba(216, 189, 130, 0.6); color: #D8BD82; }
 .k-rec .tld { color: #FF9A3D; border-color: rgba(255, 154, 61, 0.5); }
 .k-start .tld { background: linear-gradient(160deg, #9C84FF, #5B3FC4); color: #fff; }
+
+/* Repos : les 5 dernières secondes, le bandeau prévient */
+.rest.soon { border-color: rgba(255, 154, 61, 0.6); animation: soon 1s ease-in-out infinite; }
+.rest.soon #rest-ring { stroke: #FF9A3D; }
+.rest.soon #rest-time { color: #FFD9B0; }
+@keyframes soon { 50% { box-shadow: 0 0 26px rgba(255, 154, 61, 0.35); } }
+
+.violet-text { color: #B6A4FF; }

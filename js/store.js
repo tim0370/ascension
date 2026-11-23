@@ -343,7 +343,7 @@ export function importHevy(text) {
 }
 
 // ---------- Sauvegarde complète ----------
-export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines, prefs: state.prefs, body: state.body, rankSeen: state.rankSeen }); }
+export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines, prefs: state.prefs, body: state.body, rankSeen: state.rankSeen, feats: state.feats, goals: state.goals, prog: state.prog, rankV: state.rankV, measures: state.measures }); }
 export function importJson(text) {
   const data = JSON.parse(text);
   if (!data || data.app !== 'ascension' || !Array.isArray(data.workouts)) throw new Error("Ce fichier n'est pas une sauvegarde de l'app.");
@@ -355,6 +355,12 @@ export function importJson(text) {
   if (data.routines && !state.routines) { state.routines = data.routines; for (const r of state.routines) canon(r); }
   if (data.prefs) state.prefs = Object.assign({}, data.prefs, state.prefs);
   if (data.body && !(state.body && state.body.length)) state.body = data.body;
+  // Ajouts des versions 20 et plus : hauts faits, objectifs, cycle du programme, mensurations.
+  if (data.feats) state.feats = Object.assign({}, data.feats, state.feats);
+  if (Array.isArray(data.goals)) { const ids = new Set((state.goals || []).map((g) => g.id)); state.goals = (state.goals || []).concat(data.goals.filter((g) => !ids.has(g.id))); }
+  if (data.prog && (!state.prog || added >= state.workouts.length - added)) state.prog = data.prog;
+  if (data.rankV) state.rankV = data.rankV;
+  if (Array.isArray(data.measures)) { const k = new Set((state.measures || []).map((m) => m.d + m.k)); state.measures = (state.measures || []).concat(data.measures.filter((m) => !k.has(m.d + m.k))); }
   save();
   return { added };
 }
