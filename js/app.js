@@ -15,6 +15,8 @@ import { dailyQuests, streak, feats, myTitle, titles, skins, SKINS } from './que
 import { bossCard } from './boss.js';
 import './course.js';
 import { monthBanner } from './bilan.js';
+import { quickCard } from './jour.js';
+import './chrono.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync } from './notif.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
@@ -75,7 +77,7 @@ function viewHome() {
       + '<div class="seg">' + a.exercises.map((e) => '<i class="' + (e.sets.length && e.sets.every((x) => x.done) ? 'on' : '') + '"></i>').join('') + '</div>'
       + '<button type="button" class="pill gold-btn wide" data-tab="workout">Reprendre la séance</button></section>';
   } else {
-    const doneToday = state.workouts.find((w) => w.start >= t0 && !w.boss && w.exercises.some((e) => e.name !== 'Running'));
+    const doneToday = state.workouts.find((w) => w.start >= t0 && !w.boss && !w.quick && w.exercises.some((e) => e.name !== 'Running'));
     h += progCard(true, !!doneToday);
   }
 
@@ -94,6 +96,8 @@ function viewHome() {
       + (next ? '<div class="col" style="gap:6px;margin-top:auto"><span class="small" style="font-weight:600">' + esc(next.desc) + '</span><div class="bar thin gold"><div style="width:' + Math.round((next.cur / next.goal) * 100) + '%"></div></div></div>' : '<span class="small mut" style="margin-top:auto">Tout est débloqué</span>')
       + '</section></div>';
   }
+
+  if (has) h += quickCard();
 
   if (quests.length) {
     const doneCount = quests.filter((q) => q.done).length;

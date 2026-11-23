@@ -103,7 +103,7 @@ export function xpOf(w) {
   for (const e of w.exercises) for (const s of e.sets) {
     if (e.name === 'Running') km += s.d || 0; else sets += 1;
   }
-  return sets * 10 + Math.round(km * 20) + 50 + (w.prs || 0) * 25 + (w.boss && w.boss.win ? 300 : 0);
+  return sets * 10 + Math.round(km * 20) + (w.quick ? 0 : 50) + (w.prs || 0) * 25 + (w.boss && w.boss.win ? 300 : 0);
 }
 
 export function totalXp() {
@@ -131,7 +131,7 @@ export function weekDays() {
 
 // D'où vient l'XP : séries, séances, course, records, quêtes.
 export function xpBreakdown() {
-  const b = { sets: 0, sessions: state.workouts.length, km: 0, prs: 0, quests: 0, questXp: 0 };
+  const b = { sets: 0, sessions: state.workouts.filter((w) => !w.quick).length, km: 0, prs: 0, quests: 0, questXp: 0 };
   for (const w of state.workouts) {
     b.prs += w.prs || 0;
     for (const e of w.exercises) for (const x of e.sets) { if (e.name === 'Running') b.km += x.d || 0; else b.sets += 1; }
@@ -365,7 +365,7 @@ export function weekQuest() {
   const now = new Date();
   const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)).getTime();
   // Ce n'est plus une quête (ça se fait tout seul) : juste ton objectif de la semaine. Les boss ne comptent pas comme séance.
-  const cur = state.workouts.filter((w) => w.start >= monday && !w.boss).length;
+  const cur = state.workouts.filter((w) => w.start >= monday && !w.boss && !w.quick).length;
   const goal = weekGoal();
   return { id: 'week', label: goal + ' séances cette semaine', cur: Math.min(cur, goal), goal, done: cur >= goal, unit: 'séances' };
 }

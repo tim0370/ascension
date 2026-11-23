@@ -150,7 +150,9 @@ export function viewWorkout() {
     // Le reste (routines, séance libre, course) est rangé derrière deux tuiles, pour laisser la place au programme.
     h += '<div class="tiles"><section class="glass tile tap" role="button" tabindex="0" data-act="routines"><span class="label">Mes routines</span>'
       + '<span class="h2">' + plural(routines().length, 'routine', 'routines') + '</span><span class="small mut" style="margin-top:auto">Full Body, séance libre</span></section>'
-      + '<section class="glass tile tap" role="button" tabindex="0" data-act="run"><span class="label">Course</span><span class="ico gold">' + ICON.run + '</span><span class="small mut" style="margin-top:auto">Avec le GPS, quand tu veux</span></section></div>';
+      + '<section class="glass tile tap" role="button" tabindex="0" data-act="run"><span class="label">Course</span><span class="ico gold">' + ICON.run + '</span><span class="small mut" style="margin-top:auto">Avec le GPS, quand tu veux</span></section>'
+      + '<section class="glass tile tap" role="button" tabindex="0" data-act="chrono2"><span class="label">Chrono</span><span class="ico">' + ICON.bolt + '</span><span class="small mut" style="margin-top:auto">Tabata, EMOM, AMRAP</span></section>'
+      + '<section class="glass tile tap" role="button" tabindex="0" data-act="quick"><span class="label">Pompes du jour</span><span class="ico">' + ICON.plus + '</span><span class="small mut" style="margin-top:auto">Une série hors séance</span></section></div>';
     return h;
   }
   if (a.warm) return viewWarmup(a);

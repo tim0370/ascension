@@ -33,7 +33,7 @@ function dayStats(list) {
       if (isPistol(e.name)) s.pistol += x.r || 0;
       if (EXPLO.includes(e.name)) s.explo += x.r || 0;
     }
-    if (lifted && !w.boss) s.lift += 1;
+    if (lifted && !w.boss && !w.quick) s.lift += 1;
     if (w.prog && w.prog.type !== 'test') { s.prog += 1; if (w.end - w.start < 45 * 60000) s.progFast += 1; }
     if (w.ghost) { s.ghostSets += w.ghost.won; if (w.ghost.total >= 6 && w.ghost.won === w.ghost.total) s.ghostPerfect += 1; }
     if (w.boss && w.boss.win) s.boss += 1;
@@ -126,7 +126,8 @@ export function dailyQuests() {
 // ---------- La flamme : jours d'entraînement d'affilée ----------
 // Un jour de repos est permis : la flamme s'éteint seulement après deux jours de suite sans rien.
 export function streak() {
-  const days = new Set(state.workouts.map((w) => dayKey(w.start)));
+  // Les pompes du jour (hors séance) gardent la flamme à partir de 30.
+  const days = new Set(state.workouts.filter((w) => !w.quick || w.exercises.reduce((n, e) => n + e.sets.reduce((k, s) => k + (s.r || 0), 0), 0) >= 30).map((w) => dayKey(w.start)));
   const t0 = day0(Date.now());
   let d = days.has(dayKey(t0)) ? t0 : t0 - DAY;
   if (!days.has(dayKey(d))) d -= DAY; // hier repos : on regarde avant-hier

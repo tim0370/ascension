@@ -527,3 +527,23 @@ select.textin option { background: #1A1530; color: #fff; }
 .feelx svg { width: 16px; height: 16px; }
 .coach { display: inline-flex; align-items: flex-start; gap: 6px; font-size: 13px; line-height: 1.35; color: var(--violet-soft); font-weight: 500; margin-top: 2px; }
 .coach svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
+
+/* Pompes du jour : anneau de progression */
+.qring { --p: 0; width: 54px; height: 54px; border-radius: 999px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  background: conic-gradient(var(--violet) calc(var(--p) * 1%), rgba(255, 255, 255, 0.08) 0); position: relative; }
+.qring::before { content: ''; position: absolute; inset: 5px; border-radius: 999px; background: #15102A; }
+.qring span { position: relative; font-size: 12px; font-weight: 700; }
+
+/* Chrono Tabata / EMOM / AMRAP */
+.chrono { position: fixed; inset: 0; z-index: 400; display: flex; flex-direction: column; gap: 22px; padding: calc(env(safe-area-inset-top) + 22px) 22px calc(env(safe-area-inset-bottom) + 26px); background: var(--bg); transition: background 0.4s; }
+.chrono.ch-work { background: radial-gradient(120% 70% at 50% 30%, #4B2FC0 0%, #1B1240 55%, #0D0A18 100%); }
+.chrono.ch-rest { background: radial-gradient(120% 70% at 50% 30%, #14684A 0%, #0D2A22 55%, #0D0A18 100%); }
+.chrono.ch-prep { background: radial-gradient(120% 70% at 50% 30%, #3A2A12 0%, #18120A 55%, #0D0A18 100%); }
+.chring { position: relative; width: min(78vw, 340px); aspect-ratio: 1; margin: auto; }
+.chring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.chring circle { fill: none; stroke-width: 7; }
+.chring .tr { stroke: rgba(255, 255, 255, 0.1); }
+.chring .pg { stroke: #fff; stroke-linecap: round; stroke-dasharray: 100; transition: stroke-dashoffset 0.25s linear; }
+.chin { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+.chphase { font-size: 15px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255, 255, 255, 0.8); }
+.chtime { font-size: 78px; line-height: 1; }

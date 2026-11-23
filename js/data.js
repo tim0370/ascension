@@ -416,6 +416,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 23, items: [
+    'Pompes du jour (accueil) : note une série en une touche, n’importe quand, pour viser 100 pompes dans la journée',
+    'Elles comptent pour les quêtes, les hauts faits et tes records, et gardent ta flamme dès 30 pompes',
+    'Chrono (onglet Séance) : Tabata, EMOM, AMRAP ou intervalles, avec bip et voix',
+  ] },
   { v: 22, items: [
     'Coach : à la fin de chaque exercice, dis si c’était facile, bien ou très dur',
     'La fois suivante, l’objectif s’adapte : 2 répétitions de plus si c’était facile, le même si c’était très dur',
