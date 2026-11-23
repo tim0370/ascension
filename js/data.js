@@ -430,6 +430,9 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 37, items: [
+    'Réparé : l’app restait sur un fond violet au lancement (la mise à niveau des noms d’exercices plantait). Tes données n’ont pas été touchées',
+  ] },
   { v: 36, items: [
     'Le personnage est roux',
     'Animations corrigées : les bras de la course ne tournent plus (vraie foulée en 4 temps), le bras bizarre du burpee (tuile Chrono) est réparé, et plus aucune main ni aucun pied ne traverse le sol. Les 102 animations ont été vérifiées une par une',

@@ -6,7 +6,7 @@ import { EXOS, ROUTINES, ALIAS } from './data.js';
 const KEY = 'ascension.v1';
 
 export const state = load();
-migrate();
+// migrate() est lancé tout en bas du fichier, une fois toutes les fonctions et tables prêtes.
 
 // Hevy en français : « Pompes », « Dips », « Course à pied »… On retrouve l'exercice du catalogue par son nom affiché.
 const plain = (x) => String(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, ' ').replace(/\((lestees|leste|lestee|lestes|weighted|avec lest|poids du corps|bodyweight)\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -446,3 +446,6 @@ export function weekQuest() {
   const goal = weekGoal();
   return { id: 'week', label: goal + ' séances cette semaine', cur: Math.min(cur, goal), goal, done: cur >= goal, unit: 'séances' };
 }
+
+// Mise à niveau des données, en dernier : elle utilise des tables définies plus haut (noms français…).
+try { migrate(); } catch (e) { console.error('migrate', e); }
