@@ -416,6 +416,9 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 33, items: [
+    'Guide de l’app (en haut des Réglages) : tout ce que fait Ascension, fonction par fonction, et une touche pour ouvrir chacune',
+  ] },
   { v: 32, items: [
     'Course GPS : ton tracé est enregistré et dessiné dans le détail de la course (départ en vert, arrivée en or). Il reste dans ton téléphone',
     'L’écran reste allumé pendant le retour au calme',

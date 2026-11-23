@@ -141,6 +141,53 @@ function viewHome() {
   return h;
 }
 
+// ---------- Guide de l'app ----------
+const GUIDE = [
+  ['S’entraîner', [
+    ['prog', 'Programme guidé', 'L’app choisit ta séance du jour (4 séances qui tournent), monte les exercices quand tu es prêt, et te fait un re-test toutes les 4 semaines.'],
+    ['routines', 'Mes routines', 'Full Body A et B, et la séance libre.'],
+    ['quick', 'Pompes du jour', 'Note une série en une touche, n’importe quand, pour viser 100 pompes dans la journée.'],
+    ['chrono2', 'Chrono', 'Tabata, EMOM, AMRAP et intervalles, avec voix.'],
+    ['cooldown', 'Retour au calme', '6 étirements guidés en 3 minutes.'],
+    ['gps', 'Course GPS', 'Distance, allure, lièvre, voix à chaque kilomètre et tracé de la course.'],
+  ]],
+  ['Être guidé', [
+    ['coach', 'Coach', 'Il lit ton historique : quoi faire aujourd’hui, pourquoi tu stagnes, comment monter de rang. Pose-lui tes questions.'],
+    ['', 'Pendant la séance', 'Objectif par série, fantôme de la dernière fois, compteur de pompes à la caméra, et « facile, bien, très dur » pour régler la séance suivante.'],
+    ['', 'Voix du coach', 'Dans les réglages, partie Son : elle annonce chaque série à la fin du repos.'],
+    ['', 'Notifications', 'Dans les réglages : fin du repos, rappel de séance, flamme, boss.'],
+  ]],
+  ['Jouer', [
+    ['level', 'Niveaux et XP', '10 XP par série, 50 par séance, 25 par record, plus les quêtes.'],
+    ['quests', 'Quêtes du jour', 'Trois défis calés sur tes records, et parfois une quête rare.'],
+    ['boss', 'Boss de la semaine', 'Un nouveau chaque lundi, à battre en un seul effort.'],
+    ['season', 'Saison du mois', '30 paliers, médailles de bronze, d’argent et d’or.'],
+    ['flame', 'Flamme et boucliers', 'Jours d’affilée ; un bouclier tous les 7 jours la protège.'],
+    ['feats', 'Hauts faits', 'Des défis durs qui débloquent titres et couleurs.'],
+    ['profile', 'Mon profil', 'Ton titre et la couleur de ton emblème.'],
+  ]],
+  ['Voir ses progrès', [
+    ['rank', 'Rang et 5 qualités', 'Force, explosivité, vitesse, endurance, maîtrise : de E à Z.'],
+    ['goal-new', 'Objectifs', 'Fixe un but, l’app te dit quand tu y seras.'],
+    ['career', 'Ma carrière', 'Tes compteurs depuis le début.'],
+    ['bilans', 'Bilans du mois', 'Ton mois en diapositives, à partager.'],
+    ['parcours', 'Mon parcours', 'La frise de tes grands moments.'],
+    ['measures', 'Mensurations', 'Bras, taille, cuisses… au mètre ruban.'],
+    ['', 'Carte du corps', 'Onglet Progrès : la récupération de chaque muscle.'],
+  ]],
+  ['Ne rien perdre', [
+    ['export', 'Sauvegarder', 'Un fichier avec toutes tes données, à garder dans Fichiers ou iCloud.'],
+    ['home-edit', 'Personnaliser l’accueil', 'Choisis les cartes affichées.'],
+  ]],
+];
+function sheetGuide() {
+  let h = '<div class="col" style="gap:4px"><span class="label violet">Guide</span><h1 class="h1">Tout ce que fait Ascension</h1><span class="small mut">Touche une ligne pour l’ouvrir. Tout marche sans internet, et tes données restent dans ton téléphone.</span></div>';
+  for (const [title, items] of GUIDE) {
+    h += '<span class="label">' + title + '</span><div class="list">' + items.map(([act, name, txt]) => '<' + (act ? 'button type="button" data-act="' + act + '"' : 'div') + ' class="item"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + name + '</span><span class="small mut">' + txt + '</span></div>' + (act ? ICON.chev : '') + '</' + (act ? 'button' : 'div') + '>').join('') + '</div>';
+  }
+  sheet(h + closeBtn, 1, 'full');
+}
+
 // ---------- Personnaliser l'accueil ----------
 const HOME_CARDS = [['coach', 'Coach'], ['boss', 'Boss de la semaine'], ['tiles', 'Rang et hauts faits'], ['season', 'Saison du mois'], ['quick', 'Pompes du jour'], ['quests', 'Quêtes du jour'], ['goal', 'Objectif en cours'], ['week', 'Ta semaine']];
 function show(k) { return !(state.settings.hide || {})[k]; }
@@ -348,6 +395,7 @@ function sheetRun() {
 function sheetSettings() {
   const rest = state.settings.rest || 90;
   sheet('<h1 class="h1">Réglages</h1>'
+    + '<button type="button" class="glass card row tap" data-act="guide" style="gap:12px;align-items:center;width:100%;text-align:left;color:inherit;font:inherit"><span class="ico">' + ICON.star + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Tout ce que fait Ascension</span><span class="small mut">Le guide de l’app, fonction par fonction</span></div>' + ICON.chev + '</button>'
     + '<div class="col" style="gap:8px"><span class="label">Temps de repos par défaut</span><div class="row" style="flex-wrap:wrap;gap:8px">'
     + [60, 90, 120, 150, 180].map((s) => '<button type="button" class="pill sm ' + (s === rest ? 'gold-btn' : 'glass') + '" data-act="set-rest" data-s="' + s + '">' + clock(s) + '</button>').join('') + '</div>'
     + '<span class="small mut">Tu peux aussi régler un repos différent pour chaque exercice pendant la séance.</span>'
@@ -448,6 +496,7 @@ Object.assign(ACTIONS, {
   'set-goal': (el) => { state.settings.weekGoal = +el.dataset.n; save(); render(); sheetSettings(); },
   'toggle-sound': () => { state.settings.sound = state.settings.sound === false; save(); sheetSettings(); },
   'home-edit': () => sheetHomeEdit(),
+  guide: () => sheetGuide(),
   'home-toggle': (el) => { const k = el.dataset.k; state.settings.hide = Object.assign({}, state.settings.hide, { [k]: show(k) }); save(); render(); sheetHomeEdit(); },
   'toggle-voice': () => { state.settings.voiceCoach = !state.settings.voiceCoach; save(); if (state.settings.voiceCoach) { try { const u = new SpeechSynthesisUtterance('Voix du coach activée. Je t’annonce chaque série à la fin du repos.'); u.lang = 'fr-FR'; speechSynthesis.speak(u); } catch (e) { /* pas de voix */ } } sheetSettings(); },
   'toggle-silent': () => { state.settings.soundSilent = state.settings.soundSilent === false; save(); wakeAudio(); sheetSettings(); },
