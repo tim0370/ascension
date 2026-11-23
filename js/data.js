@@ -57,6 +57,10 @@ export const EXOS = {
   'Reverse Fly (Dumbbell)': { fr: 'Oiseau haltères', kind: 'weight', g: 'dos' },
   'Dumbbell Pullover': { fr: 'Pull-over haltère', kind: 'weight', g: 'dos' },
   'Superman': { fr: 'Superman', kind: 'reps', g: 'dos' },
+  // Cou (allongé sur un banc ou au sol, avec ou sans poids sur le front)
+  'Lying Neck Curls': { fr: 'Flexions du cou', kind: 'reps', g: 'cou' },
+  'Lying Neck Extension': { fr: 'Extensions du cou', kind: 'reps', g: 'cou' },
+  'Lying Neck Side Raise': { fr: 'Inclinaisons du cou (côtés)', kind: 'reps', g: 'cou' },
   // Bras
   'Bicep Curl (Dumbbell)': { fr: 'Curl haltères', kind: 'weight', g: 'bras' },
   'Hammer Curl (Dumbbell)': { fr: 'Curl marteau', kind: 'weight', g: 'bras' },
@@ -112,14 +116,12 @@ export const EXOS = {
   'Seated Overhead Press (Barbell)': { fr: 'Développé épaules barre', kind: 'weight', old: true },
   'Bench Press (Barbell)': { fr: 'Développé couché barre', kind: 'weight', old: true },
   'Pull Up': { fr: 'Tractions', kind: 'reps', old: true },
-  'Lying Neck Curls': { fr: 'Flexions du cou', kind: 'reps', old: true },
-  'Lying Neck Extension': { fr: 'Extensions du cou', kind: 'reps', old: true },
   'L-Sit Hold': { fr: 'L-sit', kind: 'time', old: true },
   'Pike Compression Hold': { fr: 'Compression pike', kind: 'time', old: true },
 };
 
 // Familles affichées dans le choix d'exercice (champ g de chaque exercice).
-export const GROUPES = { pompes: 'Pompes', dips: 'Dips', pecs: 'Pectoraux', epaules: 'Épaules', dos: 'Dos', bras: 'Bras', jambes: 'Jambes', gainage: 'Gainage', cardio: 'Cardio' };
+export const GROUPES = { pompes: 'Pompes', dips: 'Dips', pecs: 'Pectoraux', epaules: 'Épaules', dos: 'Dos', bras: 'Bras', jambes: 'Jambes', gainage: 'Gainage', cou: 'Cou', cardio: 'Cardio' };
 
 // Variantes regroupées : dans Hevy, la version lestée est un exercice à part. Ici c'est le même exercice,
 // avec un lest facultatif. À gauche le nom Hevy, à droite le nom gardé.
@@ -130,6 +132,15 @@ export const ALIAS = {
   'Reverse Lunge (Dumbbell)': 'Reverse Lunge',
   'Lunge (Dumbbell)': 'Lunge',
   'Squat (Dumbbell)': 'Squat (Bodyweight)',
+  'Lying Neck Curls (Weighted)': 'Lying Neck Curls',
+  'Lying Neck Extension (Weighted)': 'Lying Neck Extension',
+  'Lying Neck Side Raise (Weighted)': 'Lying Neck Side Raise',
+  'Neck Flexion': 'Lying Neck Curls',
+  'Neck Extension': 'Lying Neck Extension',
+  'Lateral Neck Flexion': 'Lying Neck Side Raise',
+  'Lying Neck Lateral Raise': 'Lying Neck Side Raise',
+  'Side Lying Neck Raise': 'Lying Neck Side Raise',
+  'Lying Lateral Neck Raise': 'Lying Neck Side Raise',
 };
 
 // Routines actuelles (reprises des dernières séances Hevy de novembre 2026).
@@ -351,6 +362,9 @@ export const FICHES = {
   'Face Pull (Band)': { muscles: 'Arrière des épaules, haut du dos, rotateurs', steps: ['Élastique accroché à hauteur de visage (porte ou station), tiens-le bras tendus.', 'Tire vers ton visage en écartant les mains, coudes hauts.', 'Reviens lentement.'], erreurs: ['Tirer vers le ventre au lieu du visage.', 'Se pencher en arrière.'], facile: 'Band Pull Apart', dur: 'Reverse Fly (Dumbbell)' },
   'Reverse Fly (Dumbbell)': { muscles: 'Arrière des épaules, haut du dos', steps: ['Buste penché, dos plat, haltères sous la poitrine.', 'Ouvre les bras sur les côtés, coudes légèrement pliés.', 'Serre les omoplates en haut, redescends lentement.'], erreurs: ['Monter avec un élan.', 'Prendre trop lourd : 10 kg c’est déjà beaucoup, commence plus léger si besoin.'], facile: 'Band Pull Apart', dur: 'Bent Over Row (Dumbbell)' },
   'Dumbbell Pullover': { muscles: 'Grand dorsal, pectoraux', steps: ['Allongé sur le banc, un haltère tenu à deux mains au-dessus de la poitrine.', 'Descends l’haltère derrière la tête, bras presque tendus.', 'Ramène-le au-dessus de la poitrine en gardant les bras fixes.'], erreurs: ['Plier les coudes pendant le mouvement.', 'Cambrer le dos en bas.'], facile: 'Superman', dur: 'Dumbbell Row' },
+  'Lying Neck Curls': { muscles: 'Avant du cou', steps: ['Allongé sur le dos, la tête dépasse du bout du banc (ou reste au sol). Un poids léger sur le front si tu veux du lest, tenu à deux mains.', 'Rentre le menton puis monte la tête vers la poitrine, lentement.', 'Redescends en contrôlant jusqu’à l’horizontale, sans laisser la tête tomber.'], erreurs: ['Aller vite ou donner des à-coups : le cou se travaille toujours lentement.', 'Commencer lourd : 1 à 2,5 kg suffisent au début.', 'Pousser avec les épaules au lieu du cou.'], facile: 'Lying Neck Side Raise', dur: 'Lying Neck Extension' },
+  'Lying Neck Extension': { muscles: 'Arrière du cou, trapèzes', steps: ['Allongé sur le ventre, la tête dépasse du bout du banc, regard vers le sol.', 'Monte la tête vers l’arrière jusqu’à regarder devant toi, lentement.', 'Redescends doucement, menton vers la poitrine, sans à-coup.'], erreurs: ['Cambrer tout le dos : seul le cou bouge.', 'Monter trop haut et écraser la nuque.', 'Mettre trop de poids trop tôt.'], facile: 'Lying Neck Curls', dur: 'Lying Neck Side Raise' },
+  'Lying Neck Side Raise': { muscles: 'Côtés du cou', steps: ['Allongé sur le côté, la tête dépasse du banc (ou reste au sol), oreille vers le bas.', 'Monte l’oreille vers l’épaule du haut, lentement.', 'Redescends en contrôlant. Fais le même nombre de chaque côté : note le total ou une série par côté.'], erreurs: ['Tourner la tête au lieu de la pencher.', 'Faire plus d’un côté que de l’autre.', 'Aller vite.'], facile: 'Lying Neck Curls', dur: 'Lying Neck Extension' },
   'Superman': { muscles: 'Bas du dos, fessiers, arrière des épaules', steps: ['Allongé sur le ventre, bras tendus devant.', 'Décolle en même temps bras, poitrine et jambes.', 'Tiens une seconde, redescends doucement.'], erreurs: ['Lever la tête vers le plafond : regarde le sol.', 'Faire de grands à-coups.'], facile: 'Glute Bridge', dur: 'Dumbbell Pullover' },
   // ---------- Bras ----------
   'Bicep Curl (Dumbbell)': { muscles: 'Biceps', steps: ['Debout, haltères le long du corps, paumes vers l’avant.', 'Plie les coudes pour monter les haltères vers les épaules.', 'Redescends lentement, bras presque tendus.'], erreurs: ['Avancer les coudes ou balancer le dos.', 'Redescendre trop vite.'], facile: 'Bicep Curl (Band)', dur: 'Hammer Curl (Dumbbell)' },
@@ -416,6 +430,13 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 36, items: [
+    'Le personnage est roux',
+    'Animations corrigées : les bras de la course ne tournent plus (vraie foulée en 4 temps), le bras bizarre du burpee (tuile Chrono) est réparé, et plus aucune main ni aucun pied ne traverse le sol. Les 102 animations ont été vérifiées une par une',
+    'Exercices du cou : flexions (sur le dos), extensions (sur le ventre) et inclinaisons sur le côté, avec fiche et animation. Tes séances Hevy de cou comptent à nouveau',
+    'Lest sur tous les exercices : bouton « Ajouter du lest » directement sous les répétitions',
+    'Hevy en français : « Pompes », « Dips », « Course à pied »… sont reliés tout seuls au bon exercice. Pour les autres noms, Réglages, « Exercices non reconnus » propose déjà le bon exercice',
+  ] },
   { v: 35, items: [
     'Les personnages sont habillés : peau, t-shirt violet, short, baskets et cheveux, au lieu d’être tout blancs',
     'Animations refaites : les bras et les jambes tournent autour des articulations au lieu de glisser, ils ne rétrécissent plus en plein mouvement, et les mouvements lents (pompes lentes…) ne buguent plus',

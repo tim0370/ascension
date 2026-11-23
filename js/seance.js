@@ -245,6 +245,7 @@ function viewFocus(a) {
         + '<div class="col grow" style="align-items:center;gap:0"><input class="midnum" inputmode="decimal" data-f="w" data-i="' + a.setIdx + '" value="' + (s.w ? fr(s.w, 1) : 0) + '" aria-label="Lest en kilos"><span class="small mut">kg de lest</span></div>'
         + '<button type="button" class="stepbtn sm" data-act="step" data-f="w" data-d="1" aria-label="Plus de lest">' + ICON.plus + '</button></div>';
     }
+    else h += '<button type="button" class="pill sm glass" data-act="lest-on" data-i="' + a.idx + '" style="align-self:center;color:var(--soft)">' + ICON.plus + 'Ajouter du lest (gilet, haltère)</button>';
     // Chrono intégré pour les exercices en secondes : il remplit la durée tout seul.
     if (time && !s.done) {
       h += '<button type="button" class="pill glass wide' + (a.chrono ? ' on' : '') + '" data-act="chrono">' + (a.chrono ? 'Arrêter le chrono' : 'Lancer le chrono') + '</button>';
@@ -860,6 +861,7 @@ Object.assign(ACTIONS, {
     ex.goals = ex.sets.map(() => null);
     save(); render(); sheetExMenu(i);
   },
+  'lest-on': (el) => { const ex = state.active.exercises[+el.dataset.i]; setPref(ex.name, { lest: true }); save(); render(); toast('Lest activé pour cet exercice : indique les kilos'); },
   'ex-lest': (el) => {
     const i = +el.dataset.i, ex = state.active.exercises[i];
     const on = !lestOf(ex.name);

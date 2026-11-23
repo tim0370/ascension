@@ -8,12 +8,23 @@ const KEY = 'ascension.v1';
 export const state = load();
 migrate();
 
+// Hevy en français : « Pompes », « Dips », « Course à pied »… On retrouve l'exercice du catalogue par son nom affiché.
+const plain = (x) => String(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, ' ').replace(/\((lestees|leste|lestee|lestes|weighted|avec lest|poids du corps|bodyweight)\)/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+const SYN = { 'pompe': 'Push Up', 'pompes classiques': 'Push Up', 'dips triceps': 'Triceps Dip', 'dip': 'Triceps Dip', 'dips lestes': 'Triceps Dip', 'course': 'Running', 'course a pied': 'Running', 'footing': 'Running', 'jogging': 'Running', 'planche': 'Plank', 'gainage': 'Plank', 'squat pistol': 'Pistol Squat', 'pistol': 'Pistol Squat', 'squat': 'Squat (Bodyweight)', 'squats': 'Squat (Bodyweight)', 'burpees': 'Burpee', 'fente': 'Lunge', 'fentes': 'Lunge', 'pompes pike': 'Pike Pushup', 'pompe pike': 'Pike Pushup' };
+let FRMAP = null;
+export function frenchName(name) {
+  if (EXOS[name] || ALIAS[name]) return null;
+  if (!FRMAP) { FRMAP = {}; const put = (key, v) => { FRMAP[key] = FRMAP[key] || v; FRMAP[key.replace(/s\b/g, '')] = FRMAP[key.replace(/s\b/g, '')] || v; }; for (const k of Object.keys(SYN)) put(k, SYN[k]); for (const k of Object.keys(EXOS)) if (!EXOS[k].old) { put(plain(EXOS[k].fr), k); put(plain(k), k); } for (const k of Object.keys(EXOS)) { put(plain(EXOS[k].fr), k); put(plain(k), k); } }
+  const p = plain(name);
+  return FRMAP[p] || FRMAP[p.replace(/s\b/g, '')] || null;
+}
+
 // Regroupe les variantes d'un même exercice (avec ou sans lest) sous un seul nom, voir ALIAS dans data.js.
 function canon(o) {
   if (!o || !o.exercises) return;
   const out = [];
   for (const e of o.exercises) {
-    const name = ALIAS[e.name] || e.name;
+    const name = ALIAS[e.name] || frenchName(e.name) || e.name;
     const same = out.find((x) => x.name === name);
     if (same && (ALIAS[e.name] || same.merged)) { same.sets.push(...e.sets); if (same.goals) delete same.goals; continue; }
     out.push(Object.assign({}, e, { name, merged: !!ALIAS[e.name] }));
@@ -36,6 +47,12 @@ function migrate() {
   // Séances importées de Hevy avant que l'app les marque : leur identifiant commence par h suivi de la date.
   let fixed = false;
   for (const w of state.workouts) if (!w.src && /^h\d{9,}/.test(String(w.id))) { w.src = 'hevy'; fixed = true; }
+  // v36 : noms d'exercices en français venus de Hevy, reliés au catalogue (une fois).
+  if (v < 4) {
+    for (const w of state.workouts) if (w.exercises.some((e) => frenchName(e.name))) { canon(w); fixed = true; }
+    for (const r of state.routines || []) canon(r);
+    state.v = 4; fixed = true;
+  }
   if (fixed) save();
 }
 
@@ -60,6 +77,18 @@ export function unknownExos() {
   const m = {};
   for (const w of state.workouts) for (const e of w.exercises) if (!EXOS[e.name]) { const x = m[e.name] || (m[e.name] = { name: e.name, sets: 0, n: 0, last: 0 }); x.sets += e.sets.length; x.n += 1; x.last = Math.max(x.last, w.start); }
   return Object.values(m).sort((a, b) => b.sets - a.sets);
+}
+// Meilleure supposition pour un nom inconnu : le plus de mots en commun avec un nom du catalogue.
+export function guessExo(name) {
+  const w = plain(name).split(' ').filter((x) => x.length > 2).map((x) => x.replace(/s$/, ''));
+  let best = null, bs = 0;
+  for (const k of Object.keys(EXOS)) {
+    if (EXOS[k].old) continue;
+    const v = plain(EXOS[k].fr + ' ' + k).split(' ').map((x) => x.replace(/s$/, ''));
+    const sc = w.filter((x) => v.includes(x)).length / Math.max(w.length, 1);
+    if (sc > bs) { bs = sc; best = k; }
+  }
+  return bs >= 0.5 ? best : null;
 }
 // Relie un exercice inconnu à un exercice du catalogue, dans toutes les séances (et les routines).
 export function renameExo(from, to) {

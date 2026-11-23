@@ -3,7 +3,7 @@
 import {
   state, save, exoName, sorted, runs, xpOf, totalXp, levelInfo, weekStreak,
   fr, dur, clock, pace, dateFr, setText, workoutText, importHevy, exportJson, importJson,
-  weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines, isHevy, unknownExos, renameExo,
+  weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines, isHevy, unknownExos, renameExo, guessExo,
 } from './store.js';
 import { NEWS, EXOS } from './data.js';
 import { rankInfo, heat, bodyLog } from './stats.js';
@@ -152,7 +152,7 @@ function sheetUnknown() {
   let h = '<div class="col" style="gap:4px"><span class="label violet">Historique</span><h1 class="h1">Exercices non reconnus</h1><span class="small mut">Ces noms ne sont pas dans le catalogue d’Ascension : leurs séries ne comptent pas dans tes pompes à vie, tes dips ni ton rang. Relie chacun à l’exercice qui correspond, ou laisse-le s’il n’a rien à voir.</span></div>';
   if (!list.length) h += '<section class="glass card"><span class="mut">Tout ton historique est reconnu.</span></section>';
   h += list.map((x, i) => '<section class="glass card col" style="gap:10px"><div class="col" style="gap:2px"><span style="font-weight:700">' + esc(x.name) + '</span><span class="small mut">' + plural(x.sets, 'série', 'séries') + ' · ' + plural(x.n, 'séance', 'séances') + ' · dernière le ' + dateFr(x.last, true) + '</span></div>'
-    + '<div class="row" style="gap:8px"><label class="field grow" style="height:48px"><select id="unk-' + i + '" aria-label="Exercice correspondant" style="width:100%;background:none;border:0;color:inherit;font:inherit">' + opts + '</select></label><button type="button" class="pill gold-btn" data-act="unknown-set" data-i="' + i + '" data-name="' + esc(x.name) + '">Relier</button></div></section>').join('');
+    + '<div class="row" style="gap:8px"><label class="field grow" style="height:48px"><select id="unk-' + i + '" aria-label="Exercice correspondant" style="width:100%;background:none;border:0;color:inherit;font:inherit">' + (guessExo(x.name) ? opts.replace('value="' + esc(guessExo(x.name)) + '"', 'value="' + esc(guessExo(x.name)) + '" selected') : opts) + '</select></label><button type="button" class="pill gold-btn" data-act="unknown-set" data-i="' + i + '" data-name="' + esc(x.name) + '">Relier</button></div></section>').join('');
   sheet(h + closeBtn, 1, 'full');
 }
 

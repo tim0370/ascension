@@ -92,8 +92,8 @@ const DIP_H = [56, 28];
 const dipTop = (o) => fromSh([54.5, 9.6], -84, Object.assign({ a1: { to: DIP_H, s: 'back' }, l1: [104, 150], l2: [98, 146] }, o));
 const dipLow = (o) => fromSh([58, 19.5], -68, Object.assign({ a1: { to: DIP_H, s: 'back' }, l1: [110, 158], l2: [104, 152] }, o));
 const ROW_H = [57, 28];
-const rowLow = (F) => plank(F, ROW_H, 18.8, { low: true, s: 'down' });
-const rowTop = (F) => plank(F, ROW_H, 7.5, { low: true, s: 'down' });
+const rowLow = (F) => plank(F, ROW_H, 18.8, { low: true, s: 'down', p: { l1: { to: F, s: 'fwd', f: -60 } } });
+const rowTop = (F) => plank(F, ROW_H, 7.5, { low: true, s: 'down', p: { l1: { to: F, s: 'fwd', f: -60 } } });
 const hinge = (o) => st(Object.assign({ h: [43, 35], t: -22, hd: -12, l1: { to: [53, AY], s: 'fwd' }, l2: { to: [49.5, AY], s: 'fwd' }, a1: [90, 90], a2: [92, 90] }, o));
 const LIE = (o) => Object.assign({ h: [50, G - 3], t: 180, a1: [0, 0], l1: [0, 0], l2: [0, 0] }, o);
 const SEAT = (o) => Object.assign({ h: [46, G - 15.5], t: -90, l1: [0, 90, 0], l2: [-4, 88, 0] }, o);
@@ -122,7 +122,7 @@ const FIG = {
   'Explosive Push Up': { f: [pu(9.4), plank(PU_F, [51, G - 5], 18.8)], m: ['chest', 'ua'], d: 1.5 },
   'Clap Push Up': { f: [pu(9.4), plank(PU_F, [51, G - 6], 18.8, { p: { a1: [112, 30], a2: [108, 34] } })], m: ['chest', 'ua'], d: 1.5 },
   'Pseudo Planche Push Up': { f: [line(PU_F, [56, 38], [44, G - 0.6]), line(PU_F, [58, 48.5], [44, G - 0.6])], m: ['shoulder', 'chest', 'abs'] },
-  'Spiderman Push Up': { f: [pu(18.8), pu(9.6, { p: { l1: [-6, 150] } }), pu(18.8), pu(9.6, { p: { l2: [-6, 150] } })], m: ['chest', 'abs'], d: 4 },
+  'Spiderman Push Up': { f: [pu(18.8), pu(9.6, { p: { l1: [-22, 140] } }), pu(18.8), pu(9.6, { p: { l2: [-22, 140] } })], m: ['chest', 'abs'], d: 4 },
   'Hindu Push Up': { f: [pike([34, 31], [58, G - 0.6], [18, G - 2.4], 18.8), plank([18, G - 2.4], [58, G - 0.6], 10), line([18, G - 2.4], [58, 46], [58, G - 0.6], { p: { t: -42, hd: -60 } })], m: ['chest', 'shoulder'], d: 3.4 },
   'Deficit Push Up': { f: [plank(PU_F, [50, G - 4], 18.8), plank(PU_F, [50, G - 4], 7.8)], m: ['chest', 'ua'], eq: [['db', 50, G - 2.3]] },
   // Dips
@@ -136,14 +136,14 @@ const FIG = {
   'Bench Dip (Feet Elevated)': { f: [fromSh([40, 26.5], -96, { a1: { to: [37, G - 13.6], s: 'back' }, l1: { to: [70, G - 14.4], s: 'fwd' } }), fromSh([41, 35.5], -98, { a1: { to: [37, G - 13.6], s: 'back' }, l1: { to: [70, G - 14.4], s: 'fwd' } })], m: ['ua'], eq: [bench(14, 38), bench(64, 86)] },
   // Pectoraux
   'Bench Press (Dumbbell)': { f: [benchLie({ a1: [100, -84], a2: [96, -88] }), benchLie({ a1: [-90, -90], a2: [-88, -88] })], m: ['chest', 'ua'], eq: [bench(20, 56)], db: 3 },
-  'Dumbbell Fly': { f: [benchLie({ a1: [112, 70], a2: [108, 74] }), benchLie({ a1: [-92, -86], a2: [-88, -90] })], m: ['chest'], eq: [bench(20, 56)], db: 3, d: 3 },
+  'Dumbbell Fly': { f: [benchLie({ a1: [125, 52], a2: [120, 56] }), benchLie({ a1: [-92, -86], a2: [-88, -90] })], m: ['chest'], eq: [bench(20, 56)], db: 3, d: 3 },
   // Épaules
   'Pike Pushup': { f: [pike([36, 31], [58, G - 0.6], [20, G - 2.4], 18.8), pike([38, 34], [58, G - 0.6], [20, G - 2.4], 9.6)], m: ['shoulder', 'ua'] },
   'Elevated Pike Push Up': { f: [pike([34, 25], [58, G - 0.6], [18, G - 15], 18.8), pike([36, 28], [58, G - 0.6], [18, G - 15], 9.6)], m: ['shoulder', 'ua'], eq: [bench(4, 26)] },
   'Handstand Hold': { f: HOLD({ h: [46, 21.5], t: 90, a1: { to: [47, G - 0.6] }, l1: [-94, -94], l2: [-96, -96] }, 0.3), m: ['shoulder', 'abs'], eq: [['wall', 40]], sc: 0.84, d: 3.5 },
   'Wall Handstand Push Up': { f: [{ h: [46, 21.5], t: 90, a1: { to: [47, G - 0.6] }, l1: [-94, -94], l2: [-96, -96] }, { h: [46, 30], t: 90, a1: { to: [47, G - 0.6], s: 'back' }, l1: [-94, -94], l2: [-96, -96] }], m: ['shoulder', 'ua'], eq: [['wall', 40]], sc: 0.84 },
   'Wall Handstand Push Up Negative': { f: [{ h: [46, 21.5], t: 90, a1: { to: [47, G - 0.6] }, l1: [-94, -94], l2: [-96, -96] }, { h: [46, 30], t: 90, a1: { to: [47, G - 0.6], s: 'back' }, l1: [-94, -94], l2: [-96, -96] }], m: ['shoulder', 'ua'], eq: [['wall', 40]], sc: 0.84, d: 5, kt: [0, 0.82, 1] },
-  'Wall Walk': { f: [plank([14, G - 2.4], [52, G - 0.6], 18.8), { h: [24, 26], t: 72, a1: { to: [31, G - 0.6] }, l1: [-128, -128, -40], l2: [-132, -132, -40] }, { h: [16, 22], t: 88, a1: { to: [17, G - 0.6] }, l1: [-97, -97], l2: [-99, -99] }], m: ['shoulder', 'abs'], eq: [['wall', 9]], sc: 0.84, d: 5 },
+  'Wall Walk': { f: [plank([14, G - 2.4], [52, G - 0.6], 18.8), { h: [24, 26], t: 72, a1: { to: [31, G - 0.6], s: 'up' }, l1: [-128, -128, -40], l2: [-132, -132, -40] }, { h: [16, 22], t: 88, a1: { to: [17, G - 0.6], s: 'up' }, l1: [-97, -97], l2: [-99, -99] }], m: ['shoulder', 'abs'], eq: [['wall', 9]], sc: 0.84, d: 5 },
   'Planche Lean': { f: [line(PU_F, [55, 39], [48, G - 0.6]), line(PU_F, [59.5, 40], [48, G - 0.6])], m: ['shoulder', 'abs'], d: 3 },
   'Seated Overhead Press (Dumbbell)': { f: [SEAT({ a1: [62, -94], a2: [58, -90] }), SEAT({ a1: [-86, -86], a2: [-90, -90] })], m: ['shoulder', 'ua'], eq: [bench(30, 58)], db: 3 },
   'Arnold Press (Dumbbell)': { f: [SEAT({ a1: [78, -100], a2: [74, -96] }), SEAT({ a1: [-86, -86], a2: [-90, -90] })], m: ['shoulder'], eq: [bench(30, 58)], db: 3, d: 3 },
@@ -205,12 +205,22 @@ const FIG = {
   'V Up': { f: [LIE({ h: [50, G - 3.4], a1: [182, 182], l1: [-2, -2], l2: [0, 0] }), LIE({ h: [50, G - 3.6], t: -128, a1: [-56, -56], l1: [-52, -52], l2: [-50, -50] })], m: ['abs'], d: 2 },
   'Mountain Climber': { f: [pu(18.8, { p: { l1: [28, 156], l2: { to: PU_F, s: 'fwd' } } }), pu(18.8, { p: { l2: [28, 156], l1: { to: PU_F, s: 'fwd' } } })], m: ['abs', 'th'], d: 0.9 },
   'Shoulder Taps': { f: [pu(18.8, { p: { a2: [120, -40] } }), pu(18.8), pu(18.8, { p: { a1: [120, -40], a2: { to: PU_H, s: 'up' } } }), pu(18.8)], m: ['abs', 'shoulder'], d: 2.4 },
+  // Cou : sur le banc, la tête dépasse du bout
+  'Lying Neck Curls': { f: [{ h: [64, G - 15.6], t: 180, hd: 160, a1: [12, -20], l1: [12, 92], l2: [8, 90] }, { h: [64, G - 15.6], t: 180, hd: 228, a1: [12, -20], l1: [12, 92], l2: [8, 90] }], m: ['neck'], eq: [bench(44, 80)], d: 3.2 },
+  'Lying Neck Extension': { f: [{ h: [36, G - 15.6], t: 0, hd: 38, a1: [110, 40], l1: [180, 180, 270], l2: [178, 178, 270] }, { h: [36, G - 15.6], t: 0, hd: -32, a1: [110, 40], l1: [180, 180, 270], l2: [178, 178, 270] }], m: ['neck'], eq: [bench(6, 52)], d: 3.2 },
+  'Lying Neck Side Raise': { f: [LIE({ h: [60, G - 3.4], hd: 178, a1: [8, 4], a2: [176, 180], l1: [0, 0], l2: [2, 2] }), LIE({ h: [60, G - 3.4], hd: 218, a1: [8, 4], a2: [176, 180], l1: [0, 0], l2: [2, 2] })], m: ['neck'], d: 3.2 },
   // Cardio
-  'Burpee': { f: [st({ h: [50, AY - 26], a1: [-96, -96], a2: [-92, -92], l1: { to: [52, AY - 3], s: 'fwd', f: 60 }, l2: { to: [49, AY - 3], s: 'fwd', f: 60 } }), squatLow({ h: [42, 46], t: -20, a1: { to: [58, G - 0.6] }, l1: { to: [48, AY], s: 'fwd' }, l2: { to: [46, AY], s: 'fwd' } }), plank([22, G - 2.4], [58, G - 0.6], 18.8), squatLow({ h: [42, 46], t: -20, a1: { to: [58, G - 0.6] }, l1: { to: [48, AY], s: 'fwd' }, l2: { to: [46, AY], s: 'fwd' } })], m: ['th', 'chest'], d: 2.8, sc: 0.86 },
+  'Burpee': { f: [st({ h: [50, AY - 26], a1: [-96, -96], a2: [-92, -92], l1: { to: [52, AY - 3], s: 'fwd', f: 60 }, l2: { to: [49, AY - 3], s: 'fwd', f: 60 } }), squatLow({ h: [42, 46], t: -20, a1: { to: [58, G - 0.6], s: 'up' }, a2: { to: [56, G - 0.6], s: 'up' }, l1: { to: [48, AY], s: 'fwd' }, l2: { to: [46, AY], s: 'fwd' } }), plank([22, G - 2.4], [58, G - 0.6], 18.8), squatLow({ h: [42, 46], t: -20, a1: { to: [58, G - 0.6], s: 'up' }, a2: { to: [56, G - 0.6], s: 'up' }, l1: { to: [48, AY], s: 'fwd' }, l2: { to: [46, AY], s: 'fwd' } })], m: ['th', 'chest'], d: 2.8, sc: 0.86 },
   'Jumping Jack': { f: [fr({ a1: [82, 88], a2: [98, 92], l1: { to: [52, AY], s: 'fwd', f: 0 }, l2: { to: [48, AY], s: 'back', f: 180 } }), fr({ h: [50, AY - 23.4], a1: [-60, -76], a2: [-120, -104], l1: { to: [61, AY], s: 'fwd', f: 0 }, l2: { to: [39, AY], s: 'back', f: 180 } })], m: ['calf', 'shoulder'], d: 1, sc: 0.88 },
   'High Knees': { f: [st({ a1: [60, -40], a2: [120, 90], l1: [-14, 84], l2: { to: [49, AY], s: 'fwd' } }), st({ a1: [120, 90], a2: [60, -40], l2: [-14, 84], l1: { to: [51, AY], s: 'fwd' } })], m: ['th', 'abs'], d: 0.8 },
   'Tuck Jump': { f: [squatLow({ a1: [130, 130], a2: [126, 126] }), st({ h: [50, 24], t: -84, a1: [0, 60], a2: [4, 64], l1: [-36, 94], l2: [-32, 96] })], m: ['th', 'abs'], d: 1.4, sc: 0.86 },
-  'Running': { f: [st({ t: -80, a1: [60, -30], a2: [124, 150], l1: [-30, 70], l2: { to: [38, AY - 2], s: 'fwd', f: 40 } }), st({ t: -80, a1: [124, 150], a2: [60, -30], l2: [-30, 70], l1: { to: [38, AY - 2], s: 'fwd', f: 40 } })], m: ['th', 'calf'], d: 0.9 },
+  // Course : 4 positions (appui, envol, appui de l'autre jambe, envol), bras opposés aux jambes.
+  'Running': { f: [
+    st({ h: [50, AY - 23.4], t: -80, a1: [125, 40], a2: [55, -35], l1: [68, 96, 0], l2: [116, 150, 118] }),
+    st({ h: [50, AY - 25.2], t: -80, a1: [88, 0], a2: [100, 30], l1: [108, 196, 220], l2: [28, 104, 8] }),
+    st({ h: [50, AY - 23.4], t: -80, a1: [55, -35], a2: [125, 40], l1: [116, 150, 118], l2: [68, 96, 0] }),
+    st({ h: [50, AY - 25.2], t: -80, a1: [100, 30], a2: [88, 0], l1: [28, 104, 8], l2: [108, 196, 220] }),
+  ], m: ['th', 'calf'], d: 0.8 },
 };
 
 // Exercices sans dessin à eux (anciens ou créés par l'utilisateur) : silhouette debout qui respire.
@@ -230,6 +240,7 @@ const MUSCLE = {
   fa: (J) => seg(J.e1, J.h1, 0.1, 0.8),
   th: (J) => seg(J.hip, J.k1, 0.12, 0.9),
   calf: (J) => seg(J.k1, J.f1, 0.25, 0.85),
+  neck: (J) => seg(J.sh, J.neck, -0.2, 1.1),
 };
 
 // ---------- Mouvement ----------
@@ -244,12 +255,19 @@ function asAngles(J, k) {
   const [r, m, e, t] = LIMBS[k];
   return [ang(J[r], J[m]), ang(J[m], J[e]), t ? ang(J[e], J[t]) : undefined];
 }
+// Le coude et le genou se plient par rapport au segment du dessus : on interpole ce pli, pas l'angle absolu,
+// sinon un avant-bras peut faire un tour complet (bras de la course qui tournaient).
+const norm180 = (x) => ((((x % 360) + 540) % 360) - 180);
+function lerpAbs(a, b, u) {
+  const fa = a[2] === undefined ? a[1] - 90 : a[2], fb = b[2] === undefined ? b[1] - 90 : b[2];
+  const r0 = lerpA(a[0], b[0], u);
+  const ra = norm180(a[1] - a[0]), rb = norm180(b[1] - b[0]);
+  const r1 = r0 + lerp(ra, rb, u);
+  const foot = a[2] === undefined && b[2] === undefined ? undefined : r1 + lerp(norm180(fa - a[1]), norm180(fb - b[1]), u);
+  return [r0, r1, foot];
+}
 function lerpLimb(A, B, u, JA, JB, k) {
-  if (Array.isArray(A) && Array.isArray(B)) {
-    const fa = A[2] === undefined ? (B[2] === undefined ? undefined : A[1] - 90) : A[2];
-    const fb = B[2] === undefined ? (A[2] === undefined ? undefined : B[1] - 90) : B[2];
-    return [lerpA(A[0], B[0], u), lerpA(A[1], B[1], u), fa === undefined ? undefined : lerpA(fa, fb, u)];
-  }
+  if (Array.isArray(A) && Array.isArray(B)) return lerpAbs(A, B, u);
   if (!Array.isArray(A) && !Array.isArray(B) && A.s === B.s) {
     const f = A.f === undefined || B.f === undefined ? (A.f === undefined && B.f === undefined ? undefined : null) : lerpA(A.f, B.f, u);
     if (f !== null) {
@@ -257,8 +275,20 @@ function lerpLimb(A, B, u, JA, JB, k) {
       if (typeof A.to === 'string' && A.to === B.to) return { to: A.to, off: lerpP(A.off || [0, 0], B.off || [0, 0], u), s: A.s, f };
     }
   }
-  const a = asAngles(JA, k), b = asAngles(JB, k);
-  return [lerpA(a[0], b[0], u), lerpA(a[1], b[1], u), a[2] === undefined ? undefined : lerpA(a[2], b[2], u)];
+  // Cas mixte (un membre posé d'un côté, libre de l'autre) : le bout du membre suit un arc qui monte,
+  // comme un pied qu'on avance, puis le coude ou le genou se plie tout seul dans le bon sens.
+  const [, mK, eK, tK] = LIMBS[k];
+  const EA = JA[eK], EB = JB[eK], d = dist(EA, EB);
+  const lift = Math.sin(Math.PI * u) * Math.min(7, 0.4 * d);
+  const to = [lerp(EA[0], EB[0], u), lerp(EA[1], EB[1], u) - lift];
+  const rel = (J) => norm180(ang(J[mK], J[eK]) - ang(J[LIMBS[k][0]], J[mK]));
+  const rA = rel(JA), rB = rel(JB);
+  // Un membre presque tendu peut plier d'un côté comme de l'autre : il prend le sens de l'autre position.
+  let sA = rA > 0 ? -1 : 1, sB = rB > 0 ? -1 : 1;
+  if (Math.abs(rA) < 15) sA = sB; else if (Math.abs(rB) < 15) sB = sA;
+  if (sA !== sB) return lerpAbs(asAngles(JA, k), asAngles(JB, k), u);
+  const f = tK ? lerpA(ang(JA[eK], JA[tK]), ang(JB[eK], JB[tK]), u) : undefined;
+  return { to, s: sA, f };
 }
 function lerpPose(p, q, u, JA, JB) {
   const hd = (x) => (x.hd === undefined ? x.t : x.hd);
@@ -272,6 +302,11 @@ function framesOf(spec) {
   return spec.f;
 }
 const STEPS = 8;
+// Entre deux positions, rien ne passe sous le sol.
+function floorClamp(J) {
+  for (const k of ['e1', 'h1', 'e2', 'h2', 'k1', 'f1', 't1', 'k2', 'f2', 't2']) if (J[k][1] > G - 0.3) J[k] = [J[k][0], G - 0.3];
+  return J;
+}
 // Toute la boucle en petites images : { J: articulations, k: instant de 0 à 1 }
 function timeline(spec) {
   const F = framesOf(spec), n = F.length;
@@ -284,7 +319,7 @@ function timeline(spec) {
     const same = JSON.stringify(F[i]) === JSON.stringify(F[j]);
     for (let s = 0; s < (same ? 1 : STEPS); s++) {
       const u = s / STEPS, e = 0.5 - 0.5 * Math.cos(Math.PI * u);
-      out.push({ J: s ? joints(lerpPose(F[i], F[j], e, KJ[i], KJ[j])) : KJ[i], k: f2((kt[i] + (kt[i + 1] - kt[i]) * u) * 1000) / 1000 });
+      out.push({ J: s ? floorClamp(joints(lerpPose(F[i], F[j], e, KJ[i], KJ[j]))) : KJ[i], k: f2((kt[i] + (kt[i + 1] - kt[i]) * u) * 1000) / 1000 });
     }
   }
   out.push({ J: KJ[0], k: 1 });
@@ -309,7 +344,7 @@ const cache = {};
 // Un personnage habillé : peau, t-shirt violet, short sombre, baskets claires, cheveux.
 // Le côté lointain est plus sombre, une ombre suit le corps au sol, les muscles travaillés sont en orange.
 const W = { tor: 7, neck: 3.2, th: 5.4, sh: 4.2, foot: 2.8, ua: 3.8, fa: 3.1 };
-const MW = { chest: 5.2, abs: 4.4, back: 5, glute: 4.6, shoulder: 3.6, ua: 3, fa: 2.4, th: 4.2, calf: 3.1 };
+const MW = { neck: 3.4, chest: 5.2, abs: 4.4, back: 5, glute: 4.6, shoulder: 3.6, ua: 3, fa: 2.4, th: 4.2, calf: 3.1 };
 export function figure(name, cls) {
   const key = name + '|' + (cls || '');
   if (cache[key]) return cache[key];
@@ -364,3 +399,4 @@ export function figure(name, cls) {
 }
 export const hasFigure = (name) => !!FIG[name];
 export const FIG_NAMES = Object.keys(FIG);
+export const _check = { FIG, timeline, G };
