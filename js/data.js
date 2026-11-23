@@ -416,6 +416,10 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 31, items: [
+    'Voix du coach (Réglages, partie Son) : à la fin de chaque repos, elle annonce l’exercice, la série et ton objectif, et fête tes records',
+    'Personnaliser l’accueil (bouton en bas de l’accueil) : choisis les cartes que tu veux voir',
+  ] },
   { v: 30, items: [
     'Mensurations (onglet Progrès) : bras, poitrine, épaules, taille, cuisse, mollet, avec une courbe pour chaque zone',
     'Fiche d’un exercice : ton total à vie et ton potentiel (par exemple combien de dips tu ferais avec 5 kg de plus)',

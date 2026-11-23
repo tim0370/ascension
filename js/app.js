@@ -85,16 +85,16 @@ function viewHome() {
   } else {
     const doneToday = state.workouts.find((w) => w.start >= t0 && !w.boss && !w.quick && w.exercises.some((e) => e.name !== 'Running'));
     h += progCard(true, !!doneToday);
-    if (has) h += coachCard();
+    if (has && show('coach')) h += coachCard();
   }
 
   if (has) {
     h += monthBanner();
-    h += bossCard();
+    if (show('boss')) h += bossCard();
     // Deux tuiles : le rang (étoile des 5 qualités) et les hauts faits
     const got = fx.list.filter((f) => f.done).length;
     const next = fx.list.filter((f) => !f.done).sort((a, b) => b.cur / b.goal - a.cur / a.goal)[0];
-    h += '<div class="tiles">'
+    if (show('tiles')) h += '<div class="tiles">'
       + '<section class="glass tile tap" role="button" tabindex="0" data-act="rank"><span class="label violet">Rang ' + info.rank.letter + '</span>'
       + '<div class="minirad">' + radarSvg(info.q, true) + '</div>'
       + '<span class="small mut">' + info.q.map((x) => x.letter).join(' ') + (info.next ? ' · ' + Math.round(info.ratio * 100) + ' % vers ' + info.next.letter : '') + '</span></section>'
@@ -104,8 +104,8 @@ function viewHome() {
       + '</section></div>';
   }
 
-  if (has) { h += seasonCard(); celebrateSeason(); }
-  if (has) h += quickCard();
+  if (has) { if (show('season')) h += seasonCard(); celebrateSeason(); }
+  if (has && show('quick')) h += quickCard();
   // Rappel de sauvegarde : sur iPhone, les données ne vivent que dans le téléphone.
   const DAYMS = 864e5;
   if (state.workouts.length >= 5 && Date.now() - (state.lastExport || state.installed || 0) > 14 * DAYMS && Date.now() > (state.settings.backupSnooze || 0)) {
@@ -113,19 +113,19 @@ function viewHome() {
       + '<div class="row"><button type="button" class="pill glass" data-act="backup-later">Plus tard</button><button type="button" class="pill gold-btn grow" data-act="export">Sauvegarder</button></div></section>';
   }
 
-  if (quests.length) {
+  if (quests.length && show('quests')) {
     const doneCount = quests.filter((q) => q.done).length;
     h += '<div class="sechead"><span class="h2">Quêtes du jour</span><span class="small mut">' + doneCount + ' sur ' + quests.length + '</span></div>'
       + '<section class="glass card tap" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + quests.map(questRow).join('') + '</section>';
   }
 
   const goal = (state.goals || []).find((g) => !g.done);
-  if (goal) {
+  if (goal && show('goal')) {
     h += '<div class="sechead"><span class="h2">Objectif</span><button type="button" class="small mut row" style="gap:4px" data-act="goals-all">Tous' + ICON.chev + '</button></div>'
       + '<section class="glass card" style="padding:2px 16px">' + goalRow(goal, true) + '</section>';
   }
 
-  if (has) {
+  if (has && show('week')) {
     h += '<section class="glass card col tap" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span>'
       + '<span class="row small mut" style="gap:4px">' + (wq.done ? 'Objectif atteint' : wq.cur + ' sur ' + wq.goal + ' séances') + ICON.chev + '</span></div>'
       + '<div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>';
@@ -136,7 +136,17 @@ function viewHome() {
   }
   // Rappel de sauvegarde : toutes les deux semaines, tant que rien n'a été exporté.
   if (!state.installed) { state.installed = Date.now(); save(); }
+  if (has) h += '<button type="button" class="pill glass wide" data-act="home-edit" style="color:var(--mut)">Personnaliser l’accueil</button>';
   return h;
+}
+
+// ---------- Personnaliser l'accueil ----------
+const HOME_CARDS = [['coach', 'Coach'], ['boss', 'Boss de la semaine'], ['tiles', 'Rang et hauts faits'], ['season', 'Saison du mois'], ['quick', 'Pompes du jour'], ['quests', 'Quêtes du jour'], ['goal', 'Objectif en cours'], ['week', 'Ta semaine']];
+function show(k) { return !(state.settings.hide || {})[k]; }
+function sheetHomeEdit() {
+  const h = '<div class="col" style="gap:4px"><span class="label violet">Accueil</span><h1 class="h1">Personnaliser</h1><span class="small mut">Choisis les cartes affichées sur l’accueil. La séance du programme reste toujours en haut. Tout reste accessible ailleurs.</span></div>'
+    + '<section class="glass card" style="padding:4px 16px">' + HOME_CARDS.map(([k, l]) => '<button type="button" class="row between" data-act="home-toggle" data-k="' + k + '" style="width:100%;padding:14px 0;border:0;border-bottom:1px solid var(--line);background:none;color:inherit;font:inherit"><span style="font-weight:600">' + l + '</span><span class="switch' + (show(k) ? ' on' : '') + '"><i></i></span></button>').join('') + '</section>';
+  sheet(h + closeBtn);
 }
 
 // ---------- Détails : niveau, semaine, quêtes ----------
@@ -343,8 +353,9 @@ function sheetSettings() {
     + '<div class="col" style="gap:8px"><span class="label">Son</span>'
     + '<button type="button" class="pill sm glass wide' + (state.settings.sound === false ? '' : ' on') + '" data-act="toggle-sound">' + (state.settings.sound === false ? 'Bip de fin de repos : non' : 'Bip de fin de repos : oui') + '</button>'
     + '<button type="button" class="pill sm glass wide' + (state.settings.soundSilent === false ? ' on' : '') + '" data-act="toggle-silent">' + (state.settings.soundSilent === false ? 'Bip discret (garde la musique) : oui' : 'Bip discret (garde la musique) : non') + '</button>'
+    + '<button type="button" class="pill sm glass wide' + (state.settings.voiceCoach ? ' on' : '') + '" data-act="toggle-voice">' + (state.settings.voiceCoach ? 'Voix du coach : oui' : 'Voix du coach : non') + '</button>'
     + '<button type="button" class="pill sm glass wide" data-act="test-sound">Tester le son</button>'
-    + '<span class="small mut">Le bip sonne même si ton iPhone est en silencieux ; le volume se règle avec les boutons sur le côté. Si ta musique se coupe à chaque bip, mets « Bip discret : oui » (il ne sonne alors plus en silencieux). Le son ne marche que si l’app est ouverte à l’écran.</span></div>'
+    + '<span class="small mut">Le bip sonne même si ton iPhone est en silencieux ; le volume se règle avec les boutons sur le côté. Si ta musique se coupe à chaque bip, mets « Bip discret : oui » (il ne sonne alors plus en silencieux). Le son ne marche que si l’app est ouverte à l’écran. La voix du coach annonce l’exercice, la série et ton objectif à la fin de chaque repos, et fête tes records.</span></div>'
     + '<div class="col" style="gap:8px"><span class="label">Notifications</span>'
     + (pushOn()
       ? '<button type="button" class="pill sm glass wide on" data-act="notif-off">Notifications : oui</button>'
@@ -434,6 +445,9 @@ Object.assign(ACTIONS, {
   'set-rest': (el) => { state.settings.rest = +el.dataset.s; save(); sheetSettings(); },
   'set-goal': (el) => { state.settings.weekGoal = +el.dataset.n; save(); render(); sheetSettings(); },
   'toggle-sound': () => { state.settings.sound = state.settings.sound === false; save(); sheetSettings(); },
+  'home-edit': () => sheetHomeEdit(),
+  'home-toggle': (el) => { const k = el.dataset.k; state.settings.hide = Object.assign({}, state.settings.hide, { [k]: show(k) }); save(); render(); sheetHomeEdit(); },
+  'toggle-voice': () => { state.settings.voiceCoach = !state.settings.voiceCoach; save(); if (state.settings.voiceCoach) { try { const u = new SpeechSynthesisUtterance('Voix du coach activée. Je t’annonce chaque série à la fin du repos.'); u.lang = 'fr-FR'; speechSynthesis.speak(u); } catch (e) { /* pas de voix */ } } sheetSettings(); },
   'toggle-silent': () => { state.settings.soundSilent = state.settings.soundSilent === false; save(); wakeAudio(); sheetSettings(); },
   'test-sound': () => {
     beep(true).then((how) => {

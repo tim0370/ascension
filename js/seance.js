@@ -547,6 +547,20 @@ function potential(name, list) {
   return h + '</div>';
 }
 
+// Voix du coach (réglage « Voix du coach ») : annonce la série suivante à la fin du repos.
+export function speak(t) {
+  if (!state.settings.voiceCoach) return;
+  try { const u = new SpeechSynthesisUtterance(t); u.lang = 'fr-FR'; u.rate = 1.05; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u); } catch (e) { /* pas de voix */ }
+}
+function announceNext() {
+  const a = state.active, ex = curExo(), s = curSet();
+  if (!a || !ex || !s || s.done) return;
+  const time = measureOf(ex.name) === 'time';
+  const g = ex.goals && ex.goals[a.setIdx];
+  const n = ex.sets.length;
+  speak(exoName(ex.name) + ', série ' + (a.setIdx + 1) + ' sur ' + n + '. ' + (g ? 'Objectif : ' + (time ? g.t + ' secondes' : g.r + ' répétitions') + '.' : 'Vas-y.'));
+}
+
 // Ressenti de la séance : trois boutons, celui choisi passe en or.
 export function feelPills(w) {
   return ['Facile', 'Bien', 'Dur'].map((f) => '<button type="button" class="pill sm grow ' + (w.feel === f ? 'gold-btn' : 'glass') + '" data-act="feel" data-id="' + esc(w.id) + '" data-v="' + f + '">' + f + '</button>').join('');
@@ -715,7 +729,7 @@ export function renderRest() {
   if (!a || !a.rest) { if ($('rest').innerHTML) $('rest').innerHTML = ''; return; }
   const left = (a.rest.end - Date.now()) / 1000;
   // Pas de bip en retard : si l'app était fermée à la fin du repos, on ne sonne pas au retour.
-  if (left <= 0 && !a.rest.rang) { a.rest.rang = true; if (left > -3) beep(); save(); }
+  if (left <= 0 && !a.rest.rang) { a.rest.rang = true; if (left > -3) { beep(); setTimeout(announceNext, 700); } save(); }
   if (left < -30) { a.rest = null; save(); $('rest').innerHTML = ''; return; }
   const ratio = Math.max(0, Math.min(1, left / a.rest.total));
   const over = left <= 0;
@@ -812,7 +826,8 @@ Object.assign(ACTIONS, {
       if (ni >= 0) { a.idx = ni; a.setIdx = firstTodo(a.exercises[ni]); ui.enter = true; toast(beat ? 'Objectif atteint, exercice suivant' : 'Exercice terminé'); top(); }
       else { a.view = 'list'; ui.enter = true; toast('Toutes les séries sont faites'); top(); }
     }
-    if (record) { toast('Record battu', true); burst(); }
+    if (record) { toast('Record battu', true); burst(); speak('Record battu. Bravo.'); }
+    else if (beat) speak('Objectif atteint.');
     else if (gh && s.gh > 0) toast('Fantôme battu');
     const doneIdx = ex.sets.indexOf(s), exIdx = a.exercises.indexOf(ex);
     save(); render(); renderRest();
