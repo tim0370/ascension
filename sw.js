@@ -1,7 +1,7 @@
 // Service worker : garde l'app dans le téléphone pour qu'elle s'ouvre tout de suite, même sans réseau.
 // À chaque mise à jour : augmenter VERSION ici, VERSION dans js/ui.js, et ajouter les nouveautés dans js/data.js.
 // L'app compare elle-même son numéro à celui de ce fichier en ligne et se met à jour (voir la fin de js/app.js).
-const VERSION = 'ascension-37';
+const VERSION = 'ascension-38';
 const FILES = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/ui.js', 'js/seance.js', 'js/progress.js', 'js/stats.js', 'js/photos.js', 'js/store.js', 'js/data.js', 'js/anim.js', 'js/sound.js', 'js/programme.js', 'js/quetes.js', 'js/boss.js', 'js/course.js', 'js/camera.js', 'js/notif.js', 'js/corps.js', 'js/bilan.js', 'js/objectifs.js', 'js/jour.js', 'js/chrono.js', 'js/retour.js', 'js/coach.js', 'js/saison.js', 'js/parcours.js', 'js/mesures.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-512.png'];
 
 // À l'installation, on télécharge tous les fichiers avec le numéro de version dans l'adresse :
@@ -21,6 +21,20 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   // Les vérifications de version passent toujours par le réseau.
   if (new URL(e.request.url).searchParams.has('fresh')) return;
+  // La page elle-même : le réseau d'abord (3 s au plus), pour qu'une réparation arrive toujours ; le cache sinon.
+  if (e.request.mode === 'navigate') {
+    e.respondWith(caches.open(VERSION).then((c) => new Promise((ok) => {
+      let done = false;
+      const fallback = () => c.match('index.html').then((hit) => { if (!done) { done = true; ok(hit || fetch(e.request)); } });
+      const t = setTimeout(fallback, 3000);
+      fetch(e.request, { cache: 'no-store' }).then((res) => {
+        if (done) return;
+        if (!res.ok) { clearTimeout(t); fallback(); return; }
+        done = true; clearTimeout(t); c.put('index.html', res.clone()).catch(() => {}); ok(res);
+      }).catch(() => { clearTimeout(t); fallback(); });
+    })));
+    return;
+  }
   e.respondWith(
     caches.open(VERSION).then((c) => c.match(e.request, { ignoreSearch: true }).then((hit) => hit || fetch(e.request).then((res) => {
       if (res.ok || res.type === 'opaque') c.put(e.request, res.clone()).catch(() => {});

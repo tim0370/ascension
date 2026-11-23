@@ -430,6 +430,10 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 38, items: [
+    'Si l’app ne démarre pas, un bouton « Réparer l’app » apparaît maintenant à la place de l’écran vide',
+    'L’app va toujours chercher la dernière version de la page quand tu as du réseau',
+  ] },
   { v: 37, items: [
     'Réparé : l’app restait sur un fond violet au lancement (la mise à niveau des noms d’exercices plantait). Tes données n’ont pas été touchées',
   ] },
