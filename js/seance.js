@@ -152,7 +152,8 @@ export function viewWorkout() {
       + '<span class="h2">' + plural(routines().length, 'routine', 'routines') + '</span><span class="small mut" style="margin-top:auto">Full Body, séance libre</span></section>'
       + '<section class="glass tile tap" role="button" tabindex="0" data-act="run"><span class="label">Course</span><span class="ico gold">' + ICON.run + '</span><span class="small mut" style="margin-top:auto">Avec le GPS, quand tu veux</span></section>'
       + '<section class="glass tile tap" role="button" tabindex="0" data-act="chrono2"><span class="label">Chrono</span><span class="ico">' + ICON.bolt + '</span><span class="small mut" style="margin-top:auto">Tabata, EMOM, AMRAP</span></section>'
-      + '<section class="glass tile tap" role="button" tabindex="0" data-act="quick"><span class="label">Pompes du jour</span><span class="ico">' + ICON.plus + '</span><span class="small mut" style="margin-top:auto">Une série hors séance</span></section></div>';
+      + '<section class="glass tile tap" role="button" tabindex="0" data-act="quick"><span class="label">Pompes du jour</span><span class="ico">' + ICON.plus + '</span><span class="small mut" style="margin-top:auto">Une série hors séance</span></section></div>'
+      + '<button type="button" class="pill glass wide" data-act="cooldown">Retour au calme · 3 min d’étirements</button>';
     return h;
   }
   if (a.warm) return viewWarmup(a);
@@ -165,6 +166,7 @@ function viewWarmup(a) {
   return '<div class="row between"><div class="col" style="gap:2px"><span class="small mut">' + esc(a.label) + '</span><h1 class="h1">Échauffement</h1></div><button type="button" class="pill sm glass" data-act="warm-skip">Passer</button></div>'
     + '<div class="seg">' + WARMUP.map((x, i) => '<i class="' + (i <= a.warm.i ? 'on' : '') + '"></i>').join('') + '</div>'
     + '<section class="glass card hud col center" style="border-radius:32px;padding:34px 20px;gap:12px"><span class="label violet">Mouvement ' + (a.warm.i + 1) + ' sur ' + WARMUP.length + '</span>'
+    + (m.fig ? '<div class="cdfig" style="width:100%">' + figure(m.fig) + '</div>' : '')
     + '<span class="h1" style="font-size:30px">' + esc(m.name) + '</span><span class="num" id="warm-time" style="font-size:80px;line-height:1.05;letter-spacing:-2px">' + Math.max(0, Math.ceil((a.warm.end - Date.now()) / 1000)) + '</span>'
     + '<span class="mut">' + esc(m.tip) + '</span></section>'
     + '<button type="button" class="pill gold-btn wide big" data-act="warm-next">' + (a.warm.i < WARMUP.length - 1 ? 'Mouvement suivant' : 'Commencer la séance') + '</button>';
@@ -601,6 +603,7 @@ function sheetSummary(w, label, xpBefore, qNew, fNew) {
     + lines.map((l) => '<button type="button" class="item" data-act="exo" data-name="' + esc(l.name) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(l.name)) + '</span><span class="small mut">' + esc(l.text) + '</span></div>'
       + (l.delta ? '<span class="small ' + (l.up ? 'gold-text' : 'mut') + '" style="font-weight:600;white-space:nowrap">' + l.delta + '</span>' : '') + '</button>').join('') + '</div>';
   h += '<div class="col" style="gap:8px"><span class="label">Comment c’était ?</span><div class="row" id="feel-row">' + feelPills(w) + '</div></div>';
+  h += '<button type="button" class="pill glass wide" data-act="cooldown" style="color:var(--violet-soft)">Retour au calme · 3 min d’étirements</button>';
   h += '<div class="row"><button type="button" class="pill glass grow" data-act="share" data-id="' + esc(w.id) + '">Partager en image</button>'
     + '<button type="button" class="pill glass grow" data-act="copy" data-id="' + esc(w.id) + '" style="color:var(--gold)">' + ICON.copy + 'Pour Claude</button></div>' + closeBtn;
   sheet(h, 1, 'full');

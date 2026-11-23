@@ -407,15 +407,19 @@ export const FICHES = {
 export const WARMUP = [
   { name: 'Rotations des épaules', secs: 30, tip: 'Grands cercles, dans un sens puis dans l’autre.' },
   { name: 'Cercles des poignets', secs: 30, tip: 'Mains jointes, tourne doucement dans les deux sens.' },
-  { name: 'Squats à vide', secs: 40, tip: 'Lentement, descends de plus en plus bas.' },
-  { name: 'Pompes lentes', secs: 40, tip: 'Trois secondes pour descendre, sans forcer.' },
-  { name: 'Planche sur les mains', secs: 30, tip: 'Pousse le sol, écarte les omoplates.' },
-  { name: 'Fentes alternées', secs: 40, tip: 'Un pas en arrière, puis l’autre jambe.' },
+  { name: 'Squats à vide', fig: 'Squat (Bodyweight)', secs: 40, tip: 'Lentement, descends de plus en plus bas.' },
+  { name: 'Pompes lentes', fig: 'Slow Push Up', secs: 40, tip: 'Trois secondes pour descendre, sans forcer.' },
+  { name: 'Planche sur les mains', fig: 'Plank', secs: 30, tip: 'Pousse le sol, écarte les omoplates.' },
+  { name: 'Fentes alternées', fig: 'Reverse Lunge', secs: 40, tip: 'Un pas en arrière, puis l’autre jambe.' },
 ];
 
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 24, items: [
+    'Retour au calme : 6 étirements guidés en 3 minutes, avec silhouette, minuteur et voix, proposé à la fin de chaque séance',
+    'L’échauffement montre maintenant les mouvements en animation',
+  ] },
   { v: 23, items: [
     'Pompes du jour (accueil) : note une série en une touche, n’importe quand, pour viser 100 pompes dans la journée',
     'Elles comptent pour les quêtes, les hauts faits et tes records, et gardent ta flamme dès 30 pompes',

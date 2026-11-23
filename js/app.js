@@ -17,6 +17,7 @@ import './course.js';
 import { monthBanner } from './bilan.js';
 import { quickCard } from './jour.js';
 import './chrono.js';
+import './retour.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync } from './notif.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';

@@ -102,6 +102,13 @@ const squatLow = (o) => st(Object.assign({ h: [41, 45], t: -52, hd: -70, a1: [-2
 const HOLD = (p, dy) => [p, Object.assign({}, p, { h: [p.h[0], p.h[1] + (dy || 0.6)], t: p.t + 0.8 })];
 
 const FIG = {
+  // Étirements du retour au calme (retour.js) : deux positions proches, au rythme d'une respiration lente.
+  'stretch-chest': { f: [st({ t: -92, hd: -94, a1: [116, 116], a2: [120, 120] }), st({ t: -97, hd: -104, a1: [126, 124], a2: [130, 128] })], m: ['chest', 'shoulder'], d: 5 },
+  'stretch-triceps': { f: [st({ a1: [-98, 96], a2: [-70, -150] }), st({ a1: [-104, 100], a2: [-74, -154] })], m: ['ua'], d: 5 },
+  'stretch-quad': { f: [st({ a1: { to: [42.6, 34.2], s: 'back' }, l1: [106, -116, 200], l2: { to: [50.5, AY], s: 'fwd' } }), st({ t: -87, a1: { to: [41.4, 33.2], s: 'back' }, l1: [110, -118, 200], l2: { to: [50.5, AY], s: 'fwd' } })], m: ['th'], d: 5 },
+  'stretch-ham': { f: [{ h: [34, G - 3.2], t: -38, hd: -30, a1: [4, 6], l1: [0, 0, -90], l2: [2, 2, -90] }, { h: [34, G - 3.2], t: -24, hd: -14, a1: [8, 4], l1: [0, 0, -90], l2: [2, 2, -90] }], m: ['th', 'back'], d: 5 },
+  'stretch-dog': { f: [pike([36, 31], [60, G - 0.6], [20, G - 2.4], 18.8), pike([35, 29], [60, G - 0.6], [20, G - 2.4], 18.8)], m: ['calf', 'shoulder'], d: 5 },
+  'stretch-child': { f: [{ h: [35, G - 8], t: 14, hd: 20, a1: [4, 2], l1: [32, 180, 180], l2: [30, 180, 180] }, { h: [34, G - 7.4], t: 18, hd: 24, a1: [6, 2], l1: [34, 180, 180], l2: [32, 180, 180] }], m: ['back'], d: 5 },
   // Pompes
   'Push Up': { f: [pu(18.8), pu(9.4)], m: ['chest', 'ua'] },
   'Knee Push Up': { f: [plank([30, G - 1.6], PU_H, 18.8, { knees: true }), plank([30, G - 1.6], PU_H, 11, { knees: true })], m: ['chest', 'ua'] },
