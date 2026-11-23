@@ -48,8 +48,10 @@
     } catch (e) { done(); }
   };
   setTimeout(function () {
-    var app = document.getElementById('app');
-    if (!app || app.children.length) return;
+    if (window.__ascOk) return;
+    var app = document.createElement('div');
+    app.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#0D0A18;overflow:auto;padding-top:env(safe-area-inset-top)';
+    document.body.appendChild(app);
     app.innerHTML = '<section style="margin:40px 16px;padding:20px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#F4F2FB;font:15px/1.45 -apple-system,system-ui,sans-serif">'
       + '<div style="font-weight:700;font-size:19px;margin-bottom:6px">L’app n’a pas démarré</div>'
       + '<div style="opacity:.75;margin-bottom:14px">Tes données ne sont pas touchées. Touche le bouton pour recharger l’app depuis Internet.</div>'

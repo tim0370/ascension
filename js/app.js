@@ -581,7 +581,14 @@ export function render() {
   // L'animation d'arrivée ne joue que quand on change d'écran, pas à chaque série cochée.
   $('app').classList.toggle('enter', ui.enter);
   ui.enter = false;
-  $('app').innerHTML = (views[ui.tab] || viewHome)();
+  let html;
+  try { html = (views[ui.tab] || viewHome)(); } catch (e) {
+    console.error(e);
+    html = '<section class="glass card col" style="gap:10px;margin-top:20px"><span class="h2">Cet écran n’a pas pu s’afficher</span><span class="small mut">Tes données ne sont pas touchées. Envoie une capture de ce message pour que ce soit corrigé.</span>'
+      + '<span class="small dim" style="font-family:ui-monospace,monospace;word-break:break-word">' + esc(String(e && e.message || e)) + ' ' + esc(String(e && e.stack || '').split(String.fromCharCode(10)).slice(0, 3).join(' | ')) + '</span>'
+      + '<button type="button" class="pill gold-btn wide" onclick="__repair()">Réparer l’app</button></section>';
+  }
+  $('app').innerHTML = html;
   document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === ui.tab));
   // Un rang gagné se fête sur l'accueil, quand aucune autre fenêtre n'est ouverte.
   if (ui.tab === 'home' && state.workouts.length && !$('sheet').firstElementChild) checkRankUp(rankInfo());
@@ -702,3 +709,6 @@ Object.assign(ACTIONS, {
   'notif-off': async () => { await disablePush(); sheetSettings(); toast('Notifications désactivées'); },
   'notif-hour': (el) => { state.settings.notifHour = Math.max(6, Math.min(22, notifHour() + Number(el.dataset.d))); save(); resync(); sheetSettings(); },
 });
+
+// Le démarrage est allé au bout : l'écran de secours de index.html ne s'affichera pas.
+window.__ascOk = true;

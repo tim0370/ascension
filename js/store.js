@@ -449,3 +449,14 @@ export function weekQuest() {
 
 // Mise à niveau des données, en dernier : elle utilise des tables définies plus haut (noms français…).
 try { migrate(); } catch (e) { console.error('migrate', e); }
+// Filet de sécurité : une séance abîmée (liste d'exercices ou de séries manquante) ne doit jamais bloquer l'app.
+try {
+  if (!Array.isArray(state.workouts)) state.workouts = [];
+  state.workouts = state.workouts.filter((w) => w && typeof w === 'object' && Number.isFinite(Number(w.start)));
+  for (const w of state.workouts) {
+    w.start = Number(w.start);
+    if (!Array.isArray(w.exercises)) w.exercises = [];
+    w.exercises = w.exercises.filter((e) => e && typeof e === 'object' && e.name);
+    for (const e of w.exercises) { e.name = String(e.name); if (!Array.isArray(e.sets)) e.sets = []; e.sets = e.sets.filter((x) => x && typeof x === 'object'); }
+  }
+} catch (e) { console.error('nettoyage', e); }
