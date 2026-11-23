@@ -416,6 +416,9 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 29, items: [
+    'Mon parcours (onglet Progrès) : la frise de tes grands moments depuis le début. Première séance, 10e, 50e, 100e séance, niveaux, paliers de pompes et de dips, courses, hauts faits, objectifs et médailles',
+  ] },
   { v: 28, items: [
     'Note de séance, comme dans un jeu : S, A, B, C, D ou E selon les séries faites, tes objectifs battus, tes records et ton duel contre le fantôme. Elle apparaît aussi dans l’historique',
   ] },

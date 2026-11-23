@@ -19,6 +19,7 @@ import { quickCard } from './jour.js';
 import './chrono.js';
 import './retour.js';
 import { coachCard } from './coach.js';
+import './parcours.js';
 import { seasonCard, celebrateSeason, sheetSeason } from './saison.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync } from './notif.js';
@@ -234,7 +235,7 @@ function sheetProfile() {
     + '<span class="label">Titre</span><div class="row" style="flex-wrap:wrap;gap:8px">'
     + ts.map((t) => '<button type="button" class="pill sm ' + (t === cur ? 'gold-btn' : 'glass') + '" data-act="set-title" data-t="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>'
     + (ts.length < 2 ? '<span class="small mut">Pas encore de titre : réussis un haut fait pour en gagner un.</span>' : '');
-  h += '<div class="row"><button type="button" class="pill glass grow" data-act="career">Ma carrière</button><button type="button" class="pill glass grow" data-act="bilans">Bilans du mois</button></div>';
+  h += '<div class="row"><button type="button" class="pill glass grow" data-act="career">Ma carrière</button><button type="button" class="pill glass grow" data-act="bilans">Bilans du mois</button></div><button type="button" class="pill glass wide" data-act="parcours">Mon parcours</button>';
   sheet(h + closeBtn);
 }
 

@@ -143,6 +143,7 @@ export function viewProgress() {
   h += '<div class="tiles">'
     + '<section class="glass tile tap" role="button" tabindex="0" data-act="career"><span class="label" style="color:var(--gold)">Ma carrière</span><span class="ico gold">' + ICON.medal + '</span><span class="small mut" style="margin-top:auto">Pompes à vie, tonnes soulevées, km</span></section>'
     + '<section class="glass tile tap" role="button" tabindex="0" data-act="bilan"><span class="label violet">Bilan du mois</span><span class="ico">' + ICON.star + '</span><span class="small mut" style="margin-top:auto">Ton mois en plein écran</span></section></div>';
+  h += '<section class="glass card row tap" role="button" tabindex="0" data-act="parcours" style="gap:12px;align-items:center"><span class="ico">' + ICON.flame + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Mon parcours</span><span class="small mut">La frise de tes grands moments depuis le début</span></div>' + ICON.chev + '</section>';
   h += goalsCard();
   h += bodyCard();
 
