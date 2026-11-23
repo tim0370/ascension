@@ -416,6 +416,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 20, items: [
+    'Carte du corps (onglet Progrès) : chaque muscle en vert, orange ou rouge selon sa récupération, ou en violet selon ton travail de la semaine. Touche un muscle pour son détail',
+    'Ma carrière : tes pompes et tes dips à vie, les tonnes soulevées depuis le début, tes km, et les prochains caps à passer',
+    'Bilan du mois en plein écran : tes jours d’entraînement, tes tonnes, ton exercice du mois, tes records, à partager en image',
+  ] },
   { v: 19, items: [
     'Notifications : active-les dans les Réglages (ouvre Ascension depuis son icône)',
     'Fin du repos annoncée même quand tu es sur TikTok ou une autre app',

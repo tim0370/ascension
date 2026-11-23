@@ -6,6 +6,7 @@ import { figure } from './anim.js';
 import { addPhoto, listPhotos, deletePhoto, setPhotoDate, photoFiles } from './photos.js';
 import { $, esc, plural, toNum, ui, ACTIONS, ICON, rankSvg, toast, sheet, closeSheet, closeBtn, burst, chartSvg } from './ui.js';
 import { render } from './app.js';
+import { bodyCard } from './corps.js';
 
 let photos = null; // chargées une fois, puis gardées en mémoire
 
@@ -138,6 +139,10 @@ export function viewProgress() {
   const info = rankInfo();
   let h = '<div class="col" style="gap:2px"><span class="small mut">Rang ' + info.rank.letter + ' · ' + esc(info.rank.name) + '</span><h1 class="h1">Progression</h1></div>';
   h += rankCard(info);
+  h += '<div class="tiles">'
+    + '<section class="glass tile tap" role="button" tabindex="0" data-act="career"><span class="label" style="color:var(--gold)">Ma carrière</span><span class="ico gold">' + ICON.medal + '</span><span class="small mut" style="margin-top:auto">Pompes à vie, tonnes soulevées, km</span></section>'
+    + '<section class="glass tile tap" role="button" tabindex="0" data-act="bilan"><span class="label violet">Bilan du mois</span><span class="ico">' + ICON.star + '</span><span class="small mut" style="margin-top:auto">Ton mois en plein écran</span></section></div>';
+  h += bodyCard();
 
   h += '<div class="sec"><span class="h2">Arbres de progression</span></div>';
   for (const t of allTrees()) {

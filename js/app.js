@@ -14,6 +14,7 @@ import { progCard } from './programme.js';
 import { dailyQuests, streak, feats, myTitle, titles, skins, SKINS } from './quetes.js';
 import { bossCard } from './boss.js';
 import './course.js';
+import { monthBanner } from './bilan.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync } from './notif.js';
 import { viewProgress, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
 
@@ -77,6 +78,7 @@ function viewHome() {
   }
 
   if (has) {
+    h += monthBanner();
     h += bossCard();
     // Deux tuiles : le rang (étoile des 5 qualités) et les hauts faits
     const got = fx.list.filter((f) => f.done).length;
@@ -209,6 +211,7 @@ function sheetProfile() {
     + '<span class="label">Titre</span><div class="row" style="flex-wrap:wrap;gap:8px">'
     + ts.map((t) => '<button type="button" class="pill sm ' + (t === cur ? 'gold-btn' : 'glass') + '" data-act="set-title" data-t="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>'
     + (ts.length < 2 ? '<span class="small mut">Pas encore de titre : réussis un haut fait pour en gagner un.</span>' : '');
+  h += '<div class="row"><button type="button" class="pill glass grow" data-act="career">Ma carrière</button><button type="button" class="pill glass grow" data-act="bilans">Bilans du mois</button></div>';
   sheet(h + closeBtn);
 }
 
