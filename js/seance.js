@@ -81,10 +81,18 @@ function buildExo(name, sets, title) {
   const last = title && sorted().find((w) => norm(w.title) === norm(title) && w.exercises.some((e) => e.name === name));
   const prev = last ? last.exercises.find((e) => e.name === name).sets : lastSets(name);
   const time = measureOf(name) === 'time';
+  const lastEx = last ? last.exercises.find((e) => e.name === name) : (sorted().find((w) => w.exercises.some((e) => e.name === name)) || { exercises: [] }).exercises.find((e) => e.name === name);
+  const feel = lastEx && lastEx.feel; // 'f' facile, 'b' bien, 'd' très dur
+  const plus = feel === 'f' ? 2 : feel === 'd' ? 0 : 1;
+  const topR = prev ? Math.max(0, ...prev.map((x) => x.r || 0)) : 0;
+  let coach = '';
+  if (feel === 'f') coach = 'C’était facile la dernière fois : vise ' + (time ? '10 s' : '2 répétitions') + ' de plus.';
+  else if (feel === 'd') coach = 'Tu avais trouvé ça très dur : refais pareil, mais plus propre.';
+  if (!time && lestOf(name) && topR >= 12 && feel !== 'd') coach = 'Tu passes 12 répétitions : ajoute 2,5 kg de lest et repars autour de 8.';
   return {
-    name,
+    name, coach,
     sets: sets.map((s, i) => { const p = (prev && (prev[i] || prev[prev.length - 1])) || s; return { r: time ? 0 : (p.r || s.r || 0), w: p.w || s.w || 0, t: time ? (p.t || s.t || 0) : 0, done: false }; }),
-    goals: sets.map((s, i) => { const p = prev && (prev[i] || prev[prev.length - 1]); if (!p) return null; if (time) return p.t ? { t: p.t + 5 } : null; return p.r ? { r: p.r + 1 } : null; }),
+    goals: sets.map((s, i) => { const p = prev && (prev[i] || prev[prev.length - 1]); if (!p) return null; if (time) return p.t ? { t: p.t + 5 * plus } : null; return p.r ? { r: p.r + plus } : null; }),
     prev: prev ? prev.map(setText).join(', ') : '',
     // Le fantôme : ce que tu as fait la dernière fois, série par série.
     ghost: prev ? prev.map((x) => ({ r: x.r || 0, w: x.w || 0, t: x.t || 0 })) : null,
@@ -161,12 +169,21 @@ function viewWarmup(a) {
 }
 
 // Vue d'ensemble : toute la séance, on touche un exercice pour l'ouvrir en grand.
+// Après la dernière série d'un exercice : « c'était comment ? » (adapte l'objectif de la prochaine fois).
+function feelCard(a) {
+  const i = a.feelAsk;
+  if (i === undefined || i === null || !a.exercises[i]) return '';
+  return '<section class="feelask"><div class="row between"><span class="small" style="font-weight:600">' + esc(exoName(a.exercises[i].name)) + ' : c’était comment ?</span><button type="button" class="feelx" data-act="feel-skip" aria-label="Passer">' + ICON.x + '</button></div>'
+    + '<div class="row" style="gap:8px">' + [['f', 'Facile'], ['b', 'Bien'], ['d', 'Très dur']].map(([k, l]) => '<button type="button" class="pill sm glass grow" data-act="feel-ex" data-v="' + k + '">' + l + '</button>').join('') + '</div></section>';
+}
+
 function viewList(a) {
   const total = a.exercises.reduce((n, e) => n + e.sets.length, 0);
   const done = a.exercises.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0);
   const cur = a.exercises.findIndex((e) => !exDone(e));
   let h = '<div class="row between"><div class="col" style="gap:2px"><span class="small mut">Séance en cours</span><h1 class="h1">' + esc(a.label) + '</h1></div>'
     + '<span class="num" id="elapsed" style="font-size:22px;color:var(--soft)">' + clock((Date.now() - a.start) / 1000) + '</span></div>';
+  h += feelCard(a);
   h += '<section class="glass card hud col" style="gap:10px"><div class="row between"><span class="h2">' + done + ' sur ' + plural(total, 'série', 'séries') + '</span><span class="gold-text num" style="font-size:17px">+' + (done * 10) + ' XP</span></div>'
     + '<div class="bar gold"><div style="width:' + (total ? Math.round((done / total) * 100) : 0) + '%"></div></div>'
     + (a.tip ? '<span class="small" style="color:var(--violet-soft)">' + esc(a.tip) + '</span>' : '') + '</section>';
@@ -200,8 +217,10 @@ function viewFocus(a) {
   let h = '<div class="row between"><button type="button" class="pill sm glass" data-act="list">' + ICON.back + 'Séance</button>'
     + '<span class="num" id="elapsed" style="font-size:20px;color:var(--soft)">' + clock((Date.now() - a.start) / 1000) + '</span>'
     + '<button type="button" class="iconbtn" data-act="ex-menu" data-i="' + a.idx + '" aria-label="Options de l’exercice">' + ICON.more + '</button></div>';
+  h += feelCard(a);
   h += '<div class="row" style="align-items:flex-start;gap:12px"><div class="col grow" style="gap:4px"><span class="label violet">Exercice ' + (a.idx + 1) + ' sur ' + n + '</span><h1 class="h1" style="font-size:30px">' + esc(exoName(ex.name)) + '</h1>'
     + '<span class="small mut">' + (ex.prev ? 'La dernière fois : ' + esc(ex.prev) : 'Première fois sur cet exercice') + '</span>'
+    + (ex.coach ? '<span class="coach">' + ICON.bolt + esc(ex.coach) + '</span>' : '')
     + (ex.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(ex.note) + '</span>' : '') + '</div>'
     + '<button type="button" class="figbtn" data-act="exo" data-name="' + esc(ex.name) + '" aria-label="Voir comment faire">' + figure(ex.name) + '</button></div>';
   h += '<div class="chips">' + ex.sets.map((x, k) => '<button type="button" class="chip' + (x.done ? ' done' : '') + (k === a.setIdx ? ' sel' : '') + (x.pr ? ' pr' : '') + '" data-act="sel-set" data-i="' + k + '" aria-label="Série ' + (k + 1) + '">' + chipLabel(ex.name, x) + '</button>').join('') + '</div>';
@@ -443,7 +462,7 @@ function saveEditor() {
 function finishWorkout() {
   const a = state.active;
   const exercises = a.exercises
-    .map((e) => { const o = { name: e.name, sets: e.sets.filter((s) => s.done && (s.r || s.t)).map((s) => { const x = { done: true }; if (s.r) x.r = s.r; if (s.w) x.w = s.w; if (s.t) x.t = s.t; return x; }) }; if (e.note && clean(e.note)) o.note = clean(e.note); return o; })
+    .map((e) => { const o = { name: e.name, sets: e.sets.filter((s) => s.done && (s.r || s.t)).map((s) => { const x = { done: true }; if (s.r) x.r = s.r; if (s.w) x.w = s.w; if (s.t) x.t = s.t; return x; }) }; if (e.note && clean(e.note)) o.note = clean(e.note); if (e.feel) o.feel = e.feel; return o; })
     .filter((e) => e.sets.length);
   if (!exercises.length) { toast('Valide au moins une série avant de terminer'); return; }
   const left = a.exercises.reduce((n, e) => n + e.sets.filter((s) => !s.done).length, 0);
@@ -708,6 +727,13 @@ Object.assign(ACTIONS, {
   list: () => { state.active.view = 'list'; save(); ui.enter = true; render(); top(); },
   'sel-set': (el) => { state.active.setIdx = +el.dataset.i; save(); render(); },
   step: (el) => { const s = curSet(), f = el.dataset.f; s[f] = Math.max(0, Math.round(((s[f] || 0) + (+el.dataset.d)) * 10) / 10); save(); render(); },
+  'feel-ex': (el) => {
+    const a = state.active; if (!a || a.feelAsk == null) return;
+    const ex = a.exercises[a.feelAsk]; if (ex) ex.feel = el.dataset.v;
+    delete a.feelAsk; save(); render();
+    toast(el.dataset.v === 'f' ? 'Noté : la prochaine fois, objectif plus haut' : el.dataset.v === 'd' ? 'Noté : la prochaine fois, même objectif' : 'Noté');
+  },
+  'feel-skip': () => { const a = state.active; if (a) { delete a.feelAsk; save(); render(); } },
   validate: () => {
     // Deux appuis trop rapprochés ne valident pas deux séries d'un coup.
     if (Date.now() - (ui.lastValidate || 0) < 600) return;
@@ -726,6 +752,7 @@ Object.assign(ACTIONS, {
     const beat = goal && (time ? s.t >= goal.t : s.r >= goal.r);
     startRest();
     const next = ex.sets.findIndex((x) => !x.done);
+    if (next < 0 && !ex.feel) a.feelAsk = a.exercises.indexOf(ex);
     if (next >= 0) {
       a.setIdx = next;
       if (beat) toast('Objectif atteint');

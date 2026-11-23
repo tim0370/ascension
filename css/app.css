@@ -520,3 +520,10 @@ select.textin option { background: #1A1530; color: #fff; }
 .ready i { width: 8px; height: 8px; border-radius: 999px; background: #3AD68C; box-shadow: 0 0 8px #3AD68C; }
 .ready.mid i { background: #FFB03B; box-shadow: 0 0 8px #FFB03B; }
 .ready.low i { background: #FF5468; box-shadow: 0 0 8px #FF5468; }
+
+/* Coach : ressenti après un exercice, conseil pour la prochaine fois */
+.feelask { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 22px; background: rgba(139, 108, 246, 0.14); border: 1px solid rgba(139, 108, 246, 0.35); animation: stUp 0.4s var(--ease); }
+.feelx { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--mut); }
+.feelx svg { width: 16px; height: 16px; }
+.coach { display: inline-flex; align-items: flex-start; gap: 6px; font-size: 13px; line-height: 1.35; color: var(--violet-soft); font-weight: 500; margin-top: 2px; }
+.coach svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
