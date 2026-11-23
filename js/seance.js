@@ -463,6 +463,27 @@ function saveEditor() {
 }
 
 // ---------- Terminer : enregistrement et bilan ----------
+// Note de la séance, comme dans un jeu : séries faites, objectifs atteints, records, duel contre le fantôme.
+export const GRADES = ['S', 'A', 'B', 'C', 'D', 'E'];
+function gradeOf(a, w) {
+  if (a.test) return null; // le re-test se juge sur les maximums, pas sur une note
+  let planned = 0, done = 0, goals = 0, hit = 0;
+  for (const e of a.exercises) e.sets.forEach((st, i) => {
+    planned += 1;
+    if (!st.done || !(st.r || st.t)) return;
+    done += 1;
+    const g = e.goals && e.goals[i];
+    if (g) { goals += 1; if ((g.r && (st.r || 0) >= g.r) || (g.t && (st.t || 0) >= g.t)) hit += 1; }
+  });
+  if (!planned) return null;
+  let score = 40 * (done / planned) + (goals ? 35 * (hit / goals) : 20) + Math.min(15, (w.prs || 0) * 8);
+  if (w.ghost) score += w.ghost.won > w.ghost.lost ? 10 : w.ghost.won === w.ghost.lost ? 5 : 0;
+  else score += 5;
+  w.score = Math.round(score);
+  return score >= 90 ? 'S' : score >= 75 ? 'A' : score >= 60 ? 'B' : score >= 45 ? 'C' : score >= 30 ? 'D' : 'E';
+}
+const GRADE_TXT = { S: 'Parfait. Tout fait, objectifs battus.', A: 'Très belle séance.', B: 'Solide. Encore un effort sur les objectifs.', C: 'Correct, mais tu peux faire mieux.', D: 'Séance difficile. Ça arrive.', E: 'Le plus dur, c’était de venir. C’est fait.' };
+
 function finishWorkout() {
   const a = state.active;
   const exercises = a.exercises
@@ -482,6 +503,7 @@ function finishWorkout() {
   }
   state.workouts.push(w);
   w.prs = countPrs(w);
+  w.grade = gradeOf(a, w);
   const progMsg = progDone(w);
   // Si tu as ajouté ou retiré des exercices ou des séries, on propose de garder ce changement (pas en express).
   const routine = !a.express && a.routineId && routines().find((r) => r.id === a.routineId);
@@ -577,6 +599,7 @@ function sheetSummary(w, label, xpBefore, qNew, fNew) {
 
   let h = '<div class="col center" style="gap:6px"><span class="label violet">Séance terminée</span><h1 class="h1" style="font-size:30px">' + esc(label) + '</h1>'
     + '<span class="num gold-text" style="font-size:66px;line-height:1.1">+<span id="xp-count">0</span> XP</span></div>';
+  if (w.grade) h += '<section class="glass card gradecard g' + w.grade + '"><span class="grade">' + w.grade + '</span><div class="col grow" style="gap:3px"><span class="label">Note de la séance</span><span style="font-weight:600">' + esc(GRADE_TXT[w.grade]) + '</span><span class="small mut">Séries faites, objectifs atteints, records et duel contre ton fantôme · ' + w.score + ' sur 100</span></div></section>';
   h += '<section class="glass card hud col" style="gap:10px"><div class="row between"><span class="h2">Niveau ' + after.level + '</span>'
     + (levelUp ? '<span class="tag gold">Niveau supérieur</span>' : '<span class="small mut">Encore ' + (after.need - after.into) + ' XP</span>') + '</div>'
     + '<div class="bar"><div id="xp-bar" style="transition:width 1.2s cubic-bezier(0.2,0.8,0.2,1);width:' + (levelUp ? 0 : Math.round((before.into / before.need) * 100)) + '%"></div></div></section>';

@@ -416,6 +416,9 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 28, items: [
+    'Note de séance, comme dans un jeu : S, A, B, C, D ou E selon les séries faites, tes objectifs battus, tes records et ton duel contre le fantôme. Elle apparaît aussi dans l’historique',
+  ] },
   { v: 27, items: [
     'Saison du mois : 30 paliers à monter avec ton XP du mois. Médaille de bronze au palier 10, d’argent au 20, d’or au 30, gardées dans ta vitrine. Nouveaux titres et couleur d’emblème Aurore à gagner',
     'Le coach repère aussi quand ton dos est en retard sur la poussée',

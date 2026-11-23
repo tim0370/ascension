@@ -265,7 +265,7 @@ function historyList() {
     if (m !== month) { month = m; const r = recap[m]; h += '<div class="row between month"><span class="label">' + esc(m) + '</span><span class="small mut">' + plural(r.n, 'séance', 'séances') + (r.sets ? ' · ' + r.sets + ' séries' : '') + (r.km ? ' · ' + fr(r.km, 1) + ' km' : '') + '</span></div>'; }
     const run = isRun(w) && w.exercises.length === 1;
     h += '<button type="button" class="item" data-act="detail" data-id="' + esc(w.id) + '"><span class="ico' + (run ? ' gold' : '') + '">' + (run ? ICON.run : ICON.bell) + '</span><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(titleOf(w)) + (w.prs ? ' <span class="gold-text small">· ' + plural(w.prs, 'record', 'records') + '</span>' : '') + '</span><span class="small mut">' + esc(summary(w)) + '</span></div>'
-      + '<span class="small mut" style="white-space:nowrap">' + new Date(w.start).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }) + '</span></button>';
+      + (w.grade ? '<span class="gradechip g' + w.grade + '">' + w.grade + '</span>' : '') + '<span class="small mut" style="white-space:nowrap">' + new Date(w.start).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }) + '</span></button>';
   }
   h += '</section>';
   if (shown.length > ui.historyLimit) h += '<button type="button" class="pill glass wide" data-act="more">Voir plus</button>';
