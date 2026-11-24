@@ -6,7 +6,7 @@ import {
   weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines, isHevy, unknownExos, renameExo, guessExo,
 } from './store.js';
 import { NEWS, EXOS } from './data.js';
-import { rankInfo, heat, bodyLog } from './stats.js';
+import { rankInfo, heat, bodyLog, addWeight } from './stats.js';
 import { beep, wakeAudio, initSound, soundError } from './sound.js';
 import { hint, $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst } from './ui.js';
 import { routinesCard, viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
@@ -29,7 +29,7 @@ import { coachCard } from './coach.js';
 import './parcours.js';
 import { seasonCard, celebrateSeason, sheetSeason } from './saison.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
-import { enablePush, disablePush, initPush, pushOn, notifHour, resync } from './notif.js';
+import { enablePush, disablePush, initPush, pushOn, notifHour, resync, KINDS as NKINDS } from './notif.js';
 import { viewProgress, hevyCard, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
 import { routeSvg } from './course.js';
 
@@ -44,16 +44,16 @@ const qCat = (q) => (q.rare ? 'rare' : q.id.startsWith('v-') ? 'volume' : q.id.s
 export function questRow(q) {
   const cat = qCat(q);
   return '<div class="quest' + (q.done ? ' done' : '') + (q.rare ? ' rare' : '') + '"><span class="qico ' + (q.done ? 'done' : cat) + '">' + (q.done ? ICON.check : ICON[QICO[cat]]) + '</span>'
-    + '<div class="col grow" style="gap:0">' + (q.rare ? '<span class="label" style="color:var(--gold);letter-spacing:1.4px">Quête rare</span>' : '')
+    + '<div class="col grow" style="gap:0">' + (q.rare ? '<span class="label" style="color:var(--gold)">Quête rare</span>' : '')
     + '<span class="qlabel" style="font-weight:600">' + esc(q.label) + '</span>'
     + (q.done ? '<span class="small" style="color:var(--vert)">Réussie</span>' : '<div class="bar"><div style="width:' + Math.round((q.cur / q.goal) * 100) + '%"></div></div><span class="small mut" style="margin-top:4px">' + q.cur + ' sur ' + q.goal + ' ' + esc(q.unit) + '</span>') + '</div>'
-    + '<span class="xptag ' + (q.done ? 'mut' : 'gold-text') + '">+' + q.xp + '</span></div>';
+    + '<span class="xptag ' + (q.done ? 'mut' : 'gold-text') + '">+' + q.xp + ' XP</span></div>';
 }
 
 const head = (t, c, right) => '<div class="sechead"><span class="h2 row" style="gap:10px"><i class="secdot ' + c + '"></i>' + t + '</span>' + (right || '') + '</div>';
 
 function flamePill(st) {
-  return '<button type="button" class="flame' + (st.n ? '' : ' off') + (st.danger ? ' danger' : '') + '" data-act="flame" aria-label="Flamme de ' + st.n + ' semaine' + (st.n > 1 ? 's' : '') + (st.shields ? ', ' + st.shields + ' bouclier' + (st.shields > 1 ? 's' : '') : '') + '">' + ICON.flame + st.n + (st.shields ? '<span class="fshield">' + ICON.shield + (st.shields > 1 ? '<b>' + st.shields + '</b>' : '') + '</span>' : '') + '</button>';
+  return '<button type="button" class="flame' + (st.n ? '' : ' off') + (st.danger ? ' danger' : '') + '" data-act="flame" aria-label="Flamme de ' + st.n + ' semaine' + (st.n > 1 ? 's' : '') + (st.shields ? ', ' + st.shields + ' bouclier' + (st.shields > 1 ? 's' : '') : '') + '">' + ICON.flame + st.n + '<small class="fl-u">sem.</small>' + (st.shields ? '<span class="fshield">' + ICON.shield + (st.shields > 1 ? '<b>' + st.shields + '</b>' : '') + '</span>' : '') + '</button>';
 }
 
 function viewHome() {
@@ -77,6 +77,7 @@ function viewHome() {
     + '<button type="button" class="who tap" data-act="level"><span class="label violet">' + (title ? esc(title) : 'Rang ' + info.rank.letter + ' · ' + esc(info.rank.name)) + '</span>'
     + '<span class="h2">Niveau ' + lv.level + '</span><div class="bar thin" style="width:100%"><div style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></div></div></button>'
     + flamePill(st) + '</div>';
+  { const d = new Date(); const wd = d.toLocaleDateString('fr-FR', { weekday: 'long' }); h = '<header class="homehead">' + h + '<div class="today">' + wd + ' ' + d.getDate() + '<small>' + d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) + '</small></div></header>'; }
 
 
   // Le bloc principal : la séance en cours, ou celle du programme
@@ -124,19 +125,19 @@ function viewDefis() {
   const has = state.workouts.length > 0;
   const quests = has ? dailyQuests() : [];
   const fx = feats();
-  let h = '<div class="col" style="gap:4px"><span class="label violet">Défis</span><h1 class="h1">À battre</h1><span class="small mut">Tout ce qui se gagne, du plus court au plus long : aujourd’hui, cette semaine, ce mois-ci, et ta campagne.</span></div>';
+  let h = '<div class="col" style="gap:4px"><h1 class="h1">Défis</h1><span class="small mut">Tout ce qui rapporte de l’XP en plus de tes séances, rangé du plus court au plus long.</span></div>';
   if (quests.length) {
     const n = quests.filter((q) => q.done).length;
-    h += head('Aujourd’hui', 't-teal', '<span class="small mut">' + n + ' quête' + (n > 1 ? 's' : '') + ' sur ' + quests.length + '</span>')
+    h += head('Quêtes du jour', 't-teal', '<span class="small mut">' + n + ' sur ' + quests.length + ' réussie' + (n > 1 ? 's' : '') + '</span>')
       + '<section class="glass card tap tint t-teal" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + quests.map(questRow).join('') + '</section>';
   }
-  if (has) h += head('Cette semaine', 't-red') + bossCard();
+  if (has) h += head('Défi de la semaine', 't-red') + bossCard();
   h += head('Ce mois-ci', 't-gold') + p30Card() + (has ? testCard() + seasonCard() : '');
   if (has) celebrateSeason();
   h += head('Campagne', 't-violet', '<button type="button" class="small mut row" style="gap:4px" data-act="camp-all">Les 6 chapitres' + ICON.chev + '</button>') + campNow();
   h += head('Figures', 't-pink') + dojoView();
   const got = fx.list.filter((f) => f.done).length;
-  h += head('Hauts faits', 't-gold') + '<section class="glass card row tap tint t-gold" role="button" tabindex="0" data-act="feats" style="gap:14px"><span class="medal" style="background:linear-gradient(160deg,#F3DFA8,#B8913F);color:#24190A;border:none">' + ICON.medal + '</span><div class="col grow" style="gap:2px"><span class="h2">' + got + ' sur ' + fx.list.length + '</span><span class="small mut">Des exploits durs qui débloquent titres et couleurs d’emblème.</span></div>' + ICON.chev + '</section>';
+  h += head('Hauts faits', 't-gold') + '<section class="glass card row tap tint t-gold" role="button" tabindex="0" data-act="feats" style="gap:14px"><span class="medal" style="background:linear-gradient(160deg,#F3DFA8,#B8913F);color:#24190A;border:none">' + ICON.medal + '</span><div class="col grow" style="gap:2px"><span class="h2">' + got + ' sur ' + fx.list.length + '</span><span class="small mut">Des exploits durs, gagnés une seule fois. Certains donnent une couleur d’emblème.</span></div>' + ICON.chev + '</section>';
   return h;
 }
 
@@ -174,7 +175,7 @@ const GUIDE = [
   ]],
   ['Défis', [
     ['p30', 'Programmes de 30 jours', 'Un but précis (pompes +50 %, 60 s en équilibre, premier pistol…), 10 à 15 minutes par jour en plus de ta semaine. Test au jour 1, ajustement aux jours 10 et 20, test final au jour 30.'],
-    ['camp-all', 'Campagne', '6 chapitres de 5 étapes, chacun fini par un boss. Chaque étape est une vraie performance, vérifiée dans ton historique. +50 XP par étape, +250 par boss.'],
+    ['camp-all', 'Campagne', '6 chapitres de 5 étapes, chacun fini par une épreuve finale. Chaque étape est une vraie performance, vérifiée dans ton historique. +50 XP par étape, +250 par épreuve finale.'],
     ['', 'Figures', '9 figures (équilibre, corbeau, L-sit, planche…) en étapes, avec un chrono de tenue. Les étapes réussies font monter ta ceinture, de blanche à noire.'],
   ]],
   ['Être guidé', [
@@ -186,17 +187,17 @@ const GUIDE = [
     ['mtest', 'Test du mois', '6 épreuves une fois par mois (pompes, dips, burpees, saut, chaise, course), comparées aux garçons de 16 à 19 ans.'],
     ['', 'Pendant la séance', 'Objectif par série, fantôme de la dernière fois, compteur de pompes à la caméra, et « facile, bien, très dur » pour régler la séance suivante.'],
     ['', 'Voix du coach', 'Dans les réglages, partie Son : elle annonce chaque série à la fin du repos.'],
-    ['', 'Notifications', 'Dans les réglages : fin du repos, rappel de séance, flamme, boss.'],
+    ['', 'Notifications', 'Dans les réglages : fin du repos, séance du jour, programme de 30 jours, dimanche si la semaine n’est pas validée, bilan du lundi. Chaque rappel se coupe à part.'],
   ]],
   ['Jouer', [
     ['level', 'Niveaux et XP', '10 XP par série, 50 par séance, 25 par record, plus les quêtes.'],
     ['quests', 'Quêtes du jour', 'Trois défis calés sur tes records, et parfois une quête rare.'],
-    ['boss', 'Boss de la semaine', 'Un nouveau chaque lundi, à battre en un seul effort.'],
+    ['boss', 'Ton ombre', 'Le défi de la semaine : battre ta propre meilleure tentative. Un nouveau défi chaque lundi.'],
     ['season', 'Saison du mois', '30 paliers, médailles de bronze, d’argent et d’or.'],
     ['flame', 'Flamme et boucliers', 'Semaines d’affilée où ton objectif est atteint ; un bouclier toutes les 4 semaines la protège.'],
     ['lundi', 'Bilan du lundi', 'Ta semaine passée en chiffres et en équivalents parlants, tes records et ceux qui arrivent.'],
-    ['feats', 'Hauts faits', 'Des défis durs qui débloquent titres et couleurs.'],
-    ['profile', 'Mon profil', 'Ton titre et la couleur de ton emblème.'],
+    ['feats', 'Hauts faits', 'Des défis durs : +100 XP chacun, certains débloquent une couleur d’emblème.'],
+    ['profile', 'Profil', 'Ton niveau, ton rang et la couleur de ton emblème.'],
   ]],
   ['Voir ses progrès', [
     ['rank', 'Rang et 5 qualités', 'Force, explosivité, vitesse, endurance, maîtrise : de E à Z.'],
@@ -236,7 +237,7 @@ function sheetLevel() {
   const info = rankInfo();
   const b = xpBreakdown();
   const line = (label, detail, value) => '<div class="item"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + label + '</span><span class="small mut">' + detail + '</span></div><span class="gold-text" style="font-weight:600;white-space:nowrap">' + value.toLocaleString('fr-FR') + ' XP</span></div>';
-  sheet('<div class="row" style="gap:14px">' + rankSvg(info.rank.letter) + '<div class="col grow"><span class="gold-text" style="font-size:11px;font-weight:600;letter-spacing:2px">RANG ' + info.rank.letter + ' · ' + esc(info.rank.name.toUpperCase()) + '</span><span class="big">Niveau ' + lv.level + '</span><span class="small mut">' + xp.toLocaleString('fr-FR') + ' XP gagnés en tout</span></div></div>'
+  sheet('<div class="row" style="gap:14px">' + rankSvg(info.rank.letter) + '<div class="col grow"><span class="label" style="color:var(--gold)">Rang ' + info.rank.letter + ' · ' + esc(info.rank.name.toUpperCase()) + '</span><span class="big">Niveau ' + lv.level + '</span><span class="small mut">' + xp.toLocaleString('fr-FR') + ' XP gagnés en tout</span></div></div>'
     + '<div class="col" style="gap:8px"><div class="bar"><div style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></div></div><span class="small mut">' + lv.into + ' sur ' + lv.need + ' XP pour atteindre le niveau ' + (lv.level + 1) + '. Chaque niveau demande 50 XP de plus que le précédent.</span></div>'
     + '<button type="button" class="pill glass wide" data-act="rank">Voir mon rang et les épreuves</button>'
     + '<span class="label">D’où vient ton XP</span><div class="list">'
@@ -245,7 +246,7 @@ function sheetLevel() {
     + line('Course à pied', fr(b.km, 1) + ' km × 20 XP', Math.round(b.km * 20))
     + line('Records battus', b.prs + ' × 25 XP', b.prs * 25)
     + line('Quêtes du jour', plural(b.quests, 'quête réussie', 'quêtes réussies'), b.questXp)
-    + line('Boss vaincus', state.workouts.filter((w) => w.boss && w.boss.win).length + ' × 300 XP', state.workouts.filter((w) => w.boss && w.boss.win).length * 300)
+    + line('Ombres battues', state.workouts.filter((w) => w.boss && w.boss.win).length + ' × 300 XP', state.workouts.filter((w) => w.boss && w.boss.win).length * 300)
     + line('Hauts faits', Object.keys(state.feats || {}).length + ' × 100 XP', Object.keys(state.feats || {}).length * 100) + '</div>'
     + '<span class="small mut">Le niveau monte avec l’XP. Le rang, lui, vient de tes 5 qualités.</span>' + closeBtn);
 }
@@ -297,7 +298,7 @@ function sheetFlame() {
     + '<div class="row" style="gap:10px">' + Array.from({ length: SHIELD_MAX }, (_, i) => '<span class="shieldslot' + (i < st.shields ? ' on' : '') + '">' + ICON.shield + '</span>').join('') + '</div>'
     + '<span class="small mut">' + (st.shields >= SHIELD_MAX ? 'Réserve pleine. Un bouclier sauve tout seul une semaine ratée.' : 'Prochain bouclier dans ' + plural(st.next, 'semaine', 'semaines') + ' réussie' + (st.next > 1 ? 's' : '') + '.') + '</span>'
     + (st.saved ? '<span class="small" style="color:var(--violet2, #B6A4FF)">Tes boucliers ont déjà sauvé ' + plural(st.saved, 'semaine', 'semaines') + ' de cette flamme.</span>' : '') + '</section>'
-    + '<span class="small mut">Une semaine compte quand tu fais ton objectif (' + plural(st.goal, 'séance', 'séances') + ', réglable dans les Réglages). Séances, courses et re-tests comptent ; les boss et les pompes du jour non. La semaine en cours ne casse jamais ta flamme avant dimanche soir. Toutes les ' + SHIELD_EVERY + ' semaines réussies, tu gagnes un bouclier (2 au plus). Hauts faits : 4 semaines, puis 12.</span>';
+    + '<span class="small mut">Une semaine compte quand tu fais ton objectif (' + plural(st.goal, 'séance', 'séances') + ', réglable dans les Réglages). Séances, courses et re-tests comptent ; ton ombre et les pompes du jour non. La semaine en cours ne casse jamais ta flamme avant dimanche soir. Toutes les ' + SHIELD_EVERY + ' semaines réussies, tu gagnes un bouclier (2 au plus). Hauts faits : 4 semaines, puis 12.</span>';
   sheet(h + closeBtn);
 }
 
@@ -305,33 +306,31 @@ function sheetFlame() {
 function sheetFeats() {
   const fx = feats();
   const got = fx.list.filter((f) => f.done).length;
-  let h = '<div class="col"><span class="label" style="color:var(--gold)">' + got + ' sur ' + fx.list.length + ' · +100 XP chacun</span><h1 class="h1">Hauts faits</h1><span class="small mut">Des défis durs, qui se gagnent une seule fois. Chacun débloque un titre ou une couleur d’emblème.</span></div>';
+  let h = '<div class="col"><span class="label" style="color:var(--gold)">' + got + ' sur ' + fx.list.length + ' · +100 XP chacun</span><h1 class="h1">Hauts faits</h1><span class="small mut">Des défis durs, qui se gagnent une seule fois. Certains donnent aussi une couleur d’emblème.</span></div>';
   const groups = [...new Set(fx.list.map((f) => f.group))];
   for (const g of groups) {
     h += '<span class="label">' + esc(g) + '</span><section class="glass card" style="padding:2px 16px">';
     for (const f of fx.list.filter((x) => x.group === g)) {
-      const rw = f.reward.title ? 'Titre « ' + f.reward.title + ' »' : 'Couleur ' + SKINS[f.reward.skin].name;
-      h += '<div class="feat' + (f.done ? ' done' : '') + '"><span class="medal">' + (f.done ? ICON.medal : ICON.lock) + '</span><div class="col grow" style="gap:3px"><span style="font-weight:600">' + esc(f.label) + '</span><span class="small mut">' + esc(f.desc) + '</span>'
+      const rw = f.reward.skin ? '+100 XP et la couleur ' + SKINS[f.reward.skin].name : '+100 XP';
+      h += '<div class="feat' + (f.done ? ' done' : '') + '"><span class="medal">' + (f.done ? ICON.medal : ICON.lock) + '</span><div class="col grow" style="gap:3px"><span style="font-weight:600">' + esc(f.label) + '</span>'
         + (f.done ? '<span class="small" style="color:var(--gold)">' + esc(rw) + ' · réussi le ' + new Date(f.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + '</span>' : '<div class="bar thin gold" style="margin-top:4px"><div style="width:' + Math.round((f.cur / f.goal) * 100) + '%"></div></div><span class="small dim">' + f.cur + ' sur ' + f.goal + ' · ' + esc(rw) + '</span>') + '</div></div>';
     }
     h += '</section>';
   }
-  h += '<button type="button" class="pill glass wide" data-act="profile">Choisir mon titre et ma couleur</button>';
+  h += '<button type="button" class="pill glass wide" data-act="profile">Choisir la couleur de mon emblème</button>';
   sheet(h + closeBtn, 1, 'full');
 }
 
-// Mon profil : titre affiché sous le niveau, couleur de l'emblème.
+// Profil : niveau, rang, couleur de l'emblème, liens vers la carrière et les bilans.
 function sheetProfile() {
   const info = rankInfo();
-  const ts = titles(), ks = skins();
-  const cur = state.settings.title || 'Aucun', ck = ks.includes(state.settings.skin) ? state.settings.skin : 'or';
-  let h = '<div class="col center" style="gap:8px">' + rankSvg(info.rank.letter, false, null, 'emblem-sm') + '<h1 class="h1">Mon profil</h1><span class="small mut">' + (myTitle() ? esc(myTitle()) : 'Pas de titre') + ' · rang ' + info.rank.letter + '</span></div>'
+  const ks = skins(), lv = levelInfo(totalXp());
+  const ck = ks.includes(state.settings.skin) ? state.settings.skin : 'or';
+  let h = '<div class="col center" style="gap:8px">' + rankSvg(info.rank.letter, false, null, 'emblem-sm') + '<h1 class="h1">Profil</h1><span class="small mut">Rang ' + info.rank.letter + ' · ' + esc(info.rank.name) + ' · niveau ' + lv.level + '</span><span class="small mut">' + (lv.need - lv.into) + ' XP pour le niveau ' + (lv.level + 1) + '</span></div>'
     + '<span class="label">Couleur de l’emblème</span><div class="skins">'
     + Object.keys(SKINS).map((k) => { const on = ks.includes(k); return '<button type="button" class="skin' + (k === ck ? ' on' : '') + (on ? '' : ' lock') + '" data-act="' + (on ? 'set-skin' : 'feats') + '" data-k="' + k + '">' + rankSvg(info.rank.letter, false, SKINS[k], 'x') + esc(SKINS[k].name) + '</button>'; }).join('')
     + '</div><span class="small mut">Les couleurs grisées se gagnent avec les hauts faits et la saison (palier 15).</span>'
-    + '<span class="label">Titre</span><div class="row" style="flex-wrap:wrap;gap:8px">'
-    + ts.map((t) => '<button type="button" class="pill sm ' + (t === cur ? 'gold-btn' : 'glass') + '" data-act="set-title" data-t="' + esc(t) + '">' + esc(t) + '</button>').join('') + '</div>'
-    + (ts.length < 2 ? '<span class="small mut">Pas encore de titre : réussis un haut fait pour en gagner un.</span>' : '');
+    ;
   h += '<div class="row"><button type="button" class="pill glass grow" data-act="career">Ma carrière</button><button type="button" class="pill glass grow" data-act="bilans">Bilans du mois</button></div><button type="button" class="pill glass wide" data-act="parcours">Mon parcours</button>';
   sheet(h + closeBtn);
 }
@@ -429,41 +428,70 @@ function sheetRun() {
 }
 
 // ---------- Réglages et fichiers ----------
+// Réglages : rangés comme ceux de l'iPhone. Une ligne = un réglage ; les choix à plusieurs valeurs
+// s'ouvrent dans une petite fenêtre par-dessus (ui.sub), les oui/non se basculent sur place.
+const srow = (act, ic, t, v, extra) => '<button type="button" class="srow" data-act="' + act + '"' + (extra || '') + '><span class="mico">' + (ICON[ic] || '') + '</span><span class="grow mt">' + t + '</span>' + (v !== undefined ? '<span class="sv">' + v + '</span>' : '') + ICON.chev + '</button>';
+const stog = (act, ic, t, on, sub) => '<button type="button" class="srow" data-act="' + act + '" role="switch" aria-checked="' + !!on + '"><span class="mico">' + (ICON[ic] || '') + '</span><span class="col grow" style="gap:1px;min-width:0"><span class="mt">' + t + '</span>' + (sub ? '<span class="small mut">' + sub + '</span>' : '') + '</span><span class="sw' + (on ? ' on' : '') + '"><i></i></span></button>';
+const sgroup = (t, rows, note) => '<div class="sgroup">' + (t ? '<span class="label">' + t + '</span>' : '') + '<div class="slist">' + rows.join('') + '</div>' + (note ? '<span class="small mut note">' + note + '</span>' : '') + '</div>';
+
 function sheetSettings() {
   const rest = state.settings.rest || 90;
-  sheet('<h1 class="h1">Réglages</h1>'
-    + '<button type="button" class="glass card row tap" data-act="guide" style="gap:12px;align-items:center;width:100%;text-align:left;color:inherit;font:inherit"><span class="ico">' + ICON.star + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Tout ce que fait Ascension</span><span class="small mut">Le guide de l’app, fonction par fonction</span></div>' + ICON.chev + '</button>'
-    + modeSettings()
-    + '<div class="col" style="gap:8px"><span class="label">Temps de repos par défaut</span><div class="row" style="flex-wrap:wrap;gap:8px">'
-    + [60, 90, 120, 150, 180].map((s) => '<button type="button" class="pill sm ' + (s === rest ? 'gold-btn' : 'glass') + '" data-act="set-rest" data-s="' + s + '">' + clock(s) + '</button>').join('') + '</div>'
-    + '<span class="small mut">Tu peux aussi régler un repos différent pour chaque exercice pendant la séance.</span>'
-    + '</div>'
-    + '<div class="col" style="gap:8px"><span class="label">Son</span>'
-    + '<button type="button" class="pill sm glass wide' + (state.settings.sound === false ? '' : ' on') + '" data-act="toggle-sound">' + (state.settings.sound === false ? 'Bip de fin de repos : non' : 'Bip de fin de repos : oui') + '</button>'
-    + '<button type="button" class="pill sm glass wide' + (state.settings.soundSilent === false ? ' on' : '') + '" data-act="toggle-silent">' + (state.settings.soundSilent === false ? 'Bip discret (garde la musique) : oui' : 'Bip discret (garde la musique) : non') + '</button>'
-    + '<button type="button" class="pill sm glass wide' + (state.settings.voiceCoach ? ' on' : '') + '" data-act="toggle-voice">' + (state.settings.voiceCoach ? 'Voix du coach : oui' : 'Voix du coach : non') + '</button>'
-    + '<button type="button" class="pill sm glass wide" data-act="test-sound">Tester le son</button>'
-    + '<span class="small mut">Le bip sonne même si ton iPhone est en silencieux ; le volume se règle avec les boutons sur le côté. Si ta musique se coupe à chaque bip, mets « Bip discret : oui » (il ne sonne alors plus en silencieux). Le son ne marche que si l’app est ouverte à l’écran. La voix du coach annonce l’exercice, la série et ton objectif à la fin de chaque repos, et fête tes records.</span></div>'
-    + '<div class="col" style="gap:8px"><span class="label">Notifications</span>'
-    + (pushOn()
-      ? '<button type="button" class="pill sm glass wide on" data-act="notif-off">Notifications : oui</button>'
-        + '<div class="row" style="gap:10px"><button type="button" class="stepbtn sm" data-act="notif-hour" data-d="-1" aria-label="Plus tôt">' + ICON.minus + '</button><div class="col grow center" style="gap:0"><span class="num" style="font-size:26px">' + notifHour() + ' h</span><span class="small mut">rappel de la séance du jour</span></div><button type="button" class="stepbtn sm" data-act="notif-hour" data-d="1" aria-label="Plus tard">' + ICON.plus + '</button></div>'
-        + '<button type="button" class="pill sm glass wide" data-act="notif-test">Recevoir une notification d’essai</button>'
-      : '<button type="button" class="pill gold-btn wide" data-act="notif-on">Activer les notifications</button>')
-    + '<span class="small mut">Fin du repos même quand tu es sur une autre app, rappel de la séance du jour s’il n’est pas encore faite, flamme en danger, nouveau boss le lundi. Sur iPhone, ouvre Ascension depuis son icône de l’écran d’accueil.</span></div>'
-    + '<div class="col" style="gap:8px"><span class="label">Toi</span><div class="row">'
-    + '<label class="field grow" style="height:52px"><input id="set-age" inputmode="numeric" placeholder="Âge" aria-label="Ton âge" value="' + (state.settings.age || '') + '"><span class="unit">ans</span></label>'
-    + '<button type="button" class="pill glass grow" data-act="body" style="height:52px">' + (bodyLog().length ? 'Poids : ' + fr(bodyLog()[0].kg, 1) + ' kg' : 'Noter mon poids') + '</button></div>'
-    + '<span class="small mut">Ton âge et ton poids ajustent les lettres de tes 5 qualités : 20 pompes ne valent pas la même chose à 55 kg et à 90 kg.</span></div>'
-    + '<div class="col" style="gap:8px"><span class="label">Objectif de séances par semaine</span><div class="row" style="flex-wrap:wrap;gap:8px">'
-    + [2, 3, 4, 5, 6].map((n) => '<button type="button" class="pill sm ' + (n === weekGoal() ? 'gold-btn' : 'glass') + '" data-act="set-goal" data-n="' + n + '">' + n + '</button>').join('') + '</div>'
-    + '<span class="small mut">Les courses comptent. L’atteindre valide la quête de la semaine (+150 XP).</span></div>'
-    + '<div class="col" style="gap:8px"><span class="label">Hevy</span><button type="button" class="pill glass wide" data-act="pick-hevy">Importer mon historique Hevy</button>' + (unknownExos().length ? '<button type="button" class="pill glass wide" data-act="unknown" style="color:var(--flamme)">' + plural(unknownExos().length, 'exercice non reconnu', 'exercices non reconnus') + '</button>' : '')
-    + '<span class="small mut">' + (state.workouts.some(isHevy) ? plural(state.workouts.filter(isHevy).length, 'séance Hevy importée', 'séances Hevy importées') + ', comptées partout (rang, records, carrière). Tu peux réimporter un fichier plus récent : rien ne sera en double.' : 'Dans Hevy : Profil, Réglages, Exporter les données. Choisis ensuite le fichier workouts.csv ici.') + '</span></div>'
-    + '<div class="col" style="gap:8px"><span class="label">Sauvegarde</span><div class="row"><button type="button" class="pill glass grow" data-act="export">Exporter</button><button type="button" class="pill glass grow" data-act="pick-backup">Restaurer</button></div>'
-    + '<span class="small mut">Tes données restent sur ce téléphone. Exporte une sauvegarde de temps en temps pour ne rien perdre.</span></div>'
-    + '<div class="col" style="gap:8px"><span class="label">Version ' + VERSION + '</span><div class="row"><button type="button" class="pill glass grow" data-act="news">Nouveautés</button><button type="button" class="pill glass grow" data-act="update">Mettre à jour</button></div></div>' + closeBtn);
+  const kg = bodyLog().length ? fr(bodyLog()[0].kg, 1) + ' kg' : 'à noter';
+  const unk = unknownExos().length;
+  let h = '<h1 class="h1">Réglages</h1>';
+  h += sgroup('Entraînement', [
+    srow('set-sub', 'dumbbell', 'Façon de t’entraîner', esc({ full: 'Programme complet', debutant: 'Débutant', libre: 'Sans programme' }[modeNow()]), ' data-k="mode"'),
+    srow('set-sub', 'calendar', 'Objectif par semaine', plural(weekGoal(), 'séance', 'séances'), ' data-k="goal"'),
+    srow('set-sub', 'timer', 'Repos par défaut', clock(rest), ' data-k="rest"'),
+    srow('home-edit', 'home', 'Cartes de l’accueil'),
+  ]);
+  h += sgroup('Son et voix', [
+    stog('toggle-sound', 'sound', 'Bip de fin de repos', state.settings.sound !== false),
+    stog('toggle-silent', 'sound', 'Bip discret', state.settings.soundSilent === false, 'Garde ta musique, mais ne sonne plus en mode silencieux'),
+    stog('toggle-voice', 'voice', 'Voix du coach', !!state.settings.voiceCoach, 'Annonce la série suivante à la fin du repos'),
+    srow('test-sound', 'sound', 'Tester le son'),
+  ]);
+  h += sgroup('Notifications', pushOn()
+    ? [stog('notif-off', 'notif', 'Notifications', true), srow('set-sub', 'clock', 'Heure des rappels', notifHour() + ' h', ' data-k="notif"'), srow('notif-test', 'notif', 'Envoyer une notification d’essai')]
+    : [srow('notif-on', 'notif', 'Activer les notifications')],
+    pushOn() ? 'Choisis l’heure et les rappels que tu veux recevoir dans « Heure des rappels ».' : 'Sur iPhone, ouvre Ascension depuis son icône de l’écran d’accueil pour pouvoir les activer.');
+  h += sgroup('Profil', [
+    '<label class="srow"><span class="mico">' + ICON.user + '</span><span class="grow mt">Âge</span><input id="set-age" class="sin" inputmode="numeric" placeholder="—" aria-label="Ton âge" value="' + (state.settings.age || '') + '"><span class="sv">ans</span></label>',
+    srow('body', 'scale', 'Poids', kg),
+    srow('profile', 'medal', 'Niveau, rang et emblème'),
+  ], 'Ton âge et ton poids ajustent les lettres de tes 5 qualités : 20 pompes ne valent pas la même chose à 55 kg et à 90 kg.');
+  h += sgroup('Données', [
+    srow('export', 'save', 'Sauvegarder mes données'),
+    srow('pick-backup', 'save', 'Restaurer une sauvegarde'),
+    srow('pick-hevy', 'stack', 'Importer mon historique Hevy', state.workouts.some(isHevy) ? state.workouts.filter(isHevy).length + ' séances' : undefined),
+  ].concat(unk ? [srow('unknown', 'target', 'Exercices non reconnus', String(unk))] : []),
+    'Tes données restent sur ce téléphone. Sauvegarde-les de temps en temps dans Fichiers pour ne rien perdre.' + (state.workouts.some(isHevy) ? '' : ' Pour Hevy : dans Hevy, Profil, Réglages, Exporter les données, puis choisis workouts.csv ici.'));
+  h += sgroup('À propos', [
+    srow('guide', 'book', 'Guide de l’app'),
+    srow('welcome', 'star', 'Revoir la présentation'),
+    srow('news', 'star', 'Nouveautés'),
+    srow('update', 'up', 'Mettre à jour', 'version ' + VERSION),
+  ]);
+  sheet(h + closeBtn);
+  if (ui.sub && $('sheet2').firstElementChild) sheetSub(ui.sub);
 }
+
+// Les petites fenêtres de choix des réglages.
+function sheetSub(k) {
+  ui.sub = k;
+  const pick = (act, attr, list, cur, fmt) => '<div class="slist">' + list.map((v) => '<button type="button" class="srow" data-act="' + act + '" ' + attr + '="' + v[0] + '"><span class="col grow" style="gap:1px"><span class="mt">' + v[1] + '</span>' + (v[2] ? '<span class="small mut">' + v[2] + '</span>' : '') + '</span>' + (String(v[0]) === String(cur) ? '<span class="tick">' + ICON.check + '</span>' : '') + '</button>').join('') + '</div>';
+  let h = '';
+  if (k === 'mode') h = '<h1 class="h1">Façon de t’entraîner</h1>' + pick('set-mode', 'data-m', MODES, modeNow()).replace(/data-act="set-mode"/g, 'data-act="set-mode" data-from="settings"');
+  if (k === 'goal') h = '<h1 class="h1">Objectif par semaine</h1>' + pick('set-goal', 'data-n', [2, 3, 4, 5, 6].map((n) => [n, plural(n, 'séance', 'séances'), n === 5 ? '4 séances + la course du dimanche' : '']), weekGoal()) + '<span class="small mut">La course compte. Atteindre ton objectif valide ta semaine : ta flamme continue (+150 XP).</span>';
+  if (k === 'rest') h = '<h1 class="h1">Repos par défaut</h1>' + pick('set-rest', 'data-s', [60, 90, 120, 150, 180].map((x) => [x, clock(x), x === 90 ? 'Le plus courant' : x >= 150 ? 'Pour la force, avec lest' : '']), rest0()) + '<span class="small mut">Tu peux aussi régler un repos différent pour chaque exercice pendant la séance (bouton ⋯).</span>';
+  if (k === 'notif') {
+    const off = state.settings.notifOff || {};
+    h = '<h1 class="h1">Rappels</h1><div class="slist"><div class="srow"><span class="mico">' + ICON.clock + '</span><span class="grow mt">Heure</span><button type="button" class="stepbtn sm" data-act="notif-hour" data-d="-1" aria-label="Plus tôt">' + ICON.minus + '</button><span class="num" style="font-size:24px;min-width:56px;text-align:center">' + notifHour() + ' h</span><button type="button" class="stepbtn sm" data-act="notif-hour" data-d="1" aria-label="Plus tard">' + ICON.plus + '</button></div></div>'
+      + '<div class="slist">' + NKINDS.map(([kk, t, d]) => stog('notif-kind', 'notif', t, !off[kk], d).replace('data-act="notif-kind"', 'data-act="notif-kind" data-k="' + kk + '"')).join('') + '</div>';
+  }
+  sheet(h + '<button type="button" class="pill gold-btn wide" data-act="close2">OK</button>', 2);
+}
+const rest0 = () => state.settings.rest || 90;
 
 // Liste des nouveautés de la version : montrée une fois après chaque mise à jour, et depuis les réglages.
 // Les nouveautés depuis la dernière version vue (toutes, si plusieurs mises à jour d'un coup).
@@ -514,8 +542,8 @@ async function exportBackup() {
 Object.assign(ACTIONS, {
   settings: () => sheetSettings(),
   // Pendant une modification, on demande avant de fermer pour ne pas perdre le travail par erreur.
-  close: () => { if (ui.edit && !confirm('Fermer sans enregistrer les modifications ?')) return; closeSheet(); },
-  close2: () => closeSheet2(),
+  close: () => { if (ui.edit && !confirm('Fermer sans enregistrer les modifications ?')) return; ui.sub = null; closeSheet(); },
+  close2: () => { ui.sub = null; closeSheet2(); },
   level: () => sheetLevel(),
   week: (el) => sheetWeek(el.dataset.m ? +el.dataset.m : 0),
   quests: () => sheetQuests(),
@@ -531,6 +559,8 @@ Object.assign(ACTIONS, {
   delete: (el) => { if (confirm('Supprimer définitivement cette séance ?')) { state.workouts = state.workouts.filter((x) => x.id !== el.dataset.id); save(); closeSheet(); render(); } },
   more: () => { ui.historyLimit += 40; render(); },
   'set-rest': (el) => { state.settings.rest = +el.dataset.s; save(); sheetSettings(); },
+  'set-sub': (el) => sheetSub(el.dataset.k),
+  'notif-kind': (el) => { const o = Object.assign({}, state.settings.notifOff); o[el.dataset.k] = !o[el.dataset.k]; state.settings.notifOff = o; save(); resync(); sheetSub('notif'); },
   'set-goal': (el) => { state.settings.weekGoal = +el.dataset.n; save(); render(); sheetSettings(); },
   'toggle-sound': () => { state.settings.sound = state.settings.sound === false; save(); sheetSettings(); },
   'home-edit': () => sheetHomeEdit(),
@@ -616,12 +646,89 @@ function modeSettings() {
     + '<span class="small mut">' + esc(MODES.find((x) => x[0] === modeNow())[2]) + '</span></div>';
 }
 
+// ---------- Première ouverture : 3 étapes pour régler l'essentiel ----------
+// 1. Toi (âge, poids) · 2. Ta façon de t'entraîner · 3. Ta semaine. Puis comment se repérer.
+function sheetWelcome(step) {
+  const st = state.settings;
+  const dots = '<div class="wdots">' + [0, 1, 2, 3].map((i) => '<i class="' + (i <= step ? 'on' : '') + '"></i>').join('') + '</div>';
+  let h = dots;
+  if (step === 0) {
+    h += '<span class="label violet">Bienvenue</span><h1 class="h1">Ascension</h1><span class="mut">Ton carnet d’entraînement au poids du corps. Il choisit ta séance, compte tes progrès et te donne un rang de E à Z sur 5 qualités : force, explosivité, vitesse, endurance et maîtrise du corps.</span>'
+      + '<span class="label">Pour calculer ton rang</span><div class="slist">'
+      + '<label class="srow"><span class="mico">' + ICON.user + '</span><span class="grow mt">Âge</span><input id="set-age" class="sin" inputmode="numeric" placeholder="—" value="' + (st.age || '') + '"><span class="sv">ans</span></label>'
+      + '<label class="srow"><span class="mico">' + ICON.scale + '</span><span class="grow mt">Poids</span><input id="w-kg" class="sin" inputmode="decimal" placeholder="—" value="' + (bodyLog().length ? bodyLog()[0].kg : '') + '"><span class="sv">kg</span></label></div>'
+      + '<span class="small mut">20 pompes ne valent pas la même chose à 14 ans et à 30 ans, à 50 kg et à 90 kg. Tu peux laisser vide et le faire plus tard.</span>'
+      + '<button type="button" class="pill gold-btn wide" data-act="wel" data-s="1">Continuer</button>';
+  } else if (step === 1) {
+    h += '<span class="label violet">Étape 2 sur 3</span><h1 class="h1">Comment t’entraîner ?</h1><span class="mut">Tu pourras changer quand tu veux dans les Réglages.</span><div class="slist">'
+      + MODES.map(([k, t, d]) => '<button type="button" class="srow" data-act="wel-mode" data-m="' + k + '"><span class="col grow" style="gap:2px"><span class="mt">' + t + '</span><span class="small mut">' + d + '</span></span>' + (st.modeSet && modeNow() === k ? '<span class="tick">' + ICON.check + '</span>' : '') + '</button>').join('') + '</div>'
+      + '<button type="button" class="pill gold-btn wide" data-act="wel" data-s="2">Continuer</button>';
+  } else if (step === 2) {
+    h += '<span class="label violet">Étape 3 sur 3</span><h1 class="h1">Combien de séances par semaine ?</h1><span class="mut">L’app répartit tes séances et tes jours de repos. Une semaine réussie fait grandir ta flamme.</span><div class="slist">'
+      + [2, 3, 4, 5].map((n) => '<button type="button" class="srow" data-act="wel-goal" data-n="' + n + '"><span class="col grow" style="gap:2px"><span class="mt">' + plural(n, 'séance', 'séances') + '</span><span class="small mut">' + ({ 2: 'Pour reprendre doucement', 3: 'Le bon rythme pour progresser', 4: 'Pour progresser vite', 5: '4 séances et une course' })[n] + '</span></span>' + (weekGoal() === n ? '<span class="tick">' + ICON.check + '</span>' : '') + '</button>').join('') + '</div>'
+      + '<button type="button" class="pill gold-btn wide" data-act="wel" data-s="3">Continuer</button>';
+  } else {
+    h += '<span class="label violet">C’est prêt</span><h1 class="h1">Comment se repérer</h1><div class="slist">'
+      + [['home', 'Aujourd’hui', 'Ce que tu ouvres chaque jour : ta séance, ta forme, ta semaine.'], ['dumbbell', 'Le bouton violet', 'En haut à droite : lance ou reprends ta séance.'], ['chart', 'Le menu', 'Les trois traits en haut à droite : progrès, historique, défis, réglages.'], ['book', 'Le guide', 'Dans le menu : chaque partie de l’app expliquée.']]
+        .map(([ic, t, d]) => '<div class="srow"><span class="mico">' + ICON[ic] + '</span><span class="col grow" style="gap:2px"><span class="mt">' + t + '</span><span class="small mut">' + d + '</span></span></div>').join('') + '</div>'
+      + '<button type="button" class="pill gold-btn wide" data-act="wel-end">Commencer</button>';
+  }
+  sheet(h, 1, 'welcome');
+}
+function welSave() {
+  const a = $('set-age'), k = $('w-kg');
+  if (a && +a.value > 5 && +a.value < 100) state.settings.age = Math.round(+a.value);
+  if (k) { const kg = toNum(k.value); if (kg > 25 && kg < 250 && (!bodyLog().length || bodyLog()[0].kg !== kg)) addWeight(kg); }
+  save();
+}
+Object.assign(ACTIONS, {
+  wel: (el) => { welSave(); sheetWelcome(+el.dataset.s); },
+  'wel-mode': (el) => { const m = el.dataset.m; state.settings.modeSet = true; state.settings.noProg = m === 'libre'; state.settings.level = m === 'debutant' ? 'debutant' : undefined; save(); sheetWelcome(1); },
+  'wel-goal': (el) => { state.settings.weekGoal = +el.dataset.n; save(); sheetWelcome(2); },
+  'wel-end': () => { state.settings.onboarded = true; if (!state.settings.modeSet) state.settings.modeSet = true; save(); closeSheet(); render(); },
+  welcome: () => sheetWelcome(0),
+});
+
+// ---------- Menu (trois traits en haut à droite) ----------
+// Toute l'app, rangée en quatre groupes. Une ligne = un écran (data-tab) ou une fenêtre (data-act).
+const MENU = [
+  ['Entraînement', [
+    ['tab', 'home', 'home', 'Aujourd’hui', 'Ta séance du jour, ta forme, ta semaine'],
+    ['tab', 'workout', 'dumbbell', 'Séance', 'Programme, routines, séance libre, pompes du jour'],
+    ['act', 'run', 'run', 'Course', 'Noter une course ou courir avec le GPS'],
+    ['act', 'p30', 'calendar', 'Programme de 30 jours', 'Un but précis, 10 à 15 minutes par jour'],
+    ['act', 'chrono2', 'timer', 'Chronos', 'Tabata, EMOM, AMRAP, intervalles'],
+  ]],
+  ['Suivi', [
+    ['tab', 'progress', 'chart', 'Progrès', 'Ton rang, tes objectifs, tes muscles, tes records'],
+    ['tab', 'history', 'clock', 'Historique', 'Toutes tes séances, à revoir ou modifier'],
+    ['act', 'body', 'scale', 'Poids et mensurations', 'Ta balance et ton tour de bras'],
+    ['act', 'photos', 'cam', 'Photos de suivi', 'Ton physique, photo après photo'],
+  ]],
+  ['Défis', [
+    ['tab', 'defis', 'trophy', 'Défis', 'Quêtes du jour, ton ombre, saison, campagne, figures'],
+    ['act', 'feats', 'medal', 'Hauts faits', 'Des exploits durs, gagnés une seule fois'],
+  ]],
+  ['Toi', [
+    ['act', 'profile', 'user', 'Profil', 'Niveau, rang, tes chiffres à vie'],
+    ['act', 'settings', 'gear', 'Réglages', 'Entraînement, notifications, données'],
+    ['act', 'guide', 'book', 'Guide', 'Comment marche chaque partie de l’app'],
+  ]],
+];
+function sheetMenu() {
+  sheet('<span class="h1">Menu</span>' + MENU.map(([g, rows]) => '<div class="mgroup"><span class="label">' + g + '</span><div class="mlist">'
+    + rows.map(([k, v, ic, t, d]) => '<button type="button" class="mrow' + (k === 'tab' && ui.tab === v ? ' on' : '') + '" ' + (k === 'tab' ? 'data-tab' : 'data-act') + '="' + v + '"><span class="mico">' + (ICON[ic] || '') + '</span><span class="col grow" style="gap:1px;min-width:0"><span class="mt">' + t + '</span><span class="small mut">' + d + '</span></span>' + ICON.chev + '</button>').join('')
+    + '</div></div>').join(''), 1, 'menu');
+}
+Object.assign(ACTIONS, { menu: () => sheetMenu() });
+
 export function render() {
-  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewMoi, moi: viewMoi, defis: viewDefis };
+  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory, moi: viewHistory, defis: viewDefis };
   // L'animation d'arrivée ne joue que quand on change d'écran, pas à chaque série cochée.
   $('app').classList.toggle('enter', ui.enter);
   ui.enter = false;
-  if (ui.tab === 'repas' || ui.tab === 'aventure' || ui.tab === 'history') ui.tab = ui.tab === 'history' ? 'moi' : 'defis';
+  if (ui.tab === 'repas' || ui.tab === 'aventure') ui.tab = 'defis';
+  if (ui.tab === 'moi') ui.tab = 'history';
   let html;
   try { html = (views[ui.tab] || viewHome)(); } catch (e) {
     console.error(e);
@@ -640,6 +747,8 @@ export function render() {
     state.seenVersion = VERSION; save();
     if (!first) sheetNews(from);
   }
+  // Tout premier lancement : la présentation en 3 étapes.
+  if (ui.tab === 'home' && !state.workouts.length && !state.settings.onboarded && !$('sheet').firstElementChild) sheetWelcome(0);
 }
 
 document.addEventListener('click', (ev) => {

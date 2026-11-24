@@ -10,7 +10,7 @@ export const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
 export const toNum = (v) => parseFloat(String(v).replace(',', '.')) || 0;
 
 // Numéro de version affiché dans les réglages. À augmenter avec VERSION dans sw.js et NEWS dans data.js.
-export const VERSION = 48;
+export const VERSION = 49;
 
 // État de l'interface (pas enregistré). hFilter = filtre de l'historique. edit = brouillon en cours ; pick = à quoi sert le choix d'exercice.
 export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null, hQuery: '' };
@@ -22,6 +22,18 @@ export const ACTIONS = {};
 // ---------- Icônes ----------
 export const svg = (body, extra) => '<svg aria-hidden="true" ' + (extra || '') + ' viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + body + '</svg>';
 export const ICON = {
+  home: svg('<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>', 'width="20" height="20"'),
+  chart: svg('<path d="M4 19h16"/><path d="M7 15v-4M12 15V7M17 15v-6"/>', 'width="20" height="20"'),
+  clock: svg('<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>', 'width="20" height="20"'),
+  trophy: svg('<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/>', 'width="20" height="20"'),
+  user: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>', 'width="20" height="20"'),
+  timer: svg('<circle cx="12" cy="13" r="8"/><path d="M12 9v4M9 2h6"/>', 'width="20" height="20"'),
+  calendar: svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>', 'width="20" height="20"'),
+  scale: svg('<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 9a4 4 0 0 1 6 0l-3 3"/>', 'width="20" height="20"'),
+  dumbbell: svg('<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>', 'width="20" height="20"'),
+  notif: svg('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>', 'width="20" height="20"'),
+  sound: svg('<path d="M4 10v4h4l5 4V6L8 10z"/><path d="M16.5 9a4 4 0 0 1 0 6"/>', 'width="20" height="20"'),
+  voice: svg('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', 'width="20" height="20"'),
   book: svg('<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"/>', 'width="20" height="20"'),
   gear: svg('<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>', 'width="20" height="20"'),
   copy: svg('<rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>', 'width="18" height="18"'),
@@ -62,7 +74,7 @@ export function rankSvg(letter, small, k, cls) {
   return '<svg class="' + (cls || 'rank') + '" role="img" aria-label="Rang ' + letter + '" viewBox="0 0 72 80"' + (small ? ' style="width:34px;height:38px"' : '') + '>' + goldDef(id, k)
     + '<polygon points="36,3 68,21 68,59 36,77 4,59 4,21" fill="rgba(13,10,24,0.7)" stroke="url(#' + id + ')" stroke-width="' + (small ? 4 : 2.5) + '"/>'
     + (small ? '' : '<polygon points="36,11 61,25 61,55 36,69 11,55 11,25" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>')
-    + '<text x="36" y="' + (small ? 53 : 50) + '" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="' + (small ? 38 : 30) + '" font-weight="700" fill="url(#' + id + ')">' + letter + '</text></svg>';
+    + '<text x="36" y="' + (small ? 53 : 50) + '" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-size="' + (small ? 38 : 30) + '" font-weight="700" fill="url(#' + id + ')">' + letter + '</text></svg>';
 }
 
 // Emblème de l'accueil : le badge de rang entouré d'un anneau qui montre l'avancée vers le niveau suivant.
@@ -75,7 +87,7 @@ export function emblem(letter, ratio) {
     + '<circle class="arc" cx="84" cy="84" r="76" fill="none" stroke="url(#vio)" stroke-width="5" stroke-linecap="round" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + (C * (1 - ratio)).toFixed(1) + '" transform="rotate(-90 84 84)"/>'
     + '<polygon points="84,26 134,55 134,113 84,142 34,113 34,55" fill="rgba(10,9,15,0.6)" stroke="url(#gold2)" stroke-width="2.5"/>'
     + '<polygon points="84,38 124,61 124,107 84,130 44,107 44,61" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>'
-    + '<text x="84" y="104" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="56" font-weight="700" fill="url(#gold2)">' + letter + '</text></svg>';
+    + '<text x="84" y="104" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-size="56" font-weight="700" fill="url(#gold2)">' + letter + '</text></svg>';
 }
 
 // Anneau de progression avec un texte au centre (tuiles de l'accueil).

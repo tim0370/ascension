@@ -101,6 +101,8 @@ const benchLie = (o) => Object.assign({ h: [32, G - 15.5], t: 0, hd: -10, l1: [1
 const squatLow = (o) => st(Object.assign({ h: [41, 45], t: -52, hd: -70, a1: [-2, -2], a2: [2, 2] }, o));
 // À quatre pattes : genoux et mains au sol.
 const QUAD = (o) => Object.assign({ h: [36, 45.4], t: -22, hd: -10, a1: [90, 90], a2: [90, 90], l1: [90, 180, 180], l2: [88, 178, 178] }, o);
+const HANG = (o) => fromSh([50, 21.5], -90, Object.assign({ hd: -90, a1: { to: [50, 3], s: 'fwd' }, l1: [98, 140, 110], l2: [94, 136, 106] }, o));
+const INC = (o) => benchLie(Object.assign({ h: [30, G - 15.5], t: -30, hd: -40 }, o));
 const HOLD = (p, dy) => [p, Object.assign({}, p, { h: [p.h[0], p.h[1] + (dy || 0.6)], t: p.t + 0.8 })];
 
 const FIG = {
@@ -131,7 +133,7 @@ const FIG = {
   'Triceps Dip': { f: [dipTop(), dipLow()], m: ['ua', 'chest'], eq: [BARS], sc: 0.94 },
   'Dips Hold': { f: HOLD(dipTop(), 0.4), m: ['ua', 'shoulder'], eq: [BARS], sc: 0.94, d: 3.5 },
   'Negative Dip': { f: [dipTop(), dipLow()], m: ['ua', 'chest'], eq: [BARS], sc: 0.94, d: 5, kt: [0, 0.8, 1] },
-  'Chest Dip': { f: [dipTop({ t: -76, l1: [70, 120], l2: [66, 116] }), dipLow({ t: -50, l1: [74, 124], l2: [70, 120] })], m: ['chest'], eq: [BARS], sc: 0.94 },
+  'Chest Dip': { f: [dipTop({ t: -76, l1: [112, 200], l2: [108, 196] }), dipLow({ t: -50, l1: [125, 210], l2: [121, 206] })], m: ['chest'], eq: [BARS], sc: 0.94 },
   'Explosive Dip': { f: [dipLow(), fromSh([54, 6], -84, { a1: { to: [56, 25], s: 'back' }, l1: [100, 146], l2: [96, 142] })], m: ['ua', 'chest'], eq: [BARS], sc: 0.94, d: 1.5 },
   'Band Assisted Dip': { f: [dipTop(), dipLow()], m: ['ua', 'chest'], eq: [BARS, ['band', [51, 28], 'k1']], sc: 0.94 },
   'Bench Dip': { f: [fromSh([40, 26.5], -96, { a1: { to: [37, G - 13.6], s: 'back' }, l1: { to: [64, AY], s: 'fwd' } }), fromSh([41, 35.5], -98, { a1: { to: [37, G - 13.6], s: 'back' }, l1: { to: [64, AY], s: 'fwd' } })], m: ['ua'], eq: [bench(14, 38)] },
@@ -166,7 +168,7 @@ const FIG = {
   'Dumbbell Pullover': { f: [benchLie({ a1: [12, 20], a2: [8, 16] }), benchLie({ a1: [-80, -80], a2: [-84, -84] })], m: ['back', 'chest'], eq: [bench(20, 56)], db: 1, d: 3 },
   'Superman': { f: [LIE({ t: 182, a1: [182, 182], l1: [-1, -1], l2: [1, 1] }), LIE({ t: 196, hd: 200, a1: [204, 204], l1: [-14, -14], l2: [-11, -11] })], m: ['back', 'glute'], d: 3 },
   // Tractions (barre fixée en haut, à y = 3) : genoux pliés pour ne pas toucher le sol.
-  'Pull Up': { f: [fromSh([50, 21.5], -90, { hd: -90, a1: { to: [50, 3], s: 'fwd' }, l1: [100, 150, 180], l2: [96, 146, 176] }), fromSh([50, 9.5], -90, { hd: -84, a1: { to: [50, 3], s: 'fwd' }, l1: [100, 150, 180], l2: [96, 146, 176] })], m: ['back', 'ua'], eq: [['bar', 50, 3]] },
+  'Pull Up': { f: [fromSh([50, 21.5], -90, { hd: -90, a1: { to: [50, 3], s: 'fwd' }, l1: [98, 140, 110], l2: [94, 136, 106] }), fromSh([50, 9.5], -90, { hd: -84, a1: { to: [50, 3], s: 'fwd' }, l1: [98, 140, 110], l2: [94, 136, 106] })], m: ['back', 'ua'], eq: [['bar', 50, 3]] },
   // Bras
   'Bicep Curl (Dumbbell)': { f: [st({ a1: [94, 90], a2: [90, 86] }), st({ a1: [96, -72], a2: [92, -76] })], m: ['ua'], db: 3 },
   'Hammer Curl (Dumbbell)': { f: [st({ a1: [94, 90], a2: [90, 86] }), st({ a1: [96, -72], a2: [92, -76] })], m: ['ua', 'fa'], db: 3 },
@@ -242,11 +244,11 @@ const MORE = {
   'Straight Bar Dip': ['Triceps Dip', {  }],
   'Korean Dip': ['Bench Dip', {  }],
   'Bench Press (Barbell)': ['Bench Press (Dumbbell)', { bb: 1 }],
-  'Incline Bench Press (Dumbbell)': ['Bench Press (Dumbbell)', {  }],
-  'Incline Bench Press (Barbell)': ['Bench Press (Dumbbell)', { bb: 1 }],
+  'Incline Bench Press (Dumbbell)': ['Bench Press (Dumbbell)', { f: [INC({ a1: [100, -84], a2: [96, -88] }), INC({ a1: [-96, -96], a2: [-92, -92] })], eq: [bench(12, 40)] }],
+  'Incline Bench Press (Barbell)': ['Bench Press (Dumbbell)', { bb: 1, f: [INC({ a1: [100, -84], a2: [96, -88] }), INC({ a1: [-96, -96], a2: [-92, -92] })], eq: [bench(12, 40)] }],
   'Decline Bench Press (Barbell)': ['Bench Press (Dumbbell)', { bb: 1 }],
-  'Floor Press (Dumbbell)': ['Bench Press (Dumbbell)', {  }],
-  'Incline Dumbbell Fly': ['Dumbbell Fly', {  }],
+  'Floor Press (Dumbbell)': ['Bench Press (Dumbbell)', { f: [benchLie({ h: [32, G - 3], hd: -4, a1: [176, -88], a2: [172, -92], l1: { to: [14, AY], s: 'up' }, l2: { to: [16, AY], s: 'up' } }), benchLie({ h: [32, G - 3], hd: -4, a1: [-90, -90], a2: [-88, -88], l1: { to: [14, AY], s: 'up' }, l2: { to: [16, AY], s: 'up' } })], eq: [] }],
+  'Incline Dumbbell Fly': ['Dumbbell Fly', { f: [INC({ a1: [125, 52], a2: [120, 56] }), INC({ a1: [-98, -92], a2: [-94, -96] })], eq: [bench(12, 40)] }],
   'Chest Fly (Band)': ['Band Pull Apart', {  }],
   'Cable Fly Crossovers': ['Band Pull Apart', {  }],
   'Chest Press (Machine)': ['Seated Overhead Press (Dumbbell)', { f: [SEAT({ a1: [140, -20], a2: [136, -24] }), SEAT({ a1: [-4, -4], a2: [0, 0] })] }],
@@ -279,8 +281,8 @@ const MORE = {
   'Pull Over (Band)': ['Face Pull (Band)', { eq: [['band', [92, 4], 'h1']], f: [st({ a1: [-40, -40], a2: [-36, -36] }), st({ a1: [80, 80], a2: [84, 84] })] }],
   'Bicep Curl (Barbell)': ['Bicep Curl (Dumbbell)', { bb: 1, db: 0 }],
   'Concentration Curl': ['Bicep Curl (Dumbbell)', { eq: [bench(30, 58)], db: 1, f: [SEAT({ t: -60, a1: [70, 90] }), SEAT({ t: -60, a1: [70, -60] })] }],
-  'Preacher Curl (Dumbbell)': ['Bicep Curl (Dumbbell)', {  }],
-  'Incline Curl (Dumbbell)': ['Bicep Curl (Dumbbell)', {  }],
+  'Preacher Curl (Dumbbell)': ['Bicep Curl (Dumbbell)', { eq: [bench(30, 58)], db: 1, f: [SEAT({ t: -78, hd: -70, a1: [45, 50] }), SEAT({ t: -78, hd: -70, a1: [45, -95] })] }],
+  'Incline Curl (Dumbbell)': ['Bicep Curl (Dumbbell)', { eq: [bench(30, 58)], f: [SEAT({ t: -118, hd: -100, a1: [94, 90], a2: [90, 86] }), SEAT({ t: -118, hd: -100, a1: [96, -60], a2: [92, -64] })] }],
   'Reverse Curl (Dumbbell)': ['Bicep Curl (Dumbbell)', {  }],
   'Zottman Curl': ['Bicep Curl (Dumbbell)', {  }],
   'Wrist Curl (Dumbbell)': ['Bicep Curl (Dumbbell)', { eq: [bench(30, 58)], f: [SEAT({ t: -70, a1: [60, 30] }), SEAT({ t: -70, a1: [60, -10] })] }],
@@ -309,7 +311,7 @@ const MORE = {
   'Seated Calf Raise': ['Seated Overhead Press (Dumbbell)', { db: 0, eq: [bench(30, 58)], f: [SEAT({ a1: [60, 10], a2: [64, 14] }), SEAT({ h: [46, G - 17], a1: [60, 10], a2: [64, 14] })] }],
   'Jump Rope': ['High Knees', { f: [st({ h: [50, AY - 25], a1: [80, 20], a2: [100, 160], l1: { to: [52, AY - 2], s: 'fwd', f: 40 }, l2: { to: [49, AY - 2], s: 'fwd', f: 40 } }), st({ a1: [80, 20], a2: [100, 160] })], d: 0.7 }],
   'Sprint': ['Running', { d: 0.55 }],
-  'Skater Jump': ['Jumping Lunge', {  }],
+  'Skater Jump': ['Jumping Lunge', { f: [st({ h: [50, 40], t: -62, hd: -40, a1: [60, 40], a2: [120, 110], l1: { to: [54, AY], s: 'fwd' }, l2: [130, 170] }), st({ h: [50, 26], t: -84, a1: [110, 100], a2: [70, 60], l1: [96, 100, 30], l2: [84, 96, 30] })], d: 1.6 }],
   'Bear Crawl': ['Mountain Climber', { d: 1.4 }],
   'Battle Rope': ['High Knees', { f: [squatLow({ h: [46, 40], t: -70, a1: [10, 10], a2: [40, 40] }), squatLow({ h: [46, 40], t: -70, a1: [40, 40], a2: [10, 10] })], d: 0.6 }],
   'Rowing Machine': ['Seated Overhead Press (Dumbbell)', { db: 0, eq: [], f: [SEAT({ h: [40, G - 6], t: -60, a1: [-10, -10], l1: [-70, 60, 0], l2: [-74, 56, 0] }), SEAT({ h: [56, G - 6], t: -110, a1: [120, -20], l1: [0, 0, -90], l2: [-4, -4, -90] })] }],
@@ -328,13 +330,13 @@ const MORE = {
   'Sit Up': ['Crunch', {  }],
   'Reverse Crunch': ['Lying Leg Raise', {  }],
   'Flutter Kicks': ['Hollow Hold', {  }],
-  'Toes To Bar': ['Hanging Leg Raise', {  }],
-  'Hanging Knee Raise': ['Knee Raise (Dip Station)', {  }],
+  'Toes To Bar': ['Hanging Leg Raise', { f: [HANG({}), HANG({ t: -110, l1: [-62, -62], l2: [-58, -58] })], eq: [['bar', 50, 3]] }],
+  'Hanging Knee Raise': ['Knee Raise (Dip Station)', { f: [HANG({}), HANG({ l1: [-16, 88], l2: [-12, 90] })], eq: [['bar', 50, 3]] }],
   'Windshield Wipers': ['Lying Leg Raise', {  }],
   'Plank (Weighted)': ['Plank', {  }],
   'Bird Dog': ['Knee Push Up', { f: [QUAD(), QUAD({ a1: [-12, -12], l1: [176, 176, 86] })], m: ['back', 'abs'], d: 3 }],
   'Side Plank Hip Dip': ['Side Plank', {  }],
-  'Cable Crunch': ['Crunch', {  }],
+  'Cable Crunch': ['Crunch', { f: [{ h: [44, AY - 12], t: -88, hd: -80, a1: [-60, 160], l1: [90, 180, 180], l2: [88, 178, 178] }, { h: [44, AY - 12], t: -22, hd: 10, a1: [10, -100], l1: [90, 180, 180], l2: [88, 178, 178] }], eq: [['cable', [60, 2], 'h1']] }],
   'Neck Bridge': ['Glute Bridge', {  }],
   'Neck Harness Extension': ['Lying Neck Extension', {  }],
   'Neck Isometric (Band)': ['Face Pull (Band)', { f: HOLD(st({ hd: -96, a1: [93, 90], a2: [87, 90] }), 0.3), eq: [['band', 'head', [94, 6]]], m: ['neck'], d: 3.5 }],
@@ -351,7 +353,7 @@ const MORE = {
   'Hip Flexor Stretch': ['Lunge', { f: HOLD(st({ h: [52, 46], t: -88, l1: { to: [64, AY], s: 'fwd' }, l2: { to: [34, AY], s: 'fwd', f: 180 } }), 0.6), m: ['th'], d: 5 }],
   'Butterfly Stretch': ['stretch-ham', { f: HOLD({ h: [44, G - 3.6], t: -80, hd: -70, a1: [70, 80], l1: [-20, 120, 0], l2: [-24, 116, 0] }, 0.5), m: ['th', 'glute'], d: 5 }],
   'Cat Cow': ['Bird Dog', { f: [QUAD({ t: -16, hd: -40 }), QUAD({ t: -28, hd: 20 })], m: ['back'], d: 5 }],
-  'Cobra Stretch': ['Superman', { f: HOLD({ h: [56, G - 3], t: 200, hd: 210, a1: { to: [40, G - 0.6], s: 'back' }, l1: [-1, -1], l2: [1, 1] }, 0.4), m: ['abs'], d: 5 }],
+  'Cobra Stretch': ['Superman', { f: HOLD({ h: [56, G - 3], t: 212, hd: 222, a1: { to: [40, G - 0.6], s: 'back' }, l1: [-1, -1], l2: [1, 1] }, 0.4), m: ['abs'], d: 5 }],
   'Child Pose': ['stretch-child', {  }],
   'Downward Dog': ['stretch-dog', {  }],
   'Lying Spinal Twist': ['Lying Neck Side Raise', { f: HOLD(LIE({ h: [56, G - 3.4], a1: [8, 4], a2: [176, 180], l1: [-60, 30], l2: [2, 2] }), 0.3), m: ['back', 'glute'], d: 5 }],

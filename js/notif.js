@@ -1,11 +1,15 @@
-// Notifications (étape 4) : fin de repos même quand tu es sur une autre app, rappel de la séance du jour,
-// flamme en danger, nouveau boss le lundi.
+// Notifications : fin du repos, séance du jour (jours prévus), programme de 30 jours, semaine pas validée le dimanche,
+// bilan et nouveau défi le lundi. Chaque sorte se coupe dans les Réglages.
+// v49 : envoyées en texte brut (avant, le format JSON demandait une requête préalable qui échouait quand
+// l'iPhone mettait l'app en veille : les rappels n'étaient jamais enregistrés).
 // L'app calcule elle-même ses prochains rappels et les confie au petit programme Cloudflare (dossier ascension-push),
 // qui les envoie à l'heure exacte. Sur iPhone : seulement si Ascension est ouverte depuis l'icône de l'écran d'accueil.
 import { state, save, exoName } from './store.js';
 import { ACTIONS, toast } from './ui.js';
 import { streak } from './quetes.js';
 import { TYPES, nextType, testDue } from './programme.js';
+import { weekPlan } from './semaine.js';
+import { status as p30Status, dayPlan as p30Day } from './prog30.js';
 
 export const PUSH = 'https://ascension-push.tim0370.workers.dev';
 const DAY = 864e5;
@@ -15,40 +19,78 @@ export const pushOn = () => state.settings.push === true && 'Notification' in wi
 export const notifHour = () => (state.settings.notifHour === undefined ? 18 : state.settings.notifHour);
 
 function post(path, data, keep) {
-  return fetch(PUSH + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ id: state.settings.pushId }, data)), keepalive: !!keep });
+  return fetch(PUSH + path, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(Object.assign({ id: state.settings.pushId }, data)), keepalive: !!keep });
 }
 
 const midnight = (t) => { const d = new Date(t); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
 const atHour = (dayStart, h) => { const d = new Date(dayStart); d.setHours(h, 0, 0, 0); return d.getTime(); };
 
-// La liste des prochains rappels. withRest : on ajoute la fin du repos (quand l'app passe en arrière-plan).
+// Chaque sorte de rappel peut être coupée dans les Réglages (settings.notifOff = { day: true, … }).
+export const KINDS = [
+  ['rest', 'Fin du repos', 'Quand tu es sur une autre app pendant le repos.'],
+  ['day', 'Séance du jour', 'À ton heure, seulement les jours prévus dans ta semaine, si la séance n’est pas faite.'],
+  ['p30', 'Programme de 30 jours', 'À ton heure, si le jour du programme n’est pas fait.'],
+  ['sunday', 'Semaine pas encore validée', 'Le dimanche à 17 h, s’il te manque une séance ou la course.'],
+  ['monday', 'Lundi : ta semaine et ton ombre', 'Le lundi à midi : le bilan de ta semaine et le nouveau défi.'],
+];
+const kindOn = (k) => !(state.settings.notifOff || {})[k];
+
+// La liste des prochains rappels (8 jours au plus). withRest : on ajoute la fin du repos (quand l'app passe en arrière-plan).
 export function planItems(withRest) {
   const now = Date.now(), items = [];
   const a = state.active;
-  if (withRest && a && a.rest && !a.rest.rang && a.rest.end > now + 2000) {
+  if (withRest && kindOn('rest') && a && a.rest && !a.rest.rang && a.rest.end > now + 2000) {
     const ex = a.exercises[a.idx];
     items.push({ at: a.rest.end, title: 'Repos terminé', body: ex ? 'À toi : ' + exoName(ex.name) + ', série suivante.' : 'Série suivante.', tag: 'rest' });
   }
   const st = streak();
   const t0 = midnight(now), h = notifHour();
   const name = testDue() ? 'Re-test du programme' : (TYPES[nextType()] || {}).label || 'Ta séance';
-  // Aujourd'hui, si pas encore entraîné
-  const today = atHour(t0, h);
-  if (!st.todayDone && today > now) {
-    items.push(st.n
-      ? { at: today, title: 'Ta flamme : ' + st.n + ' semaine' + (st.n > 1 ? 's' : ''), body: st.weekDone ? 'Objectif de la semaine déjà atteint. ' + name + ' en bonus ?' : 'Encore ' + st.need + ' séance' + (st.need > 1 ? 's' : '') + ' cette semaine' + (st.danger ? ', c’est serré' : '') + '. ' + name + ' t’attend.', tag: 'day' }
-      : { at: today, title: 'Séance du jour', body: name + ' t’attend. Une séance courte suffit.', tag: 'day' });
+  let P = null;
+  try { P = weekPlan(); } catch (e) { /* plan indisponible : rappels simples */ }
+  // Séance du jour : les jours prévus de cette semaine (aujourd'hui compris s'il n'est pas encore l'heure).
+  if (kindOn('day')) {
+    const days = P ? P.days.filter((d) => !d.done.length && (d.kind === 'seance' || d.kind === 'course') && d.i >= (new Date(now).getDay() + 6) % 7) : [];
+    for (const d of days) {
+      const at = atHour(d.a + 3 * 3600e3, h);
+      if (at <= now) continue;
+      const run = d.kind === 'course';
+      items.push({ at, title: run ? 'Course du jour' : (d.label || 'Séance du jour'), body: (run ? 'C’est le jour de ta course.' : 'Ta séance du jour t’attend' + (d.sub ? ', ' + d.sub : '') + '.') + (st.n ? ' Ta flamme : ' + st.n + ' semaine' + (st.n > 1 ? 's' : '') + '.' : ''), tag: 'day' });
+    }
+    // Semaine prochaine (lundi) si l'app n'est pas ouverte d'ici là.
+    const dow = (new Date(now).getDay() + 6) % 7;
+    items.push({ at: atHour(t0 + (7 - dow) * DAY + 3 * 3600e3, h), title: 'Nouvelle semaine', body: name + ' t’attend pour bien commencer la semaine.', tag: 'day' });
   }
-  // Les deux jours suivants, au cas où tu n'ouvres pas l'app
-  for (let d = 1; d <= 2; d++) {
-    items.push({ at: atHour(t0 + d * DAY + 3 * 3600e3, h), title: d === 1 && st.n ? 'Ta flamme t’attend' : 'Séance du jour', body: name + ' t’attend. Une séance courte suffit.', tag: 'day' });
+  // Programme de 30 jours : le jour à faire, à ton heure (aujourd'hui puis les 2 jours suivants).
+  if (kindOn('p30')) {
+    try {
+      const s = p30Status();
+      if (s && !s.finished) {
+        for (let k = s.doneToday ? 1 : 0; k <= 2; k++) {
+          const dn = s.day + k - (s.doneToday ? 1 : 0);
+          if (dn > 30) break;
+          const pl = p30Day(s.p, dn);
+          if (pl.rest) continue;
+          const at = atHour(t0 + k * DAY + 3 * 3600e3, Math.max(8, h - 1));
+          if (at <= now) continue;
+          items.push({ at, title: s.p.name + ' · jour ' + dn, body: pl.test ? 'Jour de test : une seule série, au maximum.' : pl.text, tag: 'p30' });
+        }
+      }
+    } catch (e) { /* rien */ }
   }
-  // Lundi midi : nouveau boss
+  // Dimanche 17 h : la semaine n'est pas encore validée.
   const dow = (new Date(now).getDay() + 6) % 7; // 0 = lundi
-  const monday = atHour(t0 + ((7 - dow) % 7) * DAY + 3 * 3600e3, 12);
-  const nextMon = monday > now ? monday : atHour(t0 + (7 - dow) * DAY + 3 * 3600e3, 12);
-  items.push({ at: nextMon, title: 'Nouveau boss', body: 'Un nouveau boss t’attend cette semaine. Victoire : +300 XP.', tag: 'boss' });
-  return items;
+  if (kindOn('sunday') && P && P.left > 0) {
+    const sun = atHour(t0 + (6 - dow) * DAY + 3 * 3600e3, 17);
+    if (sun > now) items.push({ at: sun, title: 'Ta semaine n’est pas validée', body: 'Il te manque ' + P.left + ' séance' + (P.left > 1 ? 's' : '') + ' pour atteindre ton objectif' + (st.n ? ' et garder ta flamme de ' + st.n + ' semaine' + (st.n > 1 ? 's' : '') : '') + '.', tag: 'sunday' });
+  }
+  // Lundi midi : le bilan de la semaine et le nouveau défi de l'ombre.
+  if (kindOn('monday')) {
+    const monday = atHour(t0 + ((7 - dow) % 7) * DAY + 3 * 3600e3, 12);
+    const nextMon = monday > now ? monday : atHour(t0 + (7 - dow) * DAY + 3 * 3600e3, 12);
+    items.push({ at: nextMon, title: 'Ta semaine en chiffres', body: 'Ton bilan de la semaine est prêt, et ton ombre a un nouveau défi.', tag: 'monday' });
+  }
+  return items.sort((x, y) => x.at - y.at).slice(0, 28);
 }
 
 let lastSent = '';

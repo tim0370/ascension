@@ -605,24 +605,24 @@ async function shareImage(w) {
   let sets = 0, reps = 0;
   for (const e of w.exercises) for (const s of e.sets) { sets += 1; reps += s.r || 0; }
   const r = routines().find((x) => norm(x.title) === norm(w.title));
-  text('ASCENSION', 80, 130, '600 34px "Space Grotesk", sans-serif', '#B9A8F5');
-  text(dateFr(w.start, true), W - 80, 130, '500 34px Inter, sans-serif', '#A29DB0', 'right');
-  text(r ? r.label : clean(w.title), 80, 260, '700 84px "Space Grotesk", sans-serif', '#F4F2F8');
-  text('+' + xpOf(w) + ' XP', 80, 400, '700 120px "Space Grotesk", sans-serif', gold);
+  text('ASCENSION', 80, 130, '600 34px "Barlow Condensed", sans-serif', '#B9A8F5');
+  text(dateFr(w.start, true), W - 80, 130, '500 34px Barlow, sans-serif', '#A29DB0', 'right');
+  text(r ? r.label : clean(w.title), 80, 260, '700 84px "Barlow Condensed", sans-serif', '#F4F2F8');
+  text('+' + xpOf(w) + ' XP', 80, 400, '700 120px "Barlow Condensed", sans-serif', gold);
   const stats = [[dur((w.end - w.start) / 1000), 'durée'], [String(sets), 'séries'], [String(reps), 'répétitions']];
   if (w.prs) stats.push([String(w.prs), w.prs > 1 ? 'records' : 'record']);
-  stats.forEach((st, i) => { const x = 80 + i * ((W - 160) / stats.length); text(st[0], x, 520, '700 56px "Space Grotesk", sans-serif', '#F4F2F8'); text(st[1], x, 566, '500 30px Inter, sans-serif', '#A29DB0'); });
+  stats.forEach((st, i) => { const x = 80 + i * ((W - 160) / stats.length); text(st[0], x, 520, '700 56px "Barlow Condensed", sans-serif', '#F4F2F8'); text(st[1], x, 566, '500 30px Barlow, sans-serif', '#A29DB0'); });
   g.fillStyle = 'rgba(255,255,255,0.10)'; g.fillRect(80, 620, W - 160, 2);
   let y = 700;
   for (const e of w.exercises.slice(0, 9)) {
-    text(exoName(e.name), 80, y, '600 38px Inter, sans-serif', '#F4F2F8');
+    text(exoName(e.name), 80, y, '600 38px Barlow, sans-serif', '#F4F2F8');
     let line = e.sets.map(setText).join(', ');
-    g.font = '500 32px Inter, sans-serif';
+    g.font = '500 32px Barlow, sans-serif';
     while (g.measureText(line).width > 520 && line.length > 4) line = line.slice(0, -2);
-    text(line, W - 80, y, '500 32px Inter, sans-serif', e.sets.some((s) => s.pr) ? '#D8BD82' : '#A29DB0', 'right');
+    text(line, W - 80, y, '500 32px Barlow, sans-serif', e.sets.some((s) => s.pr) ? '#D8BD82' : '#A29DB0', 'right');
     y += 68;
   }
-  if (w.exercises.length > 9) text('et ' + (w.exercises.length - 9) + ' de plus', 80, y, '500 30px Inter, sans-serif', '#8D889C');
+  if (w.exercises.length > 9) text('et ' + (w.exercises.length - 9) + ' de plus', 80, y, '500 30px Barlow, sans-serif', '#8D889C');
   const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
   const file = new File([blob], 'ascension-seance-' + new Date(w.start).toISOString().slice(0, 10) + '.png', { type: 'image/png' });
   try {
@@ -686,7 +686,7 @@ function sheetSummary(w, label, xpBefore, qNew, fNew) {
   }
   if (fNew && fNew.length) {
     h += '<section class="glass card col feat-new" style="gap:8px"><span class="label">' + plural(fNew.length, 'haut fait réussi', 'hauts faits réussis') + '</span>'
-      + fNew.map((f) => '<div class="row between"><div class="col" style="gap:2px"><span class="h2">' + esc(f.label) + '</span><span class="small mut">' + esc(f.desc) + '</span></div><span class="tag gold">' + (f.reward.title ? 'Titre' : 'Couleur') + '</span></div>').join('') + '</section>';
+      + fNew.map((f) => '<div class="row between"><div class="col" style="gap:2px"><span class="h2">' + esc(f.label) + '</span><span class="small mut">Haut fait réussi · +100 XP' + (f.reward.skin ? ' et une couleur d’emblème' : '') + '</span></div></div>').join('') + '</section>';
   }
   if (qNew.length) {
     h += '<section class="glass card col" style="gap:8px"><span class="h2">' + plural(qNew.length, 'quête réussie', 'quêtes réussies') + '</span>'

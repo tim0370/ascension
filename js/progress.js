@@ -33,7 +33,7 @@ export function radarSvg(q, small) {
     q.forEach((x, i) => {
       const p = pt(i, 7.3), dx = i === 1 ? 6 : i === 4 ? -6 : 0;
       const ly = i === 0 ? p[1] - 14 : i === 1 || i === 4 ? p[1] - 2 : p[1] + 6;
-      s += '<text x="' + (p[0] + dx).toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle" font-family="Space Grotesk, sans-serif" font-size="22" font-weight="700" fill="#D8BD82">' + x.letter + '</text>'
+      s += '<text x="' + (p[0] + dx).toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-size="22" font-weight="700" fill="#D8BD82">' + x.letter + '</text>'
         + '<text x="' + (p[0] + dx).toFixed(1) + '" y="' + (ly + 15).toFixed(1) + '" text-anchor="middle" font-size="12.5" fill="#A29DB0">' + SHORT[x.id] + '</text>';
     });
   }
@@ -44,7 +44,7 @@ export function radarSvg(q, small) {
 export function rankCard(info) {
   const nextL = info.next ? info.next.letter : null;
   let h = '<section class="glass card hud col" style="gap:14px"><div class="row tap" role="button" tabindex="0" data-act="rank" style="gap:14px">' + rankSvg(info.rank.letter)
-    + '<div class="col grow" style="gap:4px"><span class="gold-text" style="font-size:11px;font-weight:600;letter-spacing:2px">CARTE DE RANG</span><span class="h2">Rang ' + info.rank.letter + ' · ' + esc(info.rank.name) + '</span>'
+    + '<div class="col grow" style="gap:4px"><span class="label" style="color:var(--gold)">Ton rang</span><span class="h2">Rang ' + info.rank.letter + ' · ' + esc(info.rank.name) + '</span>'
     + (nextL ? '<div class="bar"><div style="width:' + Math.round(info.ratio * 100) + '%"></div></div><span class="small mut">' + Math.round(info.ratio * 100) + ' % vers le rang ' + nextL + '</span>' : '<span class="small mut">Le plus haut rang</span>') + '</div>' + ICON.chev + '</div>'
     + '<div class="tap" role="button" tabindex="0" data-act="rank">' + radarSvg(info.q) + '</div><div class="list">';
   for (const x of info.q) {
@@ -75,7 +75,7 @@ function adjustNote() {
 
 function sheetRank() {
   const info = rankInfo();
-  let h = '<div class="row" style="gap:14px">' + rankSvg(info.rank.letter) + '<div class="col grow"><span class="gold-text" style="font-size:11px;font-weight:600;letter-spacing:2px">TON RANG</span><span class="h1">Rang ' + info.rank.letter + ' · ' + esc(info.rank.name) + '</span>'
+  let h = '<div class="row" style="gap:14px">' + rankSvg(info.rank.letter) + '<div class="col grow"><span class="label" style="color:var(--gold)">Ton rang</span><span class="h1">Rang ' + info.rank.letter + ' · ' + esc(info.rank.name) + '</span>'
     + '<span class="small mut">Ton rang est la moyenne de tes 5 qualités. Fais monter la plus faible pour monter vite.</span></div></div>';
   h += radarSvg(info.q);
   h += '<div class="list">' + info.q.map((x) => '<button type="button" class="item" data-act="quality" data-id="' + x.id + '"><span class="qletter">' + x.letter + '</span><span class="grow" style="font-weight:600">' + esc(x.name) + '</span><span class="small mut">' + (x.score >= 6 ? 'Max' : Math.round(x.frac * 100) + ' %') + '</span>' + ICON.chev + '</button>').join('') + '</div>';

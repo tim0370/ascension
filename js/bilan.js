@@ -157,7 +157,7 @@ function slides(y, m) {
   for (let d = 1; d <= nDays; d++) cal += '<i class="' + (t.days.has(new Date(y, m, d).toDateString()) ? 'on' : '') + '"></i>';
   cal += '</div>';
   S.push({ c: 'v2', h: '<span class="st-k">Tu t’es entraîné</span><span class="st-big" data-count="' + t.days.size + '">' + t.days.size + '</span><span class="st-unit">jour' + (t.days.size > 1 ? 's' : '') + ' sur ' + nDays + '</span>' + cal
-    + '<span class="st-sub">' + plural(t.train, 'séance', 'séances') + (t.runs ? ', ' + plural(t.runs, 'course', 'courses') : '') + (t.boss ? ', ' + plural(t.boss, 'combat de boss', 'combats de boss') : '') + ' · ' + dur(t.min * 60) + ' en tout.</span>'
+    + '<span class="st-sub">' + plural(t.train, 'séance', 'séances') + (t.runs ? ', ' + plural(t.runs, 'course', 'courses') : '') + (t.boss ? ', ' + plural(t.boss, 'défi de ton ombre', 'défis de ton ombre') : '') + ' · ' + dur(t.min * 60) + ' en tout.</span>'
     + (prev.n ? '<span class="st-tag">' + esc(delta(t.days.size, prev.days.size, ' en jours actifs')) + '</span>' : '') });
   if (t.reps) {
     S.push({ c: 'or', h: '<span class="st-k">Tu as soulevé</span><span class="st-big" data-count="' + Math.round(t.kg / 100) / 10 + '" data-dec="1">' + fr(t.kg / 1000, 1) + '</span><span class="st-unit">tonnes</span>'
@@ -232,17 +232,17 @@ async function shareBilan() {
   g.fillStyle = glow; g.fillRect(0, 0, W, H);
   const gold = g.createLinearGradient(0, 300, 0, 520); gold.addColorStop(0, '#F4E6BC'); gold.addColorStop(1, '#B8913F');
   const text = (s, x, yy, font, color, align) => { g.font = font; g.fillStyle = color; g.textAlign = align || 'left'; g.fillText(s, x, yy); };
-  text('ASCENSION', 80, 130, '600 34px "Space Grotesk", sans-serif', '#C2B3FF');
-  text('Bilan de ' + MOIS[m] + ' ' + y, 80, 250, '700 76px "Space Grotesk", sans-serif', '#F4F2F8');
-  text('+' + sp(t.xp) + ' XP', 80, 420, '700 130px "Space Grotesk", sans-serif', gold);
+  text('ASCENSION', 80, 130, '600 34px "Barlow Condensed", sans-serif', '#C2B3FF');
+  text('Bilan de ' + MOIS[m] + ' ' + y, 80, 250, '700 76px "Barlow Condensed", sans-serif', '#F4F2F8');
+  text('+' + sp(t.xp) + ' XP', 80, 420, '700 130px "Barlow Condensed", sans-serif', gold);
   const cells = [[String(t.days.size), 'jours actifs'], [tonnes(t.kg), 'soulevées'], [sp(t.pompes), 'pompes'], [sp(t.dips), 'dips'], [fr(t.km, 1) + ' km', 'courus'], [String(t.recs.length), 'records']];
   cells.forEach((cl, i) => {
     const x = 80 + (i % 2) * 470, yy = 600 + Math.floor(i / 2) * 210;
     g.fillStyle = 'rgba(255,255,255,0.06)'; g.beginPath(); g.roundRect(x, yy - 110, 440, 180, 32); g.fill();
-    text(cl[0], x + 36, yy, '700 72px "Space Grotesk", sans-serif', '#F4F2F8');
-    text(cl[1], x + 36, yy + 46, '500 32px Inter, sans-serif', '#A29DB0');
+    text(cl[0], x + 36, yy, '700 72px "Barlow Condensed", sans-serif', '#F4F2F8');
+    text(cl[1], x + 36, yy + 46, '500 32px Barlow, sans-serif', '#A29DB0');
   });
-  text('Soit environ ' + equiv(t.kg), 80, 1250, '500 34px Inter, sans-serif', '#C2B3FF');
+  text('Soit environ ' + equiv(t.kg), 80, 1250, '500 34px Barlow, sans-serif', '#C2B3FF');
   const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
   const file = new File([blob], 'ascension-bilan-' + monthKey(y, m) + '.png', { type: 'image/png' });
   try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }

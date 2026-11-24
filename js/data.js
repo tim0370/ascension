@@ -524,42 +524,42 @@ export const ROUTINES = [
 // Les épreuves se valident toutes seules à partir de tes séances (uniquement des exercices actuels).
 // reps = répétitions dans une série, secs = secondes, lest = kg minimum, run = km, pace = secondes par km maximum.
 export const RANKS = [
-  { letter: 'E', name: 'Initié', tests: [] },
-  { letter: 'D', name: 'Confirmé', tests: [
+  { letter: 'E', name: 'Débutant', tests: [] },
+  { letter: 'D', name: 'Bases solides', tests: [
     { label: '20 pompes d’affilée', exo: 'Push Up', reps: 20 },
     { label: '8 dips', exo: 'Triceps Dip', reps: 8 },
     { label: 'Hollow rock 20 secondes', exo: 'Hollow Rock', secs: 20 },
     { label: 'Courir 3 km', run: 3 },
   ] },
-  { letter: 'C', name: 'Aguerri', tests: [
+  { letter: 'C', name: 'Intermédiaire', tests: [
     { label: '30 pompes d’affilée', exo: 'Push Up', reps: 30 },
     { label: '8 dips avec 10 kg', exo: 'Triceps Dip', reps: 8, lest: 10 },
     { label: '4 pistol squats assistés', exo: 'Assisted Pistol Squats', alt: ['Pistol Squat'], reps: 4 },
     { label: 'Hollow rock 30 secondes', exo: 'Hollow Rock', secs: 30 },
     { label: 'Courir 5 km', run: 5 },
   ] },
-  { letter: 'B', name: 'Expert', tests: [
+  { letter: 'B', name: 'Avancé', tests: [
     { label: '40 pompes d’affilée', exo: 'Push Up', reps: 40 },
     { label: '10 dips avec 15 kg', exo: 'Triceps Dip', reps: 10, lest: 15 },
     { label: '5 pistol squats', exo: 'Pistol Squat', reps: 5 },
     { label: 'Hollow rock 45 secondes', exo: 'Hollow Rock', secs: 45 },
     { label: 'Courir 10 km', run: 10 },
   ] },
-  { letter: 'A', name: 'Élite', tests: [
+  { letter: 'A', name: 'Très avancé', tests: [
     { label: '50 pompes d’affilée', exo: 'Push Up', reps: 50 },
     { label: '10 dips avec 25 kg', exo: 'Triceps Dip', reps: 10, lest: 25 },
     { label: '8 pistol squats', exo: 'Pistol Squat', reps: 8 },
     { label: 'Hollow rock 60 secondes', exo: 'Hollow Rock', secs: 60 },
     { label: 'Courir 10 km en moins de 55 minutes', run: 10, pace: 330 },
   ] },
-  { letter: 'S', name: 'Légende', tests: [
+  { letter: 'S', name: 'Élite', tests: [
     { label: '60 pompes d’affilée', exo: 'Push Up', reps: 60 },
     { label: '8 dips avec 35 kg', exo: 'Triceps Dip', reps: 8, lest: 35 },
     { label: '10 pistol squats avec 10 kg', exo: 'Pistol Squat', reps: 10, lest: 10 },
     { label: 'Hollow rock 90 secondes', exo: 'Hollow Rock', secs: 90 },
     { label: 'Courir un semi-marathon (21 km)', run: 21 },
   ] },
-  { letter: 'Z', name: 'Mythe', tests: [
+  { letter: 'Z', name: 'Hors norme', tests: [
     { label: '80 pompes d’affilée', exo: 'Push Up', reps: 80 },
     { label: '5 pompes à une main', exo: 'One Arm Push Up', reps: 5 },
     { label: '12 dips avec 30 kg', exo: 'Triceps Dip', reps: 12, lest: 30 },
@@ -905,6 +905,16 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 49, items: [
+    'Nouveau look : nouvelles polices (titres en capitales serrées, texte plus lisible), fond gris neutre, violet pour l’app et or seulement pour les récompenses',
+    'Plus de barre en bas : le bouton trois traits en haut à droite ouvre le menu complet, et le bouton juste en dessous lance ta séance',
+    'Des noms clairs : rangs en mots simples (Débutant, Intermédiaire, Avancé…), le boss devient « Ton ombre » (ta meilleure tentative à battre), chapitres de campagne et épreuves finales en clair',
+    'Les titres à débloquer sont retirés. Les hauts faits gardent leur XP et leurs couleurs d’emblème',
+    'Réglages refaits, rangés comme ceux de l’iPhone : entraînement, son et voix, notifications, profil, données',
+    'Une présentation en 3 écrans à la première ouverture',
+    'Notifications réparées (les rappels prévus ne partaient pas quand l’app passait en arrière-plan) et nouveaux rappels : séance des jours prévus, programme de 30 jours, dimanche si ta semaine n’est pas validée, bilan du lundi. Chacun se coupe à part',
+    'Silhouettes corrigées : tractions, dips pectoraux, développé incliné, curls pupitre et incliné, relevés de genoux à la barre, crunch à la poulie, cobra…',
+  ] },
   { v: 48, items: [
     'Nouvelle barre du bas : Aujourd’hui, Progrès, Séance, Défis, Moi. Chaque chose a enfin sa place',
     'L’accueil ne montre plus que l’essentiel : ta séance du jour en premier, ta forme, le coach et ta semaine',

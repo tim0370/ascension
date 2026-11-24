@@ -1,5 +1,5 @@
 // Mode campagne : 6 chapitres de 5 étapes, la dernière est un boss. Chaque étape est une vraie performance,
-// vérifiée dans l'historique (une série, une course, une journée de pompes). +50 XP par étape, +250 par boss.
+// vérifiée dans l'historique (une série, une course, une journée de pompes). +50 XP par étape, +250 par épreuve finale.
 // Un chapitre s'ouvre quand le boss du précédent est battu ; le boss s'ouvre quand les 4 étapes du chapitre sont faites.
 // state.camp = { idÉtape: date de réussite } : sert à l'XP (store.js) et à la fête une seule fois.
 import { state, save, exoName, fr, dur } from './store.js';
@@ -13,24 +13,24 @@ const DIPS = ['Triceps Dip', 'Chest Dip'];
 
 // r = répétitions d'affilée (w = lest minimum), t = secondes, run = km (pace = secondes par km au plus), day = pompes dans la journée.
 export const CHAPTERS = [
-  { id: 'c1', name: 'Le réveil', sub: 'Les bases, propres.', col: '#4CC59A', steps: [
+  { id: 'c1', name: 'Les bases', sub: 'Pompes, dips et course : des répétitions propres.', col: '#4CC59A', steps: [
     { exo: 'Push Up', r: 20 }, { exo: DIPS, r: 10 }, { exo: 'Squat (Bodyweight)', r: 30, lb: 'squats' }, { run: 3 },
-    { boss: 'La Centaine', day: 100, desc: '100 pompes dans la même journée, en autant de séries que tu veux.' }] },
-  { id: 'c2', name: 'La forge', sub: 'Le lest entre en jeu.', col: '#55A8FF', steps: [
+    { boss: '100 pompes dans la journée', day: 100, desc: '100 pompes dans la même journée, en autant de séries que tu veux.' }] },
+  { id: 'c2', name: 'Force avec lest', sub: 'Le gilet et les haltères entrent en jeu.', col: '#55A8FF', steps: [
     { exo: 'Push Up', r: 30 }, { exo: DIPS, r: 15 }, { exo: 'Plank', t: 90 }, { run: 5 },
-    { boss: 'Le Forgeron', exo: DIPS, r: 10, w: 10, desc: '10 dips d’affilée avec 10 kg de lest.' }] },
-  { id: 'c3', name: 'Le col', sub: 'Vitesse et puissance.', col: '#A68DFF', steps: [
+    { boss: '10 dips avec 10 kg', exo: DIPS, r: 10, w: 10, desc: '10 dips d’affilée avec 10 kg de lest.' }] },
+  { id: 'c3', name: 'Vitesse et explosivité', sub: 'Aller vite et pousser fort.', col: '#A68DFF', steps: [
     { exo: 'Clap Push Up', r: 10 }, { exo: 'Push Up', r: 40 }, { run: 5, pace: 336 }, { exo: 'Wall Sit', t: 120 },
-    { boss: 'Le Gardien du col', exo: DIPS, r: 8, w: 20, desc: '8 dips d’affilée avec 20 kg de lest.' }] },
-  { id: 'c4', name: 'Les falaises', sub: 'Un bras, une jambe, la tête en bas.', col: '#FFB54D', steps: [
+    { boss: '8 dips avec 20 kg', exo: DIPS, r: 8, w: 20, desc: '8 dips d’affilée avec 20 kg de lest.' }] },
+  { id: 'c4', name: 'Unilatéral et équilibre', sub: 'Un bras, une jambe, la tête en bas.', col: '#FFB54D', steps: [
     { exo: 'Archer Push Up', r: 10 }, { exo: 'Handstand Hold', t: 30 }, { run: 10 }, { exo: 'Assisted Pistol Squats', r: 10, lb: 'pistol squats assistés' },
-    { boss: 'Le Grimpeur', day: 200, desc: '200 pompes dans la même journée.' }] },
-  { id: 'c5', name: 'La tempête', sub: 'Tout, en même temps.', col: '#FF6B7E', steps: [
+    { boss: '200 pompes dans la journée', day: 200, desc: '200 pompes dans la même journée.' }] },
+  { id: 'c5', name: 'Endurance totale', sub: 'Beaucoup de volume, partout.', col: '#FF6B7E', steps: [
     { exo: 'Clap Push Up', r: 20 }, { exo: 'Push Up', r: 50 }, { run: 10, pace: 330 }, { exo: 'Wall Handstand Push Up', r: 5, lb: 'pompes en équilibre contre le mur' },
-    { boss: 'L’Œil du cyclone', exo: DIPS, r: 6, w: 25, desc: '6 dips d’affilée avec 25 kg de lest (gilet et haltère).' }] },
-  { id: 'c6', name: 'Le sommet', sub: 'Ce que presque personne ne fait.', col: '#FFE7A3', steps: [
+    { boss: '6 dips avec 25 kg', exo: DIPS, r: 6, w: 25, desc: '6 dips d’affilée avec 25 kg de lest (gilet et haltère).' }] },
+  { id: 'c6', name: 'Niveau expert', sub: 'Ce que presque personne ne fait.', col: '#FFE7A3', steps: [
     { exo: 'One Arm Push Up', r: 3 }, { exo: 'Pistol Squat', r: 5, lb: 'pistol squats' }, { exo: 'Handstand Hold', t: 60 }, { run: 21 },
-    { boss: 'Le Roi du sommet', day: 300, desc: '300 pompes dans la même journée.' }] },
+    { boss: '300 pompes dans la journée', day: 300, desc: '300 pompes dans la même journée.' }] },
 ];
 
 // ---------- Vérification dans l'historique ----------
@@ -113,7 +113,7 @@ export function checkCamp() {
   if (!state.settings.campSeen) { state.settings.campSeen = 1; save(); setTimeout(() => toast('Campagne : ' + plural(fresh.length, 'étape déjà réussie', 'étapes déjà réussies') + ' grâce à ton historique · +' + xp + ' XP', true), 900); return; }
   burst();
   const boss = fresh.find((x) => x.i === 4);
-  setTimeout(() => toast(boss ? boss.s.boss + ' est vaincu · +' + xp + ' XP' : 'Campagne : ' + stepLabel(fresh[0].s) + ' · +' + xp + ' XP', true), 600);
+  setTimeout(() => toast(boss ? 'Épreuve finale réussie · +' + xp + ' XP' : 'Campagne : ' + stepLabel(fresh[0].s) + ' · +' + xp + ' XP', true), 600);
 }
 
 // ---------- Affichage ----------
@@ -123,7 +123,7 @@ export function campCard() {
   const ch = C.cur, next = ch.st.find((x) => !x.ok && (x.i < 4 || x.open)), inf = next ? stepInfo(next.s) : null;
   const idx = CHAPTERS.indexOf(ch.c) + 1;
   return '<section class="glass card col tap tint t-violet" role="button" tabindex="0" data-act="camp-open" style="gap:10px"><div class="row between"><span class="label violet">Campagne · chapitre ' + idx + ' · ' + esc(ch.c.name) + '</span>' + ICON.chev + '</div>'
-    + (next ? '<span class="h2">' + (next.i === 4 ? 'Boss : ' + esc(next.s.boss) : esc(stepLabel(next.s))) + '</span><div class="bar"><div style="width:' + Math.round(inf.ratio * 100) + '%"></div></div>' : '')
+    + (next ? '<span class="h2">' + (next.i === 4 ? 'Épreuve finale : ' + esc(next.s.boss) : esc(stepLabel(next.s))) + '</span><div class="bar"><div style="width:' + Math.round(inf.ratio * 100) + '%"></div></div>' : '')
     + '<span class="dots" style="gap:6px">' + ch.st.map((x) => '<i class="' + (x.ok ? 'done' : x === next ? 'current' : '') + '"></i>').join('') + '</span></section>';
 }
 
@@ -131,14 +131,14 @@ function chapHtml(ch, k) {
   let h = '';
     const lock = !ch.open;
     h += '<section class="glass card col chap' + (lock ? ' lock' : '') + (ch.done ? ' won' : '') + '" style="--cc:' + ch.c.col + '">'
-      + '<div class="row between" style="gap:10px"><div class="col" style="gap:2px"><span class="label" style="color:var(--cc)">Chapitre ' + (k + 1) + (ch.done ? ' · terminé' : lock ? ' · fermé' : '') + '</span><span class="h2">' + esc(ch.c.name) + '</span><span class="small mut">' + esc(lock ? 'Bats le boss du chapitre ' + k + ' pour l’ouvrir.' : ch.c.sub) + '</span></div></div>'
+      + '<div class="row between" style="gap:10px"><div class="col" style="gap:2px"><span class="label" style="color:var(--cc)">Chapitre ' + (k + 1) + (ch.done ? ' · terminé' : lock ? ' · fermé' : '') + '</span><span class="h2">' + esc(ch.c.name) + '</span><span class="small mut">' + esc(lock ? 'Bats le épreuve finale du chapitre ' + k + ' pour l’ouvrir.' : ch.c.sub) + '</span></div></div>'
       + '<div class="path">' + ch.st.map((x, i) => {
         const cur = !lock && !x.ok && (i < 4 || x.open) && ch.st.slice(0, i).filter((y) => !y.ok).length === 0;
         const off = lock || (i === 4 && !x.open);
         const inf = off || x.ok ? null : stepInfo(x.s);
         const cls = 'node' + (i === 4 ? ' boss' : '') + (x.ok ? ' ok' : '') + (cur ? ' cur' : '') + (off ? ' off' : '');
         return '<button type="button" class="prow' + (off ? ' off' : '') + '" data-act="camp-step" data-id="' + x.id + '"><span class="' + cls + '">' + (x.ok ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4L18 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' : i === 4 ? ICON.bolt : '<b>' + (i + 1) + '</b>') + '</span>'
-          + '<span class="col grow" style="gap:3px;min-width:0"><span style="font-weight:600">' + (i === 4 ? 'Boss : ' + esc(x.s.boss) : esc(stepLabel(x.s))) + '</span><span class="small mut">' + (x.ok ? 'Réussi · +' + (i === 4 ? BOSS_XP : STEP_XP) + ' XP' : i === 4 && !off ? esc(x.s.desc) : i === 4 ? 'S’ouvre après les 4 étapes' : inf ? (inf.run ? (inf.v ? 'Ton meilleur : ' + esc(inf.v) : 'Pas encore fait') : 'Ton meilleur : ' + inf.v + ' sur ' + inf.goal) : '') + '</span></span>' + ICON.chev + '</button>';
+          + '<span class="col grow" style="gap:3px;min-width:0"><span style="font-weight:600">' + (i === 4 ? 'Épreuve finale : ' + esc(x.s.boss) : esc(stepLabel(x.s))) + '</span><span class="small mut">' + (x.ok ? 'Réussi · +' + (i === 4 ? BOSS_XP : STEP_XP) + ' XP' : i === 4 && !off ? esc(x.s.desc) : i === 4 ? 'S’ouvre après les 4 étapes' : inf ? (inf.run ? (inf.v ? 'Ton meilleur : ' + esc(inf.v) : 'Pas encore fait') : 'Ton meilleur : ' + inf.v + ' sur ' + inf.goal) : '') + '</span></span>' + ICON.chev + '</button>';
       }).join('') + '</div></section>';
   return h;
 }
@@ -148,14 +148,14 @@ export function campNow() {
   const C = campaign();
   if (C.done) return '<section class="glass card col tint t-gold"><span class="h2">Campagne terminée</span><span class="small mut">Les 6 chapitres sont battus. Respect.</span></section>';
   const k = C.chapters.indexOf(C.cur);
-  return '<div class="camp">' + chapHtml(C.cur, k) + '</div><span class="small mut">' + C.n + (C.n > 1 ? ' étapes' : ' étape') + ' sur 30 · chaque étape est une vraie performance, vérifiée dans ton historique. +' + STEP_XP + ' XP par étape, +' + BOSS_XP + ' par boss.</span>';
+  return '<div class="camp">' + chapHtml(C.cur, k) + '</div><span class="small mut">' + C.n + (C.n > 1 ? ' étapes' : ' étape') + ' sur 30 · chaque étape est une vraie performance, vérifiée dans ton historique. +' + STEP_XP + ' XP par étape, +' + BOSS_XP + ' par épreuve finale.</span>';
 }
 
 export function campView() {
   const C = campaign();
   let h = '<section class="glass card col" style="gap:8px"><div class="row between"><span class="label violet">Campagne</span><span class="small mut">' + C.n + (C.n > 1 ? ' étapes' : ' étape') + ' sur 30</span></div>'
     + '<div class="bar"><div style="width:' + Math.round((C.n / 30) * 100) + '%"></div></div>'
-    + '<span class="small mut">Chaque étape est une vraie performance, vérifiée dans ton historique : fais-la en séance, au dojo ou en pompes du jour. +' + STEP_XP + ' XP par étape, +' + BOSS_XP + ' par boss.</span></section>';
+    + '<span class="small mut">Chaque étape est une vraie performance, vérifiée dans ton historique : fais-la en séance, dans les figures ou en pompes du jour. +' + STEP_XP + ' XP par étape, +' + BOSS_XP + ' par épreuve finale.</span></section>';
   h += '<div class="camp">';
   C.chapters.forEach((ch, k) => { h += chapHtml(ch, k); });
   h += '</div>';
@@ -169,10 +169,10 @@ function sheetStep(id) {
   if (!x) return;
   const inf = stepInfo(x.s), k = CHAPTERS.indexOf(ch.c) + 1, exo = x.s.run ? 'Running' : x.s.day ? 'Push Up' : [].concat(x.s.exo)[0];
   const boss = x.i === 4;
-  let h = '<div class="col" style="gap:4px"><span class="label" style="color:' + ch.c.col + '">Chapitre ' + k + ' · ' + esc(ch.c.name) + (boss ? ' · boss' : ' · étape ' + (x.i + 1)) + '</span><h1 class="h1">' + esc(boss ? x.s.boss : stepLabel(x.s)) + '</h1>' + (boss ? '<span class="small" style="color:var(--soft)">' + esc(x.s.desc) + '</span>' : '') + '</div>'
+  let h = '<div class="col" style="gap:4px"><span class="label" style="color:' + ch.c.col + '">Chapitre ' + k + ' · ' + esc(ch.c.name) + (boss ? ' · épreuve finale' : ' · étape ' + (x.i + 1)) + '</span><h1 class="h1">' + esc(boss ? x.s.boss : stepLabel(x.s)) + '</h1>' + (boss ? '<span class="small" style="color:var(--soft)">' + esc(x.s.desc) + '</span>' : '') + '</div>'
     + '<div class="figbox">' + figure(exo) + '</div>'
     + '<section class="glass card col" style="gap:8px"><div class="row between"><span class="label">' + (x.ok ? 'Réussi' : 'Ton meilleur') + '</span><span class="small mut">' + (inf.run ? esc(inf.v || 'Aucune course') : inf.v + ' sur ' + inf.goal + ' ' + inf.unit) + '</span></div><div class="bar' + (x.ok ? ' gold' : '') + '"><div style="width:' + Math.round(inf.ratio * 100) + '%"></div></div>'
-    + '<span class="small mut">' + (x.ok ? '+' + (boss ? BOSS_XP : STEP_XP) + ' XP gagnés.' : !ch.open ? 'Ce chapitre n’est pas encore ouvert.' : boss && !x.open ? 'Le boss s’ouvre quand les 4 étapes du chapitre sont réussies.' : x.s.day ? 'Note tes séries dans « Pompes du jour » sur l’accueil : elles s’additionnent sur la journée.' : 'Fais-le en séance ou ajoute l’exercice à une séance libre : l’étape se valide toute seule.') + '</span></section>'
+    + '<span class="small mut">' + (x.ok ? '+' + (boss ? BOSS_XP : STEP_XP) + ' XP gagnés.' : !ch.open ? 'Ce chapitre n’est pas encore ouvert.' : boss && !x.open ? 'L’épreuve finale s’ouvre quand les 4 étapes du chapitre sont réussies.' : x.s.day ? 'Note tes séries dans « Pompes du jour » sur l’accueil : elles s’additionnent sur la journée.' : 'Fais-le en séance ou ajoute l’exercice à une séance libre : l’étape se valide toute seule.') + '</span></section>'
     + (x.s.run ? '' : '<button type="button" class="pill sm glass wide" data-act="exo" data-name="' + esc(exo) + '">Voir la fiche de l’exercice</button>')
     + '<button type="button" class="pill gold-btn wide" data-act="close">Fermer</button>';
   sheet(h);

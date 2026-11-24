@@ -94,7 +94,7 @@ function pool(b, t0) {
       { id: 'x-centurion', label: (nPush * 2) + ' pompes aujourd’hui', hint: 'Quête rare : découpe en petites séries toute la journée.', xp: 250, key: 'push', goal: nPush * 2, unit: 'pompes' },
       { id: 'x-double', label: 'Séance et course le même jour', hint: 'Quête rare : le doublé.', xp: 200, custom: (s) => (s.lift && s.run ? 1 : 0), goal: 1, unit: 'doublé' },
       { id: 'x-parfait', label: 'Bats ton fantôme sur toutes les séries', hint: 'Quête rare : une séance du programme sans perdre une seule série.', xp: 250, key: 'ghostPerfect', goal: 1, unit: 'séance' },
-      { id: 'x-boss', label: 'Bats le boss de la semaine aujourd’hui', hint: 'Quête rare : le boss est dans l’onglet Progrès.', xp: 200, key: 'boss', goal: 1, unit: 'boss' },
+      { id: 'x-boss', label: 'Bats ton ombre aujourd’hui', hint: 'Quête rare : ton ombre est dans Défis.', xp: 200, key: 'boss', goal: 1, unit: 'défi' },
     ],
   };
 }
@@ -210,25 +210,25 @@ function allStats() {
 
 // reward : { title } ou { skin }. Chaque haut fait rapporte aussi 100 XP.
 export const FEATS = [
-  { id: 'centurion', group: 'Pompes', label: 'Centurion', desc: '100 pompes dans une journée', key: 'dayPush', goal: 100, reward: { title: 'Centurion' } },
-  { id: 'pompes200', group: 'Pompes', label: 'Légion', desc: '200 pompes dans une journée', key: 'dayPush', goal: 200, reward: { skin: 'rubis' } },
-  { id: 'pompes40', group: 'Pompes', label: 'Machine', desc: '40 pompes d’affilée', key: 'push', goal: 40, reward: { title: 'La Machine' } },
-  { id: 'pompes60', group: 'Pompes', label: 'Inépuisable', desc: '60 pompes d’affilée', key: 'push', goal: 60, reward: { skin: 'argent' } },
-  { id: 'clap10', group: 'Pompes', label: 'Détonation', desc: '10 pompes claquées d’affilée', key: 'clap', goal: 10, reward: { title: 'Explosif' } },
-  { id: 'dips25', group: 'Dips', label: 'Barres parallèles', desc: '25 dips d’affilée sans lest', key: 'dips', goal: 25, reward: { title: 'Le Roc' } },
-  { id: 'dips20kg', group: 'Dips', label: 'Lesté', desc: '8 dips avec 20 kg ou plus', key: 'dips20', goal: 8, reward: { title: 'Poids lourd' } },
-  { id: 'dips25kg', group: 'Dips', label: 'Acier', desc: '6 dips avec 25 kg ou plus', key: 'dips25', goal: 6, reward: { skin: 'obsidienne' } },
-  { id: 'pistol5', group: 'Jambes', label: 'Équilibre', desc: '5 pistols d’affilée par jambe', key: 'pistol', goal: 5, reward: { title: 'Équilibriste' } },
-  { id: 'pistol12', group: 'Jambes', label: 'Jambes d’acier', desc: '12 pistols d’affilée par jambe', key: 'pistol', goal: 12, reward: { skin: 'emeraude' } },
-  { id: 'run5', group: 'Course', label: 'Rapide', desc: '5 km en moins de 25 min', key: 'fast5', goal: 1, reward: { title: 'Le Rapide' } },
-  { id: 'run10', group: 'Course', label: 'Fond', desc: 'Courir 10 km d’une traite', key: 'run10', goal: 1, reward: { title: 'Endurant' } },
-  { id: 'streak7', group: 'Régularité', label: 'Lancé', desc: 'Une flamme de 4 semaines', key: 'streak', goal: 4, reward: { title: 'Inarrêtable' } },
-  { id: 'streak30', group: 'Régularité', label: 'Brasier', desc: 'Une flamme de 12 semaines', key: 'streak', goal: 12, reward: { skin: 'violet' } },
-  { id: 'cycle', group: 'Régularité', label: 'Discipline', desc: 'Finir un cycle complet du programme', key: 'cycles', goal: 1, reward: { title: 'Discipliné' } },
-  { id: 'boss3', group: 'Combat', label: 'Chasseur', desc: 'Battre 3 boss', key: 'boss', goal: 3, reward: { title: 'Chasseur de boss' } },
-  { id: 'boss10', group: 'Combat', label: 'Tueur de titans', desc: 'Battre 10 boss', key: 'boss', goal: 10, reward: { title: 'Tueur de titans' } },
-  { id: 'ghost10', group: 'Combat', label: 'Plus fort qu’hier', desc: 'Gagner 10 duels contre ton fantôme', key: 'ghostWins', goal: 10, reward: { title: 'Plus fort qu’hier' } },
-  { id: 'rare3', group: 'Combat', label: 'Chanceux', desc: 'Réussir 3 quêtes rares', key: 'rare', goal: 3, reward: { title: 'Le Chanceux' } },
+  { id: 'centurion', group: 'Pompes', label: '100 pompes dans une journée', desc: '100 pompes dans une journée', key: 'dayPush', goal: 100, reward: { title: 'Centurion' } },
+  { id: 'pompes200', group: 'Pompes', label: '200 pompes dans une journée', desc: '200 pompes dans une journée', key: 'dayPush', goal: 200, reward: { skin: 'rubis' } },
+  { id: 'pompes40', group: 'Pompes', label: '40 pompes d’affilée', desc: '40 pompes d’affilée', key: 'push', goal: 40, reward: { title: 'La Machine' } },
+  { id: 'pompes60', group: 'Pompes', label: '60 pompes d’affilée', desc: '60 pompes d’affilée', key: 'push', goal: 60, reward: { skin: 'argent' } },
+  { id: 'clap10', group: 'Pompes', label: '10 pompes claquées d’affilée', desc: '10 pompes claquées d’affilée', key: 'clap', goal: 10, reward: { title: 'Explosif' } },
+  { id: 'dips25', group: 'Dips', label: '25 dips d’affilée sans lest', desc: '25 dips d’affilée sans lest', key: 'dips', goal: 25, reward: { title: 'Le Roc' } },
+  { id: 'dips20kg', group: 'Dips', label: '8 dips avec 20 kg ou plus', desc: '8 dips avec 20 kg ou plus', key: 'dips20', goal: 8, reward: { title: 'Poids lourd' } },
+  { id: 'dips25kg', group: 'Dips', label: '6 dips avec 25 kg ou plus', desc: '6 dips avec 25 kg ou plus', key: 'dips25', goal: 6, reward: { skin: 'obsidienne' } },
+  { id: 'pistol5', group: 'Jambes', label: '5 pistols d’affilée par jambe', desc: '5 pistols d’affilée par jambe', key: 'pistol', goal: 5, reward: { title: 'Équilibriste' } },
+  { id: 'pistol12', group: 'Jambes', label: '12 pistols d’affilée par jambe', desc: '12 pistols d’affilée par jambe', key: 'pistol', goal: 12, reward: { skin: 'emeraude' } },
+  { id: 'run5', group: 'Course', label: '5 km en moins de 25 min', desc: '5 km en moins de 25 min', key: 'fast5', goal: 1, reward: { title: 'Le Rapide' } },
+  { id: 'run10', group: 'Course', label: 'Courir 10 km d’une traite', desc: 'Courir 10 km d’une traite', key: 'run10', goal: 1, reward: { title: 'Endurant' } },
+  { id: 'streak7', group: 'Régularité', label: 'Une flamme de 4 semaines', desc: 'Une flamme de 4 semaines', key: 'streak', goal: 4, reward: { title: 'Inarrêtable' } },
+  { id: 'streak30', group: 'Régularité', label: 'Une flamme de 12 semaines', desc: 'Une flamme de 12 semaines', key: 'streak', goal: 12, reward: { skin: 'violet' } },
+  { id: 'cycle', group: 'Régularité', label: 'Finir un cycle complet du programme', desc: 'Finir un cycle complet du programme', key: 'cycles', goal: 1, reward: { title: 'Discipliné' } },
+  { id: 'boss3', group: 'Défis', label: 'Battre ton ombre 3 fois', desc: 'Battre ton ombre 3 fois', key: 'boss', goal: 3, reward: { title: 'Chasseur de boss' } },
+  { id: 'boss10', group: 'Défis', label: 'Battre ton ombre 10 fois', desc: 'Battre ton ombre 10 fois', key: 'boss', goal: 10, reward: { title: 'Tueur de titans' } },
+  { id: 'ghost10', group: 'Défis', label: 'Gagner 10 duels contre ton fantôme', desc: 'Gagner 10 duels contre ton fantôme', key: 'ghostWins', goal: 10, reward: { title: 'Plus fort qu’hier' } },
+  { id: 'rare3', group: 'Défis', label: 'Réussir 3 quêtes rares', desc: 'Réussir 3 quêtes rares', key: 'rare', goal: 3, reward: { title: 'Le Chanceux' } },
 ];
 
 // État de chaque haut fait. Ceux qui viennent d'être réussis sont notés (state.feats) pour la fête et l'XP.
@@ -250,4 +250,5 @@ export function featXp() { return Object.keys(state.feats || {}).length * 100; }
 export function titles() { return ['Aucun'].concat(FEATS.filter((f) => f.reward.title && (state.feats || {})[f.id]).map((f) => f.reward.title), seasonUnlocks().titles); }
 export function skins() { return ['or'].concat(FEATS.filter((f) => f.reward.skin && (state.feats || {})[f.id]).map((f) => f.reward.skin), seasonUnlocks().skins); }
 export function skin() { const s = state.settings.skin; return SKINS[s] && skins().includes(s) ? SKINS[s] : SKINS.or; }
-export function myTitle() { const t = state.settings.title; return t && titles().includes(t) && t !== 'Aucun' ? t : ''; }
+// Les titres ont été retirés en v49 (personne ne les comprenait) : plus rien ne s'affiche.
+export function myTitle() { return ''; }

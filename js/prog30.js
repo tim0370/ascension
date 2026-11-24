@@ -20,7 +20,7 @@ export const P30 = [
     why: 'Même principe, aux dips sans lest : plus de répétitions propres, puis tu pourras charger plus lourd dans le programme.', who: 'Pour la force et l’endurance du haut du corps.' },
   { id: 'equilibre', name: 'Équilibre : 60 secondes', exo: 'Handstand Hold', t: true, gain: 2, cap: 60, rest: 75, sets: 5,
     why: 'Tous les jours un peu de temps à l’envers contre le mur. Les épaules se renforcent et l’équilibre devient naturel.', who: 'Pour la maîtrise du corps, et la porte d’entrée des figures.' },
-  { id: 'gainage', name: 'Gainage d’acier', exo: 'Hollow Hold', t: true, gain: 1.8, rest: 45, sets: 4,
+  { id: 'gainage', name: 'Gainage : +80 %', exo: 'Hollow Hold', t: true, gain: 1.8, rest: 45, sets: 4,
     why: 'Le hollow body, la base de toutes les figures : un tronc solide rend tes pompes, tes dips et ta course meilleurs.', who: 'Pour un ventre solide et le dragon flag plus tard.' },
   { id: 'pistol', name: 'Premier pistol squat', exo: 'Assisted Pistol Squats', gain: 1.6, rest: 75, sets: 4, final: 'Pistol Squat',
     why: 'Des pistols assistés (une main sur la station de dips) de plus en plus nombreux, puis au jour 30 un essai sans aide.', who: 'Pour des jambes fortes, une jambe après l’autre.' },

@@ -8,12 +8,12 @@ import { esc, plural, ICON, sheet, toast, burst } from './ui.js';
 export const TIER_XP = 200;
 export const TIERS = 30;
 export const REWARDS = {
-  5: { title: 'Saisonnier', label: 'Titre « Saisonnier »' },
+  5: { label: 'Premier palier du mois' },
   10: { medal: 'bronze', label: 'Médaille de bronze du mois' },
   15: { skin: 'aurore', label: 'Couleur d’emblème Aurore' },
   20: { medal: 'argent', label: 'Médaille d’argent du mois' },
-  25: { title: 'Infatigable', label: 'Titre « Infatigable »' },
-  30: { medal: 'or', title: 'Légende de saison', label: 'Médaille d’or du mois et titre « Légende de saison »' },
+  25: { label: 'Dernière ligne droite' },
+  30: { medal: 'or', label: 'Médaille d’or du mois' },
 };
 const MEDAL = { bronze: ['#F2C9A0', '#B87333', '#6E3F17'], argent: ['#F4F6FA', '#B8BEC9', '#6E7480'], or: ['#F4E6BC', '#CDAA62', '#8F6D33'] };
 const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];

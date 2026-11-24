@@ -70,7 +70,7 @@ function sheetPlan() {
   h += '</div><section class="glass card why"><span class="label violet">Pourquoi ' + P.goal + ' par semaine</span>'
     + '<span class="whyl">' + (P.goal === 5 ? '4 séances de muscu et ta course du dimanche : c’est le rythme que tu as choisi. Chaque muscle est travaillé 2 fois par semaine, avec au moins un jour de récupération entre deux séances qui le sollicitent.' : P.goal + ' séances : c’est l’objectif réglé dans les Réglages. Il se change quand tu veux.') + '</span>'
     + '<span class="whyl">Atteindre l’objectif fait grandir ta flamme d’une semaine. Toutes les 4 semaines réussies, tu gagnes un bouclier qui sauve une semaine ratée.</span>'
-    + '<span class="whyl">Les pompes du jour, les programmes de 30 jours et les boss ne comptent pas : seules les vraies séances et la course comptent.</span></section>'
+    + '<span class="whyl">Les pompes du jour, les programmes de 30 jours et ton ombre ne comptent pas : seules les vraies séances et la course comptent.</span></section>'
     + '<span class="small mut">Le plan se refait tout seul : si tu rates un jour, les séances qui restent se répartissent sur les jours suivants, avec du repos entre elles. Si ta forme est basse le matin, le repos passe en premier. Le dimanche est gardé pour la course.</span>'
     + '<div class="row" style="gap:8px"><button type="button" class="pill sm glass grow" data-act="lundi">Semaine dernière</button><button type="button" class="pill sm glass grow" data-act="week">Historique</button></div>';
   sheet(h + closeBtn);

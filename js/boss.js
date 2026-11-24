@@ -1,5 +1,6 @@
-// Boss de la semaine : un défi unique, qui change chaque lundi, à battre pour gagner 300 XP.
-// Ses points de vie = le chiffre à dépasser, calé sur ton meilleur niveau (et plus dur à chaque victoire).
+// Ton ombre : le défi de la semaine (il change chaque lundi). L'adversaire, c'est toi :
+// le chiffre à battre = ta meilleure tentative + 1 (ou une estimation la première fois). Victoire : +300 XP.
+// Dans le code, le mot « boss » est resté (données : w.boss).
 import { state, save, exoName, countPrs } from './store.js';
 import { figure } from './anim.js';
 import { beep, wakeAudio } from './sound.js';
@@ -11,12 +12,12 @@ export const BOSS_XP = 300;
 
 // secs = combat chronométré (le plus de répétitions possible dans le temps), sinon une seule série au maximum.
 export const BOSSES = [
-  { id: 'mur', name: 'Le Mur', desc: 'Le plus de pompes possible en 1 minute.', exo: 'Push Up', secs: 60 },
-  { id: 'titan', name: 'Le Titan', desc: 'Le plus de dips d’affilée avec 10 kg de lest.', exo: 'Triceps Dip', w: 10 },
-  { id: 'colosse', name: 'Le Colosse', desc: 'Le plus de pistols en 2 minutes, en comptant les deux jambes.', exo: 'Pistol Squat', alt: 'Assisted Pistol Squats', secs: 120 },
-  { id: 'eclair', name: 'L’Éclair', desc: 'Le plus de pompes explosives d’affilée. Les mains décollent à chaque fois.', exo: 'Explosive Push Up' },
-  { id: 'ombre', name: 'L’Ombre', desc: 'Le plus de burpees en 3 minutes.', exo: 'Burpee', secs: 180 },
-  { id: 'roc', name: 'Le Roc', desc: 'Le plus de dips sans lest en 1 minute.', exo: 'Triceps Dip', secs: 60 },
+  { id: 'mur', name: 'Pompes en 1 minute', desc: 'Le plus de pompes possible en 1 minute.', exo: 'Push Up', secs: 60 },
+  { id: 'titan', name: 'Dips lestés à 10 kg', desc: 'Le plus de dips d’affilée avec 10 kg de lest.', exo: 'Triceps Dip', w: 10 },
+  { id: 'colosse', name: 'Pistols en 2 minutes', desc: 'Le plus de pistols en 2 minutes, en comptant les deux jambes.', exo: 'Pistol Squat', alt: 'Assisted Pistol Squats', secs: 120 },
+  { id: 'eclair', name: 'Pompes explosives', desc: 'Le plus de pompes explosives d’affilée. Les mains décollent à chaque fois.', exo: 'Explosive Push Up' },
+  { id: 'ombre', name: 'Burpees en 3 minutes', desc: 'Le plus de burpees en 3 minutes.', exo: 'Burpee', secs: 180 },
+  { id: 'roc', name: 'Dips en 1 minute', desc: 'Le plus de dips sans lest en 1 minute.', exo: 'Triceps Dip', secs: 60 },
 ];
 
 const monday = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
@@ -76,10 +77,10 @@ export function bossCard() {
   const life = b.won ? 0 : Math.max(0, 1 - b.best / b.hp);
   return '<section class="glass card boss hud tap' + (b.won ? ' won' : '') + '" role="button" tabindex="0" data-act="boss">'
     + bossArt(b, 'sm')
-    + '<div class="col grow" style="gap:6px"><span class="label">' + (b.won ? 'Boss vaincu' : 'Boss de la semaine · ' + plural(left, 'jour', 'jours')) + '</span>'
-    + '<span class="h2">' + esc(b.name) + (b.level > 1 ? ' <span class="small mut">niv. ' + b.level + '</span>' : '') + '</span>'
+    + '<div class="col grow" style="gap:6px"><span class="label">' + (b.won ? 'Ombre battue cette semaine' : 'Ton ombre · encore ' + plural(left, 'jour', 'jours')) + '</span>'
+    + '<span class="h2">' + esc(b.name) + '</span>'
     + '<div class="hp"><div style="width:' + Math.round(life * 100) + '%"></div></div>'
-    + '<span class="small mut">' + (b.won ? 'Reviens lundi pour le suivant' : b.hp + ' PV · ' + esc(exoName(b.exo)) + (b.secs ? ' en ' + (b.secs >= 120 ? b.secs / 60 + ' min' : b.secs + ' s') : ' d’affilée')) + '</span></div></section>';
+    + '<span class="small mut">' + (b.won ? 'Un nouveau défi lundi' : 'À battre : ' + plural(b.hp, 'répétition', 'répétitions') + (b.w ? ' avec ' + b.w + ' kg' : '')) + '</span></div></section>';
 }
 
 // ---------- Le combat ----------
@@ -95,14 +96,14 @@ function drawBoss() {
   const f = fight, b = f.b;
   const life = b.won ? 0 : Math.max(0, 1 - b.best / b.hp);
   let h = '<div class="col center" style="gap:10px">' + bossArt(b, 'big')
-    + '<span class="label" style="color:var(--rouge)">' + (b.won ? 'Vaincu cette semaine' : 'Boss de la semaine') + '</span>'
-    + '<h1 class="h1" style="font-size:34px">' + esc(b.name) + '</h1>'
+    + '<span class="label">' + (b.won ? 'Ombre battue cette semaine' : 'Ton ombre · défi de la semaine') + '</span>'
+    + '<h1 class="h1">' + esc(b.name) + '</h1>'
     + '<div class="hp big"><div id="boss-hp" style="width:' + Math.round(life * 100) + '%"></div></div>'
-    + '<span class="small mut">' + b.hp + ' PV · niveau ' + b.level + (b.tries ? ' · ' + plural(b.tries, 'tentative', 'tentatives') + ', meilleure : ' + b.best : '') + '</span></div>';
-  h += '<section class="glass card col" style="gap:8px"><span class="h2">' + esc(b.desc) + '</span><span class="small mut">Exercice : ' + esc(exoName(b.exo)) + (b.w ? ' avec ' + b.w + ' kg' : '') + '. Pour le battre, fais au moins ' + b.hp + ' répétitions. Victoire : +' + BOSS_XP + ' XP.</span></section>';
+    + '<span class="small mut">À battre : ' + b.hp + (b.tries ? ' · ' + plural(b.tries, 'essai', 'essais') + ' cette semaine, meilleur : ' + b.best : '') + '</span></div>';
+  h += '<section class="glass card col" style="gap:8px"><span class="h2">' + esc(b.desc) + '</span><span class="small mut">Ton ombre, c’est toi : ta meilleure tentative sur ce défi. Pour la battre, fais au moins ' + b.hp + ' (' + esc(exoName(b.exo)) + (b.w ? ' avec ' + b.w + ' kg' : '') + '). Chaque victoire la rend plus forte la fois suivante. +' + BOSS_XP + ' XP.</span></section>';
   if (f.phase === 'ready') {
     if (b.won) h += '<span class="small mut" style="text-align:center">Tu peux le refaire pour t’entraîner, mais la victoire de la semaine est déjà comptée.</span>';
-    h += '<button type="button" class="pill gold-btn wide big" data-act="boss-go">' + (b.secs ? 'Lancer le combat (' + (b.secs >= 120 ? b.secs / 60 + ' min' : b.secs + ' s') + ')' : 'Lancer le combat') + '</button>';
+    h += '<button type="button" class="pill gold-btn wide big" data-act="boss-go">' + (b.secs ? 'Commencer (' + (b.secs >= 120 ? b.secs / 60 + ' min' : b.secs + ' s') + ')' : 'Commencer') + '</button>';
   } else if (f.phase === 'count' || f.phase === 'go') {
     h += '<div class="col center" style="gap:4px"><span class="num" id="boss-clock" style="font-size:84px;line-height:1">' + clockText() + '</span><span class="small mut" id="boss-sub">' + (f.phase === 'count' ? 'Prépare-toi' : 'Go, à fond') + '</span></div>'
       + '<button type="button" class="pill glass wide big" data-act="boss-stop">' + (b.secs ? 'J’arrête avant la fin' : 'J’ai fini ma série') + '</button>';
@@ -110,7 +111,7 @@ function drawBoss() {
     h += '<div class="col center" style="gap:6px"><span class="label">Tes répétitions</span><div class="row" style="gap:10px;width:100%"><button type="button" class="stepbtn" data-act="boss-step" data-d="-1" aria-label="Moins">' + ICON.minus + '</button>'
       + '<div class="col grow center"><input class="bignum" id="boss-score" inputmode="numeric" value="' + f.score + '" aria-label="Répétitions"></div>'
       + '<button type="button" class="stepbtn" data-act="boss-step" data-d="1" aria-label="Plus">' + ICON.plus + '</button></div></div>'
-      + '<button type="button" class="pill gold-btn wide big" data-act="boss-hit">Porter le coup</button>';
+      + '<button type="button" class="pill gold-btn wide big" data-act="boss-hit">Enregistrer</button>';
   }
   h += '<button type="button" class="pill sm glass wide" data-act="boss-close" style="color:var(--mut)">Fermer</button>';
   sheet(h);
@@ -142,7 +143,7 @@ function hit() {
   if (!score) { toast('Indique tes répétitions'); return; }
   const win = score >= b.hp;
   const now = Date.now();
-  const w = { id: 'b' + now, title: 'Boss · ' + b.name, start: f.start || now - 60000, end: now,
+  const w = { id: 'b' + now, title: 'Ton ombre · ' + b.name, start: f.start || now - 60000, end: now,
     exercises: [{ name: b.exo, sets: [Object.assign({ done: true, r: score }, b.w ? { w: b.w } : {})] }],
     boss: { id: b.id, hp: b.hp, score, win: win && !b.won } };
   state.workouts.push(w);
@@ -154,9 +155,9 @@ function hit() {
   setTimeout(() => {
     closeSheet();
     render();
-    if (win && !b.won) { burst(); beep(true); toast(b.name + ' est vaincu · +' + BOSS_XP + ' XP', true); }
+    if (win && !b.won) { burst(); beep(true); toast('Ombre battue · +' + BOSS_XP + ' XP', true); }
     else if (win) toast('Encore battu, bravo');
-    else toast(b.name + ' tient encore : il lui reste ' + (b.hp - score) + ' PV');
+    else toast('Encore ' + (b.hp - score) + ' pour battre ton ombre');
   }, 900);
 }
 

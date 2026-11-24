@@ -505,8 +505,8 @@ button.chip { height: 44px; min-width: 56px; font-size: 15px; }
 .st-body button { pointer-events: auto; position: relative; z-index: 5; }
 @keyframes stUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
 .st-k { font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255, 255, 255, 0.7); }
-.st-big { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 92px; line-height: 1; letter-spacing: -2px; }
-.st-mid { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 40px; line-height: 1.1; }
+.st-big { font-family: var(--display); font-weight: 700; font-size: 92px; line-height: 1; letter-spacing: -2px; }
+.st-mid { font-family: var(--display); font-weight: 700; font-size: 40px; line-height: 1.1; }
 .st-unit { font-size: 22px; font-weight: 600; color: rgba(255, 255, 255, 0.85); }
 .st-sub { font-size: 17px; line-height: 1.45; color: rgba(255, 255, 255, 0.82); margin-top: 14px; max-width: 320px; }
 .st-tag { align-self: flex-start; margin-top: 14px; padding: 7px 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); font-size: 13px; font-weight: 600; }
@@ -522,7 +522,7 @@ button.chip { height: 44px; min-width: 56px; font-size: 15px; }
 .st-list b { color: #F3DFA8; white-space: nowrap; }
 .st-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
 .st-grid div { display: flex; flex-direction: column; padding: 14px; border-radius: 18px; background: rgba(255, 255, 255, 0.1); }
-.st-grid b { font-family: 'Space Grotesk', sans-serif; font-size: 26px; }
+.st-grid b { font-family: var(--display); font-size: 26px; }
 .st-grid span { font-size: 12px; color: rgba(255, 255, 255, 0.7); }
 
 /* Objectifs */
@@ -807,50 +807,162 @@ h1, .h1, .h2, .big, .small, .label { overflow-wrap: break-word; }
 .stepn.ok { background: var(--gold); color: #17120A; }
 
 /* =====================================================================
-   v48 : refonte du style. Règles : texte courant 16 px, rien sous 13 px,
-   espacements en multiples de 4, un seul arrondi de carte (22 px),
-   peu de lueurs, pas de majuscules partout, fenêtres qui s'ouvrent en 300 ms.
+   v49 : nouvelle identité. Ce bloc passe après tout le reste et fait foi.
+   - Polices rangées dans l'app (hors ligne) : Barlow Condensed pour les titres
+     et les chiffres (capitales, style sport), Barlow pour le texte.
+   - Fond gris anthracite neutre. Violet = couleur de l'app (action, progression,
+     en cours). Or = récompenses seulement. Le reste en blanc et gris.
+   - Verre flou seulement pour ce qui flotte (menu, fenêtres, messages, repos).
+     Les cartes sont des surfaces simples, sans lueur ni dégradé coloré.
    ===================================================================== */
-body { font-size: 16px; line-height: 1.45; }
-body::before { opacity: 0.55; }
-body::after { opacity: 0.4; }
-#app { gap: 14px; padding-left: 20px; padding-right: 20px; }
-.small { font-size: 14px; line-height: 1.45; }
-.label { font-size: 13px; letter-spacing: 0.2px; text-transform: none; font-weight: 600; color: var(--mut); }
-.label.violet { color: var(--violet-soft); }
-.h1 { font-size: 32px; letter-spacing: -0.8px; line-height: 1.1; }
-.h2 { font-size: 19px; letter-spacing: -0.3px; line-height: 1.25; }
-.tag { font-size: 12px; letter-spacing: 0.2px; text-transform: none; height: 26px; }
-.card { border-radius: 22px; padding: 18px 18px; }
-/* Cartes : verre sombre et net, sans grosse ombre ni lueur colorée. */
-.glass { background: rgba(30, 23, 56, 0.66); border: 1px solid rgba(255, 255, 255, 0.07); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); }
-.glass.tint { background: linear-gradient(180deg, rgb(var(--t) / 0.07) 0%, rgb(var(--t) / 0) 55%), rgba(30, 23, 56, 0.66); border-color: rgba(255, 255, 255, 0.07); }
-.tint .bar:not(.gold) > div { box-shadow: none; }
-.bar > div { box-shadow: none; }
-.secdot { width: 6px; height: 6px; box-shadow: none; }
-.sechead { margin-top: 18px; margin-bottom: -4px; align-items: center; }
-.sechead .h2 { font-size: 21px; }
-/* Moins de gadgets : pas de reflet qui passe sur les boutons, pas de coins « système ». */
-.gold-btn::after { display: none; }
-.gold-btn { box-shadow: 0 8px 20px rgba(106, 75, 230, 0.32); }
-.hud::before, .hud::after { display: none; }
-.pill { font-size: 16px; }
-.pill.sm { font-size: 14px; }
-.list > .item { min-height: 58px; padding: 10px 0; }
-.cta { border-radius: 26px; }
-.cta .ctahead .h1 { font-size: 28px; }
+@font-face { font-family: 'Barlow'; font-weight: 400; font-style: normal; font-display: swap; src: url('../fonts/barlow-400.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 500; font-style: normal; font-display: swap; src: url('../fonts/barlow-500.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 600; font-style: normal; font-display: swap; src: url('../fonts/barlow-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow'; font-weight: 700; font-style: normal; font-display: swap; src: url('../fonts/barlow-700.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 600; font-style: normal; font-display: swap; src: url('../fonts/barlowc-600.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 700; font-style: normal; font-display: swap; src: url('../fonts/barlowc-700.woff2') format('woff2'); }
+@font-face { font-family: 'Barlow Condensed'; font-weight: 800; font-style: normal; font-display: swap; src: url('../fonts/barlowc-800.woff2') format('woff2'); }
 
-/* Fenêtres : fond plein, poignée, ouverture façon iPhone (300 ms, ralentit à la fin). */
-.sheet { background: rgba(5, 4, 10, 0.6); animation: fade 0.25s ease; }
-.sheet > div { background: #17122B; border: 1px solid rgba(255, 255, 255, 0.08); border-bottom: none; border-radius: 28px 28px 0 0; padding: 28px 20px calc(env(safe-area-inset-bottom) + 24px); gap: 16px; box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5); animation: slideup 0.32s cubic-bezier(0.32, 0.72, 0, 1); }
-.sheet > div::before { top: 8px; width: 36px; height: 5px; margin-left: -18px; background: rgba(255, 255, 255, 0.25); }
-.sheet .h1 { font-size: 28px; }
-.sheet .glass { background: rgba(255, 255, 255, 0.04); }
-.sheet.full > div { background: #120E22; }
+:root {
+  --bg: #0E0E12;
+  --bg2: #131318;
+  --surf: #17171D;
+  --surf2: #1F1F27;
+  --surf3: #282832;
+  --txt: #F4F4F6;
+  --soft: #CFCFD6;
+  --mut: #9B9BA6;
+  --dim: #73737E;
+  --line: rgba(255, 255, 255, 0.07);
+  --violet: #7C5CF5;
+  --violet-deep: #5B3FD6;
+  --violet-soft: #B3A2FF;
+  --gold: #E2C27A;
+  --gold-deep: #C4A055;
+  --gold-grad: linear-gradient(180deg, #F2DDA6 0%, #D4AE5E 100%);
+  --vert: #43C98E;
+  --rouge: #F0566A;
+  --flamme: #FF8A3D;
+  --display: 'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --body: 'Barlow', system-ui, -apple-system, sans-serif;
+  --r: 20px;
+  --fig-bg: #15151B;
+  --fig-floor: rgba(255, 255, 255, 0.12);
+}
+
+html, body { background: var(--bg); }
+body { font-family: var(--body); font-size: 16px; line-height: 1.45; background: var(--bg); background-attachment: scroll; }
+body::before, body::after { display: none; }
+#app { gap: 14px; padding: calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 40px); }
+/* Les deux boutons flottants sont en haut à droite : le premier élément de chaque écran leur laisse la place. */
+#app > :first-child { margin-right: 56px; min-height: 98px; }
+.homehead { display: flex; flex-direction: column; gap: 14px; }
+.homehead .today { font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1; text-transform: uppercase; color: var(--txt); }
+.homehead .today small { display: block; font-family: var(--body); font-size: 14px; font-weight: 500; text-transform: none; color: var(--mut); margin-top: 4px; }
+
+/* Typographie : titres en capitales condensées, texte simple et lisible. */
+.h1 { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1; letter-spacing: 0.2px; text-transform: uppercase; }
+.h2 { font-family: var(--display); font-weight: 700; font-size: 22px; line-height: 1.1; letter-spacing: 0.2px; }
+.big, .num, .bignum, .midnum, .sets .idx, .badge, .xptag, .qletter { font-family: var(--display); letter-spacing: 0; }
+.big { font-weight: 800; font-size: 44px; }
+.bignum { font-size: 88px; font-weight: 800; }
+.label { font-family: var(--body); font-size: 13px; font-weight: 600; letter-spacing: 0.1px; text-transform: none; color: var(--mut); }
+.label.violet { color: var(--violet-soft); }
+.small { font-size: 14px; line-height: 1.45; }
+.tag { font-family: var(--body); font-size: 12px; letter-spacing: 0; text-transform: none; background: rgba(124, 92, 245, 0.16); }
+.sechead { margin: 20px 0 -2px; align-items: baseline; }
+.sechead .h2, .sec .h2 { font-size: 24px; text-transform: uppercase; }
+.secdot { display: none; }
+
+/* Surfaces : simples, une seule bordure fine, pas de flou ni de lueur. */
+.glass, .glass.tint, .tint { background: var(--surf); border: 1px solid var(--line); box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.card { border-radius: var(--r); padding: 18px; }
+.tile, .tile3 { border-radius: var(--r); }
+.tint .label.violet { color: var(--violet-soft); }
+.ico, .tint .ico, .ico.gold { background: var(--surf2); color: var(--soft); border-radius: 12px; }
+.hud::before, .hud::after { display: none; }
+.exo { background: var(--surf2); border-color: var(--line); }
+
+/* Boutons : violet plein pour l'action principale, gris pour le reste, or pour une récompense. */
+.gold-btn, .cta .gold-btn { background: var(--violet); color: #fff; box-shadow: none; font-weight: 700; }
+.gold-btn::after { display: none; }
+.gold-btn:active { background: var(--violet-deep); }
+.pill { font-weight: 600; font-size: 16px; }
+.pill.glass { background: var(--surf2); border: 1px solid var(--line); }
+.pill.on { background: rgba(124, 92, 245, 0.18); border-color: var(--violet); }
+.reward-btn { background: var(--gold-grad); color: #1C150A; box-shadow: none; }
+.iconbtn { background: var(--surf2); }
+
+/* Progression : violet plat. Or seulement pour ce qui est gagné. */
+.bar { background: rgba(255, 255, 255, 0.08); }
+.bar > div, .tint .bar:not(.gold) > div, .tint.t-violet .bar > div, .quest .bar > div { background: var(--violet); box-shadow: none; }
+.bar.gold > div { background: var(--gold); }
+.seg i.on, .dots i.done, .tint .dots i.done, .tint.t-gold .dots i.done { background: var(--violet); box-shadow: none; }
+.dots b.done, .tint .dots b.done { background: rgba(124, 92, 245, 0.7); }
+.dots i.current, .tint .dots i.current, .node.current .mark { border-color: var(--violet); box-shadow: none; }
+.node.done .mark { border-color: var(--violet); color: var(--violet-soft); }
+.day.done .dot { background: var(--violet); box-shadow: none; }
+.day.today:not(.done) .dot { box-shadow: none; }
+.heat i.n1 { background: rgba(124, 92, 245, 0.5); }
+.heat i.n2 { background: var(--violet); box-shadow: none; }
+.badge.done { background: var(--violet); color: #fff; }
+.chip.done { background: rgba(124, 92, 245, 0.16); color: var(--violet-soft); border-color: rgba(124, 92, 245, 0.35); }
+.chip.pr { box-shadow: none; border-color: var(--gold); color: var(--gold); }
+.excard.cur { border-color: var(--violet); box-shadow: none; }
+.ready i, .ready.mid i { box-shadow: none; }
+.emblem, .rank, .topbar .emb svg { filter: none; }
+
+/* Bloc principal (séance du jour) : violet plein, sans halo. */
+.cta { background: linear-gradient(160deg, #6C4CEB 0%, #4F35C9 100%); border: none; box-shadow: none; border-radius: 24px; }
+.cta .seg i.on { background: #fff; box-shadow: none; }
+.cta .gold-btn { background: #fff; color: #3A24A8; }
+.cta .why { background: rgba(0, 0, 0, 0.16); }
+
+/* Quêtes, ombre, coach : plus de pastilles multicolores. */
+.qico, .qico.volume, .qico.record, .qico.seance { background: var(--surf2); color: var(--soft); box-shadow: none; }
+.qico.rare { background: rgba(226, 194, 122, 0.16); color: var(--gold); box-shadow: none; }
+.qico.done { background: var(--vert); color: #06140D; }
+.quest.rare { background: rgba(226, 194, 122, 0.06); }
+.tile.boss, .card.boss { background: var(--surf); border: 1px solid var(--line); box-shadow: none; }
+.boss .label { color: var(--mut); }
+.bossring { filter: none; }
+.coachcard.tint .coachav { box-shadow: none; }
+.flame { box-shadow: none; }
+
+/* Ce qui flotte garde le verre : menu, fenêtres, messages, minuteur de repos. */
+.topnav { position: absolute; z-index: 8; top: calc(env(safe-area-inset-top) + 14px); right: max(14px, calc(50vw - 226px)); display: flex; flex-direction: column; gap: 10px; }
+.tnav { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; color: var(--txt); background: rgba(30, 30, 38, 0.72); border: 1px solid rgba(255, 255, 255, 0.10); -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%); }
+.tnav svg { width: 22px; height: 22px; }
+.tnav.go { background: var(--violet); border-color: transparent; color: #fff; }
+.tnav.go.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--violet); }
+.tnav:active { transform: scale(0.93); }
+.sheet { background: rgba(0, 0, 0, 0.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.sheet > div { background: #16161C; border: 1px solid rgba(255, 255, 255, 0.08); border-bottom: none; border-radius: 26px 26px 0 0; padding: 28px 20px calc(env(safe-area-inset-bottom) + 24px); gap: 16px; box-shadow: 0 -16px 50px rgba(0, 0, 0, 0.5); animation: slideup 0.32s cubic-bezier(0.32, 0.72, 0, 1); }
+.sheet > div::before { top: 8px; width: 36px; height: 5px; margin-left: -18px; background: rgba(255, 255, 255, 0.22); }
+.sheet.full > div { background: var(--bg); }
+.sheet .glass { background: var(--surf2); }
+.sheet .h1 { font-size: 32px; }
+.sheet-x { background: var(--surf3); border-color: rgba(255, 255, 255, 0.1); box-shadow: none; }
+.toast { background: rgba(30, 30, 38, 0.92); border: 1px solid rgba(255, 255, 255, 0.1); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); }
+.toast.gold { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); }
+.rest { bottom: calc(env(safe-area-inset-bottom) + 14px); background: rgba(26, 26, 33, 0.9); border: 1px solid rgba(255, 255, 255, 0.1); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
+.rest.end { border-color: var(--gold); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
+
+/* Menu : une grande liste rangée en groupes, comme les réglages de l'iPhone. */
+.sheet.menu > div { gap: 18px; }
+.mgroup { display: flex; flex-direction: column; gap: 8px; }
+.mgroup > .label { padding-left: 4px; }
+.mlist, .slist { background: var(--surf2); border-radius: 18px; overflow: hidden; }
+.mrow, .srow { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 60px; padding: 10px 14px; text-align: left; }
+.mrow + .mrow, .srow + .srow { border-top: 1px solid var(--line); }
+.mrow:active, .srow:active { background: rgba(255, 255, 255, 0.04); }
+.mrow.on .mt { color: var(--violet-soft); }
+.mico { width: 36px; height: 36px; flex: none; border-radius: 10px; display: grid; place-items: center; background: var(--surf3); color: var(--soft); }
+.mico svg { width: 19px; height: 19px; }
+.mt { font-weight: 600; }
 
 /* « Pourquoi » : les raisons d'un choix de l'app. */
-.why { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 18px; background: rgba(255, 255, 255, 0.05); }
-.cta .why { background: rgba(255, 255, 255, 0.12); }
+.why { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 16px; background: var(--surf2); }
 .why .label { margin-bottom: 2px; }
 .whyl { position: relative; padding-left: 16px; font-size: 14px; line-height: 1.45; color: var(--soft); }
 .cta .whyl { color: #fff; }
@@ -858,20 +970,54 @@ body::after { opacity: 0.4; }
 .whymore { align-self: flex-start; display: inline-flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 600; color: #fff; margin-top: 2px; }
 .whymore svg { width: 16px; height: 16px; }
 
-/* Onglet Moi */
 .tiles3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.tile3 { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; border-radius: 20px; min-width: 0; }
-.tile3 .ico { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; background: rgba(139, 108, 246, 0.18); color: var(--violet-soft); }
-.tile3 .ico svg { width: 20px; height: 20px; }
+.tile3 { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 8px; min-width: 0; }
+.moiemb { width: 64px; height: 64px; flex: none; display: grid; place-items: center; }
+.moiemb svg { width: 64px; height: 64px; }
 
 /* Programmes de 30 jours */
 .p30grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
-.p30d { aspect-ratio: 1; display: grid; place-items: center; border-radius: 12px; font-size: 14px; font-weight: 600; background: rgba(255, 255, 255, 0.06); color: var(--soft); }
-.p30d.ok { background: var(--gold); color: #1A140A; }
+.p30d { aspect-ratio: 1; display: grid; place-items: center; border-radius: 12px; font-family: var(--display); font-size: 17px; font-weight: 700; background: var(--surf2); color: var(--soft); }
+.p30d.ok { background: var(--violet); color: #fff; }
 .p30d.cur { box-shadow: inset 0 0 0 2px var(--violet); color: #fff; }
 .p30d.off { opacity: 0.35; }
 .p30d.test:not(.ok) { color: var(--gold); }
 .p30pick { display: flex; align-items: center; gap: 14px; padding: 12px; text-align: left; width: 100%; }
 .p30pick .fig { width: 104px; flex: none; }
-.moiemb { width: 64px; height: 64px; flex: none; display: grid; place-items: center; }
-.moiemb svg { width: 64px; height: 64px; }
+
+/* Silhouettes : fond neutre. */
+.fig { background: var(--fig-bg); border-color: var(--line); }
+
+/* Réglages façon iPhone */
+.sgroup { display: flex; flex-direction: column; gap: 8px; }
+.sgroup > .label { padding-left: 4px; }
+.srow .sv { color: var(--mut); font-size: 15px; white-space: nowrap; }
+.sgroup > .note { padding: 0 4px; }
+/* Arrivée des écrans : plus courte et plus discrète. */
+#app.enter > * { animation: rise 0.3s var(--ease) both; animation-delay: 0s !important; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+.flame { font-family: var(--display); }
+.flame .fl-u { font-family: var(--body); font-size: 12px; font-weight: 600; margin-left: -3px; opacity: 0.8; }
+.bossring polygon { fill: var(--surf2); stroke: rgba(255, 255, 255, 0.18); }
+.hp > div, .hp.big > div { background: var(--violet) !important; box-shadow: none !important; }
+/* Interrupteur oui/non des réglages */
+.sw { position: relative; flex: none; width: 50px; height: 30px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); transition: background 0.2s; }
+.sw i { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform 0.2s var(--ease); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
+.sw.on { background: var(--violet); }
+.sw.on i { transform: translateX(20px); }
+.srow .tick { color: var(--violet-soft); flex: none; }
+.srow .tick svg { width: 22px; height: 22px; }
+.srow .tick svg path { stroke: currentColor; }
+.sin { width: 64px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surf3); color: var(--txt); text-align: center; font: inherit; font-weight: 600; outline: none; }
+.sin:focus { border-color: var(--violet); }
+.srow .stepbtn.sm { width: 40px; height: 40px; }
+/* Présentation de première ouverture */
+.wdots { display: flex; gap: 6px; margin-top: 4px; }
+.wdots i { flex: 1; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); }
+.wdots i.on { background: var(--violet); }
+.sheet.welcome .sheet-x { display: none; }
+.sheet.welcome .sheet-x + * { padding-right: 0; }
+
+/* v49 : finitions du tour complet */
+.topbar .who .label { white-space: normal; line-height: 1.2; }
+.cta .ctafig { right: 10px; top: 18px; width: 100px; }
