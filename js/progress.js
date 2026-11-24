@@ -1,4 +1,5 @@
 // Onglet Progression : examens de rang, arbres de progression, équilibre du corps, poids et photos.
+import { capCard } from './cap.js';
 import { RANKS, TREES, CATS, LETTRES, QUALITES, EXOS } from './data.js';
 import { state, save, fr, dateFr, routines, exoHistory, exoName, setText, isHevy } from './store.js';
 import { rankInfo, testStatus, allTrees, treeStatus, balance, bodyLog, addWeight, delWeight, bodyInfo, letterOf } from './stats.js';
@@ -151,21 +152,16 @@ export function viewProgress() {
   let h = '<div class="col" style="gap:2px"><span class="small mut">Rang ' + info.rank.letter + ' · ' + esc(info.rank.name) + '</span><h1 class="h1">Progression</h1></div>';
   h += hint('progres', 'Ton rang vient de tes 5 qualités (force, explosivité, vitesse, endurance, maîtrise), calculées d’après tes meilleures séries. Touche n’importe quelle carte pour voir le détail.');
   h += hevyCard();
+  const sh = (t, c) => '<div class="sechead"><span class="h2 row" style="gap:10px"><i class="secdot ' + c + '"></i>' + t + '</span></div>';
   h += rankCard(info);
+  // Objectifs : le grand objectif de 12 semaines puis les tiens.
+  h += goalsCard(capCard());
+  h += sh('Ton corps', 't-blue') + bodyCard();
   const car = careerTotals();
-  h += '<div class="tiles">'
+  h += sh('Ton histoire', 't-orange') + '<div class="tiles">'
     + '<section class="glass tile tap tint t-gold" role="button" tabindex="0" data-act="career"><span class="label" style="color:var(--gold)">Ma carrière</span><span class="col" style="gap:0;margin-top:auto"><span class="num gold-text" style="font-size:30px;line-height:1.1">' + car.pompes.toLocaleString('fr-FR') + '</span><span class="small mut">pompes à vie</span></span><span class="small" style="color:var(--soft)">' + car.dips.toLocaleString('fr-FR') + ' dips · ' + fr(car.km, 1) + ' km</span></section>'
-    + '<section class="glass tile tap tint t-cyan" role="button" tabindex="0" data-act="bilan"><span class="label violet">Bilan du mois</span><span class="ico">' + ICON.star + '</span><span class="small mut" style="margin-top:auto">Ton mois en plein écran</span></section></div>';
-  h += '<section class="glass card row tap tint t-orange" role="button" tabindex="0" data-act="parcours" style="gap:12px;align-items:center"><span class="ico">' + ICON.flame + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Mon parcours</span><span class="small mut">La frise de tes grands moments depuis le début</span></div>' + ICON.chev + '</section>';
-  h += goalsCard();
-  h += bodyCard();
-
-  h += '<div class="sec"><span class="h2 row" style="gap:10px"><i class="secdot t-violet"></i>Arbres de progression</span></div>';
-  for (const t of allTrees()) {
-    h += '<section class="glass card col tap tint ' + ({ pompes: 't-orange', dips: 't-violet', course: 't-cyan' }[t.id] || 't-violet') + '" role="button" tabindex="0" data-act="tree" data-id="' + t.id + '" style="gap:12px"><div class="row between"><span class="h2">' + esc(t.name) + '</span><span class="row small mut" style="gap:4px">' + t.done + ' sur ' + t.nodes.length + ICON.chev + '</span></div>'
-      + '<div class="dots">' + t.nodes.map((n, i) => (i ? '<b class="' + (n.state === 'done' ? 'done' : '') + '"></b>' : '') + '<i class="' + n.state + '"></i>').join('') + '</div>'
-      + '<span class="small mut">' + (t.current ? 'En cours : ' + esc(t.current.label.charAt(0).toLowerCase() + t.current.label.slice(1)) : 'Arbre terminé') + '</span></section>';
-  }
+    + '<section class="glass tile tap tint t-cyan" role="button" tabindex="0" data-act="bilan"><span class="label violet">Bilan du mois</span><span class="ico">' + ICON.star + '</span><span class="small mut" style="margin-top:auto">Ton mois en plein écran</span></section></div>'
+    + '<section class="glass card row tap tint t-orange" role="button" tabindex="0" data-act="parcours" style="gap:12px;align-items:center"><span class="ico">' + ICON.flame + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Mon parcours</span><span class="small mut">La frise de tes grands moments depuis le début</span></div>' + ICON.chev + '</section>';
 
   // Tableau des records : la meilleure série de chaque exercice de tes routines actuelles.
   const mine = [];

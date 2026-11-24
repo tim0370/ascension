@@ -308,6 +308,24 @@ export function readiness(list) {
 }
 
 // noForme : la forme est déjà affichée au-dessus (accueil).
+// Pourquoi cette séance : 2 à 4 raisons concrètes, tirées de tes données (cycle, rotation, forme, point faible, objectif).
+export function whyList(type, list, f, auto) {
+  const out = [];
+  const wk = weekIdx();
+  if (type === 'test') out.push('Semaine 4 du cycle : on mesure tes progrès. Une série au maximum par exercice, tes lettres se mettent à jour.');
+  else out.push('Semaine ' + (wk + 1) + ' sur 4 du cycle : ' + (wk === 0 ? 'on pose les bases, séries pas trop dures.' : wk === 1 ? 'une série de plus sur les exercices principaux.' : 'encore une série de plus, la dernière au maximum.'));
+  const last = state.workouts.filter((w) => w.prog && w.prog.type !== 'test').sort((a, b) => b.start - a.start)[0];
+  if (type === 'faible') { const q = weakQuality(); out.push('Ta qualité la plus basse est ' + q.name.toLowerCase() + ' (' + q.letter + ') : une séance par semaine lui est réservée, c’est elle qui fait monter ton rang le plus vite.'); }
+  else if (last && type !== 'test') { const d = Math.max(1, Math.round((Date.now() - last.start) / 864e5)); out.push('Dernière séance : « ' + title(last.prog.type) + ' » il y a ' + plural(d, 'jour', 'jours') + '. Aujourd’hui d’autres muscles travaillent, les premiers récupèrent.'); }
+  if (f) out.push(auto ? (lightWeek() ? 'Semaine légère : une série de moins partout pour que ton corps rattrape la fatigue accumulée.' : 'Forme ' + f.score + ' % : une série de moins partout, pour progresser sans te cramer.') : f.mode === 'record' ? 'Forme ' + f.score + ' % : c’est un bon jour pour battre un record.' : 'Forme ' + f.score + ' %' + (f.est ? ' (estimée, fais ton bilan du matin pour un vrai score)' : '') + ' : séance normale.');
+  const obj = list.find((e) => e.bloc === 'Objectif');
+  if (obj) out.push(exoName(obj.name) + ' ajouté au début : c’est l’exercice de ton grand objectif.');
+  const fresh = list.find((e) => e.fresh);
+  if (fresh) out.push('Nouveau : ' + exoName(fresh.name) + ', parce que tu as atteint le cap de l’exercice d’avant.');
+  if (list.some((e) => e.swap)) out.push('Des exercices sont remplacés à cause de la douleur que tu as signalée.');
+  out.push('Chaque série vise ta dernière fois + 1 répétition (ou + 5 secondes).');
+  return out;
+}
 export function progCard(main, doneToday, noForme) {
   const type = testDue() ? 'test' : nextType();
   const f = forme(plan(type, ''));
@@ -332,6 +350,7 @@ export function progCard(main, doneToday, noForme) {
     + (fresh ? '<span class="small gold-text">Nouveau : ' + esc(exoName(fresh.name)) + '</span>' : '')
     + (swaps ? '<span class="small" style="color:#FFB4BE">Adaptée à ta douleur</span>' : '')
     + tag + '</div>'
+    + (main && !doneToday ? '<div class="why"><span class="label">Pourquoi cette séance</span>' + whyList(type, list, f, auto).slice(0, 3).map((t) => '<span class="whyl">' + esc(t) + '</span>').join('') + '<button type="button" class="whymore" data-act="prog">Tout le détail ' + ICON.chev + '</button></div>' : '')
     + weeksBar()
     + '<div class="row">' + (type === 'test' ? '' : auto ? '<button type="button" class="pill glass" data-act="prog-start" data-type="' + type + '" data-mode="normal">Normale</button>' : '<button type="button" class="pill glass" data-act="prog-start" data-type="' + type + '" data-mode="court">Courte</button>')
     + '<button type="button" class="pill gold-btn grow" data-act="prog-start" data-type="' + type + '" data-mode="' + auto + '">' + (type === 'test' ? 'Faire le re-test' : 'Commencer') + '</button></div></section>';
@@ -353,6 +372,7 @@ export function sheetProg(type) {
   const list = plan(t, t === 'test' ? '' : mode || 'normal');
   let h = '<div class="col"><span class="label violet">' + weekLabel() + '</span><h1 class="h1">' + esc(title(t)) + '</h1>'
     + '<span class="small mut">' + esc(weekNote(t)) + '</span></div>' + weeksBar();
+  h += '<section class="glass card why"><span class="label violet">Pourquoi cette séance est faite pour toi</span>' + whyList(t, list, forme(list), mode === 'leger').map((x) => '<span class="whyl">' + esc(x) + '</span>').join('') + '</section>';
   if (t !== 'test') {
     h += '<div class="modes4">' + [['court', 'Courte'], ['leger', 'Allégée'], ['', 'Normale'], ['gros', 'Grosse']].map(([m, l]) => '<button type="button" class="pill sm ' + (m === mode ? 'gold-btn' : 'glass') + '" data-act="prog-mode" data-mode="' + m + '" data-type="' + t + '">' + l + '</button>').join('') + '</div>';
     if (mode === 'leger') h += '<span class="small mut">Allégée : une série de moins sur chaque exercice. ' + (auto ? 'Conseillée aujourd’hui d’après ta forme.' : '') + '</span>';

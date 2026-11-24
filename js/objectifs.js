@@ -112,9 +112,9 @@ export function goalRow(g, compact) {
     + '<span class="small ' + (g.done ? 'gold-text' : 'mut') + '" style="font-weight:600">' + Math.round(i.r * 100) + ' %</span></button>';
 }
 
-export function goalsCard() {
-  const gs = state.goals || [];
-  let h = '<div class="sec"><span class="h2 row" style="gap:10px"><i class="secdot t-pink"></i>Mes objectifs</span><button type="button" class="pill sm glass" data-act="goal-new">' + ICON.plus + 'Ajouter</button></div>';
+export function goalsCard(top) {
+  const gs = (state.goals || []).filter((g) => !g.big);
+  let h = '<div class="sechead"><span class="h2 row" style="gap:10px"><i class="secdot t-pink"></i>Objectifs</span><button type="button" class="pill sm glass" data-act="goal-new">' + ICON.plus + 'Ajouter</button></div>' + (top || '');
   if (!gs.length) return h + '<section class="glass card col tap tint t-pink" role="button" tabindex="0" data-act="goal-new" style="gap:8px"><span class="h2">Fixe-toi un vrai but</span><span class="small mut">40 pompes d’affilée, des dips avec 20 kg, 5 km en moins de 25 minutes… L’app suit ta progression et te dit quand tu y seras, à ton rythme actuel. +' + GOAL_XP + ' XP à l’arrivée.</span></section>';
   const open = gs.filter((g) => !g.done), done = gs.filter((g) => g.done);
   return h + '<section class="glass card tint t-pink" style="padding:4px 16px">' + open.concat(done.slice(-3)).map((g) => goalRow(g)).join('') + '</section>';

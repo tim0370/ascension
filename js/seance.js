@@ -4,6 +4,7 @@ import { EXOS, FICHES, WARMUP, GROUPES, AKA } from './data.js';
 import { figure } from './anim.js';
 import { progCard, progDone, progPlan, progOn } from './programme.js';
 import { predictions, whenTxt, checkin, dayKey } from './forme.js';
+import { p30Done } from './prog30.js';
 import { camOk } from './camera.js';
 import { dailyQuests, feats } from './quetes.js';
 import { beep, wakeAudio } from './sound.js';
@@ -139,8 +140,10 @@ export function startPlan(p) {
   // Re-test : au poids du corps, et sans objectif affiché (c'est ton max du jour).
   if (p.test) { a.test = true; for (const e of a.exercises) { for (const x of e.sets) x.w = 0; e.goals = e.goals.map(() => null); } }
   if (p.express) a.express = true;
+  // Programme de 30 jours : les séries prescrites, pas celles de la dernière fois.
+  if (p.p30) { a.p30 = p.p30; if (p.fixed) a.exercises.forEach((e, i) => { const S = p.exercises[i].sets; e.sets = S.map((s) => ({ r: s.r || 0, w: 0, t: s.t || 0, done: false })); e.goals = S.map((s) => (s.t ? { t: s.t } : { r: s.r })); }); if (p.rest) a.exercises.forEach((e) => { e.rest = p.rest; }); a.tip = p.test ? 'Une seule série, au maximum. Ce chiffre sert à calculer tes séries des prochains jours.' : 'Séries prescrites par ton programme de 30 jours : ne va pas jusqu’à l’échec.'; }
   if (p.prog && p.prog.week === 3 && !p.test) a.tip = 'Semaine 3 : dernière série des exercices principaux au maximum.';
-  if (p.test) a.tip = 'Re-test : une seule série par exercice, au maximum. 3 minutes de repos entre chaque.';
+  if (p.test && !p.p30) a.tip = 'Re-test : une seule série par exercice, au maximum. 3 minutes de repos entre chaque.';
   if (state.settings.warm) a.warm = { i: 0, end: Date.now() + WARMUP[0].secs * 1000 };
   state.active = a;
   save();
@@ -513,6 +516,7 @@ function finishWorkout() {
   const qBefore = new Set(dailyQuests().filter((q) => q.done).map((q) => q.id));
   const w = { id: 'a' + a.start, title: a.title, start: a.start, end: Date.now(), exercises };
   if (a.prog) w.prog = a.prog;
+  if (a.p30) { w.p30 = a.p30; w.quick = true; }
   if (a.prog && !a.test) {
     const duels = a.exercises.flatMap((e) => e.sets.filter((x) => x.done && x.gh !== undefined));
     if (duels.length) w.ghost = { won: duels.filter((x) => x.gh > 0).length, lost: duels.filter((x) => x.gh < 0).length, total: duels.length };
@@ -521,6 +525,7 @@ function finishWorkout() {
   w.prs = countPrs(w);
   w.grade = gradeOf(a, w);
   const progMsg = progDone(w);
+  p30Done(w);
   // Si tu as ajouté ou retiré des exercices ou des séries, on propose de garder ce changement (pas en express).
   const routine = !a.express && a.routineId && routines().find((r) => r.id === a.routineId);
   if (routine) {
@@ -715,7 +720,7 @@ function sheetSummary(w, label, xpBefore, qNew, fNew) {
 function startRest() {
   wakeAudio();
   const ex = curExo();
-  const total = state.active.test ? 180 : (ex ? restOf(ex.name) : (state.settings.rest || 90));
+  const total = state.active.test ? 180 : (ex ? ex.rest || restOf(ex.name) : (state.settings.rest || 90));
   state.active.rest = { end: Date.now() + total * 1000, total, rang: false };
 }
 

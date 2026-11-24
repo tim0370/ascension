@@ -89,8 +89,8 @@ const bench = (x1, x2, top) => ['bench', x1, x2, top === undefined ? G - 13 : to
 const PU_F = [14, G - 2.4], PU_H = [50, G - 0.6];
 const pu = (r, o) => plank(PU_F, PU_H, r, o);
 const DIP_H = [56, 28];
-const dipTop = (o) => fromSh([54.5, 9.6], -84, Object.assign({ a1: { to: DIP_H, s: 'back' }, l1: [104, 150], l2: [98, 146] }, o));
-const dipLow = (o) => fromSh([58, 19.5], -68, Object.assign({ a1: { to: DIP_H, s: 'back' }, l1: [110, 158], l2: [104, 152] }, o));
+const dipTop = (o) => fromSh([54.5, 9.6], -84, Object.assign({ a1: { to: DIP_H, s: 'back' }, l1: [100, 196], l2: [96, 192] }, o));
+const dipLow = (o) => fromSh([58, 19.5], -68, Object.assign({ a1: { to: DIP_H, s: 'back' }, l1: [112, 204], l2: [108, 200] }, o));
 const ROW_H = [57, 28];
 const rowLow = (F) => plank(F, ROW_H, 18.8, { low: true, s: 'down', p: { l1: { to: F, s: 'fwd', f: -60 } } });
 const rowTop = (F) => plank(F, ROW_H, 7.5, { low: true, s: 'down', p: { l1: { to: F, s: 'fwd', f: -60 } } });
@@ -258,12 +258,12 @@ const MORE = {
   'Lateral Raise (Cable)': ['Lateral Raise (Dumbbell)', { db: 0, eq: [['cable', [70, 60], 'h1']] }],
   'Shrug (Dumbbell)': ['Farmers Walk', { f: [st({ a1: [91, 90], a2: [89, 90] }), st({ h: [50, AY - 24.6], a1: [91, 90], a2: [89, 90] })], db: 3 }],
   'Handstand Push Up (Freestanding)': ['Wall Handstand Push Up', { eq: [] }],
-  'Crow Pose': ['Pseudo Planche Push Up', {  }],
+  'Crow Pose': ['Pseudo Planche Push Up', { f: HOLD({ h: [40, 34], t: 25, hd: 32, a1: { to: [53, G - 0.6], s: 'back' }, a2: { to: [51, G - 0.6], s: 'back' }, l1: [40, 175, 120], l2: [36, 171, 116] }, 0.4), d: 3.5, m: ['shoulder', 'ua', 'abs'] }],
   'Chin Up': ['Pull Up', {  }],
   'Negative Pull Up': ['Pull Up', {  }],
   'Band Assisted Pull Up': ['Pull Up', { eq: [['bar', 50, 3], ['band', [50, 3], 'f1']] }],
-  'Scapula Pull Up': ['Pull Up', {  }],
-  'Dead Hang': ['Pull Up', {  }],
+  'Scapula Pull Up': ['Pull Up', { f: [fromSh([50, 21.5], -90, { hd: -90, a1: { to: [50, 3], s: 'fwd' }, l1: [92, 92, 180], l2: [88, 88, 176] }), fromSh([50, 19], -90, { hd: -86, a1: { to: [50, 3], s: 'fwd' }, l1: [92, 92, 180], l2: [88, 88, 176] })], d: 2, m: ['back'] }],
+  'Dead Hang': ['Pull Up', { f: HOLD(fromSh([50, 21.5], -90, { hd: -90, a1: { to: [50, 3], s: 'fwd' }, l1: [92, 92, 180], l2: [88, 88, 176] }), 0.4), d: 3.5, m: ['fa', 'back'] }],
   'Muscle Up': ['Pull Up', {  }],
   'Front Lever': ['Pull Up', { f: HOLD({ h: [33, 22], t: 0, hd: 0, a1: { to: [50, 3] }, l1: [180, 180], l2: [178, 178] }, 0.3), d: 3.5 }],
   'Tuck Front Lever': ['Pull Up', { f: HOLD({ h: [33, 22], t: 0, hd: 0, a1: { to: [50, 3] }, l1: [-20, 100], l2: [-16, 104] }, 0.3), d: 3.5 }],
@@ -304,8 +304,8 @@ const MORE = {
   'Hip Thrust (Single Leg)': ['Hip Thrust', {  }],
   'Donkey Kick': ['Knee Push Up', { f: [QUAD(), QUAD({ l1: [200, 100, 10] })], m: ['glute'] }],
   'Fire Hydrant': ['Knee Push Up', { f: [QUAD(), QUAD({ l1: [150, 190, 190] })], m: ['glute'] }],
-  'Clamshell': ['Lying Neck Side Raise', {  }],
-  'Hip Abduction (Band)': ['Jumping Jack', {  }],
+  'Clamshell': ['Glute Bridge', { f: [LIE({ h: [44, G - 3.2], t: 180, a1: [0, 0], l1: [-35, 60, 0], l2: [-35, 60, 0] }), LIE({ h: [44, G - 3.2], t: 180, a1: [0, 0], l1: [-35, 60, 0], l2: [-82, 8, -60] })], m: ['glute'], eq: [] }],
+  'Hip Abduction (Band)': ['Jumping Jack', { f: [fr({ a1: [80, 88], a2: [100, 92] }), fr({ t: -86, a1: [80, 88], a2: [100, 92], l2: [122, 122, 212] })], eq: [['band', 'f1', 'f2']], m: ['glute'], d: 2.2 }],
   'Seated Calf Raise': ['Seated Overhead Press (Dumbbell)', { db: 0, eq: [bench(30, 58)], f: [SEAT({ a1: [60, 10], a2: [64, 14] }), SEAT({ h: [46, G - 17], a1: [60, 10], a2: [64, 14] })] }],
   'Jump Rope': ['High Knees', { f: [st({ h: [50, AY - 25], a1: [80, 20], a2: [100, 160], l1: { to: [52, AY - 2], s: 'fwd', f: 40 }, l2: { to: [49, AY - 2], s: 'fwd', f: 40 } }), st({ a1: [80, 20], a2: [100, 160] })], d: 0.7 }],
   'Sprint': ['Running', { d: 0.55 }],
@@ -319,9 +319,9 @@ const MORE = {
   'L-Sit Hold': ['Knee Raise (Dip Station)', { f: HOLD(dipTop({ t: -90, l1: [0, 0], l2: [2, 2] }), 0.3), d: 3.5 }],
   'Tuck L-Sit': ['Knee Raise (Dip Station)', { f: HOLD(dipTop({ t: -90, l1: [-26, 78], l2: [-22, 80] }), 0.3), d: 3.5 }],
   'V-Sit': ['Knee Raise (Dip Station)', { f: HOLD(dipTop({ t: -96, l1: [-40, -40], l2: [-38, -38] }), 0.3), d: 3.5 }],
-  'Pike Compression Hold': ['V Up', {  }],
-  'Planche Hold (Tuck)': ['Pseudo Planche Push Up', {  }],
-  'Full Planche': ['Pseudo Planche Push Up', {  }],
+  'Pike Compression Hold': ['V Up', { f: HOLD({ h: [46, G - 3.6], t: -96, hd: -70, a1: { to: [50, G - 0.6], s: 'back' }, l1: [-6, -6, -80], l2: [-4, -4, -78] }, 0.5), d: 3.5, m: ['abs', 'th'] }],
+  'Planche Hold (Tuck)': ['Pseudo Planche Push Up', { f: HOLD(fromSh([55, 39], 4, { hd: 8, a1: { to: [50, G - 0.6], s: 'back' }, l1: [20, 160, 120], l2: [16, 156, 116] }), 0.3), d: 3.5, m: ['shoulder', 'abs'] }],
+  'Full Planche': ['Pseudo Planche Push Up', { f: HOLD(fromSh([56, 39], 0, { hd: 6, a1: { to: [50, G - 0.6], s: 'back' }, l1: [180, 180, 90], l2: [178, 178, 88] }), 0.3), d: 3.5, m: ['shoulder', 'abs', 'back'] }],
   'Human Flag': ['Side Plank', {  }],
   'Ab Wheel': ['Knee Push Up', { f: [QUAD({ a1: { to: [54, 55.5] }, a2: { to: [54, 55.5] } }), QUAD({ h: [42, 48.3], t: 5, hd: 5, a1: { to: [74, 55.5] }, a2: { to: [74, 55.5] }, l1: [131, 180, 180], l2: [129, 178, 178] })], d: 3 }],
   'Bicycle Crunch': ['Dead Bug', {  }],
@@ -337,7 +337,7 @@ const MORE = {
   'Cable Crunch': ['Crunch', {  }],
   'Neck Bridge': ['Glute Bridge', {  }],
   'Neck Harness Extension': ['Lying Neck Extension', {  }],
-  'Neck Isometric (Band)': ['Face Pull (Band)', {  }],
+  'Neck Isometric (Band)': ['Face Pull (Band)', { f: HOLD(st({ hd: -96, a1: [93, 90], a2: [87, 90] }), 0.3), eq: [['band', 'head', [94, 6]]], m: ['neck'], d: 3.5 }],
   'Boxing (Heavy Bag)': ['Running', { f: [st({ a1: [60, -100], a2: [70, -110], l1: { to: [56, AY], s: 'fwd' }, l2: { to: [42, AY], s: 'fwd' } }), st({ t: -84, a1: [0, 0], a2: [70, -110], l1: { to: [56, AY], s: 'fwd' }, l2: { to: [42, AY], s: 'fwd' } }), st({ a1: [60, -100], a2: [70, -110], l1: { to: [56, AY], s: 'fwd' }, l2: { to: [42, AY], s: 'fwd' } }), st({ t: -96, a1: [60, -100], a2: [-4, -4], l1: { to: [56, AY], s: 'fwd' }, l2: { to: [42, AY], s: 'fwd' } })], m: ['shoulder', 'ua', 'abs'], eq: [['bag', 74]], d: 1.2 }],
   'Shadow Boxing': ['Boxing (Heavy Bag)', { eq: [] }],
   'Hamstring Stretch (Active)': ['stretch-ham', {  }],
@@ -347,9 +347,9 @@ const MORE = {
   'Chest Stretch': ['stretch-chest', {  }],
   'Cross Body Shoulder Stretch': ['stretch-chest', { f: [st({ a1: [-6, 180], a2: [40, -150] }), st({ a1: [-10, 184], a2: [36, -154] })], m: ['shoulder'], d: 5 }],
   'Triceps Stretch': ['stretch-triceps', {  }],
-  'Pigeon Stretch': ['stretch-child', {  }],
+  'Pigeon Stretch': ['stretch-child', { f: HOLD({ h: [46, G - 5], t: -70, hd: -60, a1: { to: [60, G - 0.6], s: 'back' }, l1: [24, 168, 170], l2: [176, 178, 270] }, 0.5), m: ['glute'], d: 5 }],
   'Hip Flexor Stretch': ['Lunge', { f: HOLD(st({ h: [52, 46], t: -88, l1: { to: [64, AY], s: 'fwd' }, l2: { to: [34, AY], s: 'fwd', f: 180 } }), 0.6), m: ['th'], d: 5 }],
-  'Butterfly Stretch': ['stretch-ham', {  }],
+  'Butterfly Stretch': ['stretch-ham', { f: HOLD({ h: [44, G - 3.6], t: -80, hd: -70, a1: [70, 80], l1: [-20, 120, 0], l2: [-24, 116, 0] }, 0.5), m: ['th', 'glute'], d: 5 }],
   'Cat Cow': ['Bird Dog', { f: [QUAD({ t: -16, hd: -40 }), QUAD({ t: -28, hd: 20 })], m: ['back'], d: 5 }],
   'Cobra Stretch': ['Superman', { f: HOLD({ h: [56, G - 3], t: 200, hd: 210, a1: { to: [40, G - 0.6], s: 'back' }, l1: [-1, -1], l2: [1, 1] }, 0.4), m: ['abs'], d: 5 }],
   'Child Pose': ['stretch-child', {  }],
@@ -358,7 +358,7 @@ const MORE = {
   'Neck Stretch': ['stretch-triceps', { f: [st({ hd: -70, a1: [92, 90], a2: [-80, 160] }), st({ hd: -60, a1: [92, 90], a2: [-84, 164] })], m: ['neck'], d: 5 }],
   'Wrist Stretch': ['stretch-chest', { f: [st({ a1: [-4, -4], a2: [30, -10] }), st({ a1: [-2, -2], a2: [28, -8] })], m: ['fa'], d: 5 }],
   'Lat Stretch': ['stretch-triceps', { f: [fr({ t: -80, hd: -76, a1: [-100, -110], a2: [100, 92] }), fr({ t: -74, hd: -70, a1: [-106, -116], a2: [104, 96] })], m: ['back'], d: 5 }],
-  '90 90 Hip Stretch': ['stretch-ham', {  }],
+  '90 90 Hip Stretch': ['stretch-ham', { f: HOLD({ h: [48, G - 3.6], t: -84, hd: -80, a1: { to: [58, G - 0.6], s: 'back' }, l1: [4, 96, 0], l2: [172, 84, 180] }, 0.5), m: ['glute'], d: 5 }],
   'Worlds Greatest Stretch': ['Lunge', { f: [st({ h: [52, 44], t: -40, l1: { to: [66, AY], s: 'fwd' }, l2: { to: [30, AY], s: 'fwd', f: 180 }, a1: { to: [58, G - 0.6] } }), st({ h: [52, 44], t: -40, l1: { to: [66, AY], s: 'fwd' }, l2: { to: [30, AY], s: 'fwd', f: 180 }, a1: [-90, -90] })], m: ['th', 'back'], d: 5 }],
   'Side Lunge Stretch': ['Cossack Squat', {  }],
 };

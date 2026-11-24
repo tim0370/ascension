@@ -194,7 +194,7 @@ export function bodyCard() {
   const legend = mode === 'rec'
     ? '<span class="lg"><i style="background:rgba(58,214,140,0.8)"></i>Prêt</span><span class="lg"><i style="background:rgba(255,176,59,0.9)"></i>En cours</span><span class="lg"><i style="background:rgba(255,84,104,0.9)"></i>Fatigué</span>'
     : '<span class="lg"><i style="background:rgba(139,108,246,0.3)"></i>Un peu</span><span class="lg"><i style="background:rgba(139,108,246,1)"></i>Beaucoup</span>';
-  return '<section class="glass card col tint t-teal" style="gap:12px" id="bodycard"><div class="row between" style="flex-wrap:wrap;gap:10px"><span class="h2">Ton corps</span>'
+  return '<section class="glass card col tint t-teal" style="gap:12px" id="bodycard"><div class="row between" style="flex-wrap:wrap;gap:10px"><span class="h2">Tes muscles</span>'
     + '<div class="seg2"><button type="button" class="' + (mode === 'rec' ? 'on' : '') + '" data-act="body-mode" data-m="rec">Récupération</button><button type="button" class="' + (mode === 'vol' ? 'on' : '') + '" data-act="body-mode" data-m="vol">Semaine</button></div></div>'
     + bodyMap(mode) + '<div class="row center" style="gap:14px;flex-wrap:wrap">' + legend + '</div>'
     + '<span class="small mut">' + esc(txt) + ' Touche un muscle pour le détail.</span></section>';

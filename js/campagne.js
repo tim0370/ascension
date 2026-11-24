@@ -6,7 +6,6 @@ import { state, save, exoName, fr, dur } from './store.js';
 import { EXOS } from './data.js';
 import { figure } from './anim.js';
 import { esc, plural, ACTIONS, ICON, sheet, toast, burst } from './ui.js';
-import { plug } from './avatar.js';
 
 export const STEP_XP = 50, BOSS_XP = 250;
 const rerender = () => import('./app.js').then((a) => a.render());
@@ -100,7 +99,6 @@ export function campaign() {
   const cur = out.find((x) => x.open && !x.done) || null;
   return { chapters: out, cur, done: out.every((x) => x.done), n: out.reduce((s, x) => s + x.st.filter((y) => y.ok).length, 0) };
 }
-plug({ campDone: () => campaign().done });
 
 // Note les étapes nouvellement réussies (une fête par étape, une fois). Appelé à chaque affichage de l'accueil.
 export function checkCamp() {
@@ -129,13 +127,8 @@ export function campCard() {
     + '<span class="dots" style="gap:6px">' + ch.st.map((x) => '<i class="' + (x.ok ? 'done' : x === next ? 'current' : '') + '"></i>').join('') + '</span></section>';
 }
 
-export function campView() {
-  const C = campaign();
-  let h = '<section class="glass card col" style="gap:8px"><div class="row between"><span class="label violet">Campagne</span><span class="small mut">' + C.n + ' étapes sur 30</span></div>'
-    + '<div class="bar"><div style="width:' + Math.round((C.n / 30) * 100) + '%"></div></div>'
-    + '<span class="small mut">Chaque étape est une vraie performance, vérifiée dans ton historique : fais-la en séance, au dojo ou en pompes du jour. +' + STEP_XP + ' XP par étape, +' + BOSS_XP + ' par boss.</span></section>';
-  h += '<div class="camp">';
-  C.chapters.forEach((ch, k) => {
+function chapHtml(ch, k) {
+  let h = '';
     const lock = !ch.open;
     h += '<section class="glass card col chap' + (lock ? ' lock' : '') + (ch.done ? ' won' : '') + '" style="--cc:' + ch.c.col + '">'
       + '<div class="row between" style="gap:10px"><div class="col" style="gap:2px"><span class="label" style="color:var(--cc)">Chapitre ' + (k + 1) + (ch.done ? ' · terminé' : lock ? ' · fermé' : '') + '</span><span class="h2">' + esc(ch.c.name) + '</span><span class="small mut">' + esc(lock ? 'Bats le boss du chapitre ' + k + ' pour l’ouvrir.' : ch.c.sub) + '</span></div></div>'
@@ -147,7 +140,24 @@ export function campView() {
         return '<button type="button" class="prow' + (off ? ' off' : '') + '" data-act="camp-step" data-id="' + x.id + '"><span class="' + cls + '">' + (x.ok ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4L18 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>' : i === 4 ? ICON.bolt : '<b>' + (i + 1) + '</b>') + '</span>'
           + '<span class="col grow" style="gap:3px;min-width:0"><span style="font-weight:600">' + (i === 4 ? 'Boss : ' + esc(x.s.boss) : esc(stepLabel(x.s))) + '</span><span class="small mut">' + (x.ok ? 'Réussi · +' + (i === 4 ? BOSS_XP : STEP_XP) + ' XP' : i === 4 && !off ? esc(x.s.desc) : i === 4 ? 'S’ouvre après les 4 étapes' : inf ? (inf.run ? (inf.v ? 'Ton meilleur : ' + esc(inf.v) : 'Pas encore fait') : 'Ton meilleur : ' + inf.v + ' sur ' + inf.goal) : '') + '</span></span>' + ICON.chev + '</button>';
       }).join('') + '</div></section>';
-  });
+  return h;
+}
+
+// Le chapitre en cours seulement (onglet Défis).
+export function campNow() {
+  const C = campaign();
+  if (C.done) return '<section class="glass card col tint t-gold"><span class="h2">Campagne terminée</span><span class="small mut">Les 6 chapitres sont battus. Respect.</span></section>';
+  const k = C.chapters.indexOf(C.cur);
+  return '<div class="camp">' + chapHtml(C.cur, k) + '</div><span class="small mut">' + C.n + (C.n > 1 ? ' étapes' : ' étape') + ' sur 30 · chaque étape est une vraie performance, vérifiée dans ton historique. +' + STEP_XP + ' XP par étape, +' + BOSS_XP + ' par boss.</span>';
+}
+
+export function campView() {
+  const C = campaign();
+  let h = '<section class="glass card col" style="gap:8px"><div class="row between"><span class="label violet">Campagne</span><span class="small mut">' + C.n + (C.n > 1 ? ' étapes' : ' étape') + ' sur 30</span></div>'
+    + '<div class="bar"><div style="width:' + Math.round((C.n / 30) * 100) + '%"></div></div>'
+    + '<span class="small mut">Chaque étape est une vraie performance, vérifiée dans ton historique : fais-la en séance, au dojo ou en pompes du jour. +' + STEP_XP + ' XP par étape, +' + BOSS_XP + ' par boss.</span></section>';
+  h += '<div class="camp">';
+  C.chapters.forEach((ch, k) => { h += chapHtml(ch, k); });
   h += '</div>';
   return h;
 }
@@ -170,5 +180,6 @@ function sheetStep(id) {
 
 Object.assign(ACTIONS, {
   'camp-step': (el) => sheetStep(el.dataset.id),
-  'camp-open': () => import('./aventure.js').then((a) => a.openAdv('camp')),
+  'camp-open': () => import('./ui.js').then((u) => { u.ui.tab = 'defis'; import('./app.js').then((a) => { a.render(); window.scrollTo(0, 0); }); }),
+  'camp-all': () => sheet('<div class="col" style="gap:4px"><span class="label violet">Campagne</span><h1 class="h1">Les 6 chapitres</h1></div>' + campView() + '<button type="button" class="pill gold-btn wide" data-act="close">Fermer</button>', 1, 'full'),
 });

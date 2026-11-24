@@ -6,7 +6,6 @@ import { EXOS } from './data.js';
 import { figure } from './anim.js';
 import { beep, wakeAudio } from './sound.js';
 import { $, esc, plural, ui, ACTIONS, ICON, sheet, closeSheet, toast, burst } from './ui.js';
-import { plug } from './avatar.js';
 
 const DAY = 864e5;
 const rerender = () => import('./app.js').then((a) => a.render());
@@ -53,7 +52,6 @@ export function belt() {
   let i = 0; BELTS.forEach((b, k) => { if (n >= b.n) i = k; });
   return Object.assign({}, BELTS[i], { i, n, next: BELTS[i + 1] || null });
 }
-plug({ belt });
 
 // ---------- Écran ----------
 function beltSvg(c, w) { return '<svg viewBox="0 0 60 24" width="' + (w || 60) + '" aria-hidden="true"><rect x="2" y="7" width="56" height="9" rx="2" fill="' + c + '" stroke="rgba(255,255,255,0.25)"/><path d="M27 15l-6 9M33 15l6 9" stroke="' + c + '" stroke-width="5" stroke-linecap="round"/><rect x="25" y="5" width="10" height="13" rx="2" fill="' + c + '" stroke="rgba(0,0,0,0.25)"/></svg>'; }
@@ -63,7 +61,7 @@ export function dojoView() {
   let h = '<section class="glass card row tint t-gold" style="gap:14px;align-items:center">' + beltSvg(b.c, 64)
     + '<div class="col grow" style="gap:4px"><span class="label violet">Ta ceinture</span><span class="h2">Ceinture ' + b.name.toLowerCase() + '</span>'
     + '<div class="bar gold"><div style="width:' + Math.round((b.next ? (b.n - BELTS[b.i].n) / (b.next.n - BELTS[b.i].n) : 1) * 100) + '%"></div></div>'
-    + '<span class="small mut">' + b.n + ' étapes sur ' + TOTAL + (b.next ? ' · ceinture ' + b.next.name.toLowerCase() + ' à ' + b.next.n : ' · tu as tout réussi') + '</span></div></section>';
+    + '<span class="small mut">' + b.n + (b.n > 1 ? ' étapes' : ' étape') + ' sur ' + TOTAL + (b.next ? ' · ceinture ' + b.next.name.toLowerCase() + ' à ' + b.next.n : ' · tu as tout réussi') + '</span></div></section>';
   h += '<div class="figgrid">' + FIGURES.map((f) => {
     const s = figStatus(f), st = f.steps[s.all ? f.steps.length - 1 : s.cur];
     return '<button type="button" class="glass figtile' + (s.all ? ' done' : '') + '" data-act="dojo-fig" data-id="' + f.id + '">' + figure(st.exo, 'mini')

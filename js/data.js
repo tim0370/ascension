@@ -905,6 +905,18 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 48, items: [
+    'Nouvelle barre du bas : Aujourd’hui, Progrès, Séance, Défis, Moi. Chaque chose a enfin sa place',
+    'L’accueil ne montre plus que l’essentiel : ta séance du jour en premier, ta forme, le coach et ta semaine',
+    'Ta séance du jour explique pourquoi elle est faite pour toi : semaine du cycle, forme, récupération, objectif. Touche « Tout le détail »',
+    'Ta semaine explique son objectif : 4 séances + la course, et ce que ça protège (flamme, boucliers)',
+    'Programmes de 30 jours : choisis un but (pompes, dips, équilibre, gainage, pistol squat), 10 à 15 minutes par jour, séries calculées sur ton maximum, test aux jours 1, 10, 20 et 30. +400 XP à la fin',
+    'Défis regroupe tout ce qui se gagne : quêtes du jour, boss, programme de 30 jours, test du mois, saison, campagne et figures',
+    'Le héros est retiré. La campagne et les figures (ex-dojo) sont dans Défis',
+    'Moi : ton profil, tes réglages, le guide, la sauvegarde et ton historique',
+    'Silhouettes corrigées : corbeau, planche, dips, suspension, étirements et d’autres qui ne correspondaient pas à l’exercice',
+    'Nouveau style : textes plus grands et plus lisibles, moins de lueurs, fenêtres plus nettes',
+  ] },
   { v: 47, items: [
     'L’onglet Repas laisse la place à Aventure. Ta balance reste dans Progrès, et le coach répond toujours sur ce qu’il faut manger',
     'Ton héros : un personnage qui grossit là où tu travailles et dégonfle là où tu ne fais plus rien. Compare-le à toi il y a 3 mois',

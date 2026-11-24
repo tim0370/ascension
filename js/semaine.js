@@ -53,7 +53,7 @@ export function weekCard() {
   return '<section class="glass card col tap tint t-blue" role="button" tabindex="0" data-act="plan" style="gap:14px"><div class="row between" style="gap:10px"><span class="h2">Ta semaine</span>'
     + '<span class="row small mut" style="gap:4px;white-space:nowrap">' + (P.doneN >= P.goal ? 'Objectif atteint' : Math.min(P.doneN, P.goal) + ' sur ' + P.goal) + ICON.chev + '</span></div>'
     + '<div class="week">' + P.days.map((d) => '<div class="day' + (d.done.length ? ' done' : ' k-' + d.kind) + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done.length ? checkDark : d.kind === 'course' ? '<i class="kd run"></i>' : d.kind === 'seance' ? '<i class="kd"></i>' : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div>'
-    + '<span class="small mut">' + esc(line) + '</span></section>';
+    + '<span class="small mut">' + esc(line) + ' · objectif ' + P.goal + ' (' + (P.goal === 5 ? '4 séances + la course' : 'réglable') + ')</span></section>';
 }
 
 function sheetPlan() {
@@ -67,7 +67,11 @@ function sheetPlan() {
     else if (d.kind === 'course') h += '<button type="button" class="item" data-act="gps"><span class="kdot course"></span><div class="col grow" style="gap:2px;min-width:0">' + head + '<span class="small mut">' + esc(d.label) + ' · ' + esc(d.sub) + '</span></div>' + ICON.chev + '</button>';
     else h += '<div class="item"><span class="kdot"></span><div class="col grow" style="gap:2px">' + head + '<span class="small mut">' + (d.past ? 'Repos' : 'Repos prévu') + '</span></div></div>';
   }
-  h += '</div><span class="small mut">Le plan se refait tout seul : si tu rates un jour, les séances qui restent se répartissent sur les jours suivants, avec du repos entre elles. Si ta forme est basse le matin, le repos passe en premier. Le dimanche est gardé pour la course.</span>'
+  h += '</div><section class="glass card why"><span class="label violet">Pourquoi ' + P.goal + ' par semaine</span>'
+    + '<span class="whyl">' + (P.goal === 5 ? '4 séances de muscu et ta course du dimanche : c’est le rythme que tu as choisi. Chaque muscle est travaillé 2 fois par semaine, avec au moins un jour de récupération entre deux séances qui le sollicitent.' : P.goal + ' séances : c’est l’objectif réglé dans les Réglages. Il se change quand tu veux.') + '</span>'
+    + '<span class="whyl">Atteindre l’objectif fait grandir ta flamme d’une semaine. Toutes les 4 semaines réussies, tu gagnes un bouclier qui sauve une semaine ratée.</span>'
+    + '<span class="whyl">Les pompes du jour, les programmes de 30 jours et les boss ne comptent pas : seules les vraies séances et la course comptent.</span></section>'
+    + '<span class="small mut">Le plan se refait tout seul : si tu rates un jour, les séances qui restent se répartissent sur les jours suivants, avec du repos entre elles. Si ta forme est basse le matin, le repos passe en premier. Le dimanche est gardé pour la course.</span>'
     + '<div class="row" style="gap:8px"><button type="button" class="pill sm glass grow" data-act="lundi">Semaine dernière</button><button type="button" class="pill sm glass grow" data-act="week">Historique</button></div>';
   sheet(h + closeBtn);
 }

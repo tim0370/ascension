@@ -13,8 +13,9 @@ import { routinesCard, viewWorkout, usualTime, tick, renderRest, keepAwake, onIn
 import { progCard, progOn, isBeginner, todayList } from './programme.js';
 import { formeCard, painCard } from './forme.js';
 import { weekCard, lundiBanner } from './semaine.js';
-import { viewAventure } from './aventure.js';
-import { campCard, checkCamp } from './campagne.js';
+import { campNow, checkCamp } from './campagne.js';
+import { dojoView } from './dojo.js';
+import { p30Card, status as p30Status } from './prog30.js';
 import { capCard, ensureCap, bigGoal } from './cap.js';
 import { testCard } from './test.js';
 import { dailyQuests, streak, SHIELD_MAX, SHIELD_EVERY, feats, myTitle, titles, skins, SKINS } from './quetes.js';
@@ -49,6 +50,8 @@ export function questRow(q) {
     + '<span class="xptag ' + (q.done ? 'mut' : 'gold-text') + '">+' + q.xp + '</span></div>';
 }
 
+const head = (t, c, right) => '<div class="sechead"><span class="h2 row" style="gap:10px"><i class="secdot ' + c + '"></i>' + t + '</span>' + (right || '') + '</div>';
+
 function flamePill(st) {
   return '<button type="button" class="flame' + (st.n ? '' : ' off') + (st.danger ? ' danger' : '') + '" data-act="flame" aria-label="Flamme de ' + st.n + ' semaine' + (st.n > 1 ? 's' : '') + (st.shields ? ', ' + st.shields + ' bouclier' + (st.shields > 1 ? 's' : '') : '') + '">' + ICON.flame + st.n + (st.shields ? '<span class="fshield">' + ICON.shield + (st.shields > 1 ? '<b>' + st.shields + '</b>' : '') + '</span>' : '') + '</button>';
 }
@@ -73,7 +76,7 @@ function viewHome() {
   let h = '<div class="topbar"><button type="button" class="emb tap" data-act="profile" aria-label="Mon profil">' + rankSvg(info.rank.letter, false, null, 'emb') + '</button>'
     + '<button type="button" class="who tap" data-act="level"><span class="label violet">' + (title ? esc(title) : 'Rang ' + info.rank.letter + ' · ' + esc(info.rank.name)) + '</span>'
     + '<span class="h2">Niveau ' + lv.level + '</span><div class="bar thin" style="width:100%"><div style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></div></div></button>'
-    + flamePill(st) + '<button type="button" class="gearbtn" data-act="settings" aria-label="Réglages">' + ICON.gear + '</button></div>';
+    + flamePill(st) + '</div>';
 
 
   // Le bloc principal : la séance en cours, ou celle du programme
@@ -90,8 +93,8 @@ function viewHome() {
     if (!state.settings.modeSet && state.workouts.length < 30) h += modeCard();
     h += painCard();
     const fc = has && progOn() && show('forme');
-    if (fc) h += formeCard(todayList());
     h += progOn() ? progCard(true, !!doneToday, fc) : routinesCard();
+    if (fc) h += formeCard(todayList());
     if (has && show('coach') && progOn()) h += coachCard();
   }
 
@@ -106,52 +109,43 @@ function viewHome() {
   if (photoDue()) {
     h += '<section class="glass card row tap tint t-pink" role="button" tabindex="0" data-act="photos"><span class="ico">' + ICON.cam + '</span><div class="col grow"><span class="h2">C’est le moment de ta photo</span><span class="small mut">La dernière a plus de deux semaines.</span></div>' + ICON.chev + '</section>';
   }
-  const head = (t, c, right) => '<div class="sechead"><span class="h2 row" style="gap:10px"><i class="secdot ' + c + '"></i>' + t + '</span>' + (right || '') + '</div>';
-
-  // 1. Aujourd'hui : quêtes et pompes du jour
-  let today = '';
-  if (quests.length && show('quests')) {
-    const doneCount = quests.filter((q) => q.done).length;
-    today += '<section class="glass card tap tint t-teal" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + quests.map(questRow).join('') + '</section>';
-    today = head('Aujourd’hui', 't-teal', '<span class="small mut">' + doneCount + ' quête' + (doneCount > 1 ? 's' : '') + ' sur ' + quests.length + '</span>') + today;
-  }
-  if (has && show('quick')) today = (today || head('Aujourd’hui', 't-teal')) + quickCard();
-  h += today;
-
-  // 2. Défis : boss de la semaine et saison du mois
-  let defis = '';
-  if (has && show('camp')) defis += campCard();
-  if (has && show('mtest')) defis += testCard();
-  if (has && show('boss')) defis += bossCard();
-  if (has) { if (show('season')) defis += seasonCard(); celebrateSeason(); }
-  if (defis) h += head('Défis', 't-red') + defis;
-
-  // 3. Ta progression : rang, hauts faits, objectif, semaine
-  let prog = '';
-  if (has && show('tiles')) {
-    const got = fx.list.filter((f) => f.done).length;
-    const next = fx.list.filter((f) => !f.done).sort((a, b) => b.cur / b.goal - a.cur / a.goal)[0];
-    prog += '<div class="tiles">'
-      + '<section class="glass tile tap tint t-violet" role="button" tabindex="0" data-act="rank"><span class="label violet">Rang ' + info.rank.letter + '</span>'
-      + '<div class="minirad">' + radarSvg(info.q, true) + '</div>'
-      + '<span class="small mut">' + info.q.map((x) => x.letter).join(' ') + (info.next ? ' · ' + Math.round(info.ratio * 100) + ' % vers ' + info.next.letter : '') + '</span></section>'
-      + '<section class="glass tile tap tint t-gold" role="button" tabindex="0" data-act="feats"><span class="label" style="color:var(--gold)">Hauts faits</span>'
-      + '<div class="row" style="gap:10px"><span class="medal" style="background:linear-gradient(160deg,#F3DFA8,#B8913F);color:#24190A;border:none">' + ICON.medal + '</span><span class="num" style="font-size:28px">' + got + '<span class="mut" style="font-size:16px"> / ' + fx.list.length + '</span></span></div>'
-      + (next ? '<div class="col" style="gap:6px;margin-top:auto"><span class="small" style="font-weight:600">' + esc(next.desc) + '</span><div class="bar thin gold"><div style="width:' + Math.round((next.cur / next.goal) * 100) + '%"></div></div></div>' : '<span class="small mut" style="margin-top:auto">Tout est débloqué</span>')
-      + '</section></div>';
-  }
-  if (has && show('cap')) prog += capCard();
-  const goal = (state.goals || []).find((g) => !g.done && !g.big);
-  if (goal && show('goal')) {
-    prog += '<section class="glass card tint t-pink" style="padding:2px 16px">' + goalRow(goal, true) + '</section>';
-  }
-  if (has && show('week')) prog += progOn() ? weekCard() : '<section class="glass card col tap tint t-blue" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span><span class="row small mut" style="gap:4px">' + (wq.done ? 'Objectif atteint' : wq.cur + ' sur ' + wq.goal + ' séances') + ICON.chev + '</span></div><div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>';
-  if (prog) h += head('Ta progression', 't-violet', goal && show('goal') ? '<button type="button" class="small mut row" style="gap:4px" data-act="goals-all">Objectifs' + ICON.chev + '</button>' : '') + prog;
+  // Sous la séance du jour : ta semaine, ton programme de 30 jours. Tout le reste (quêtes, boss, campagne…) est dans Défis.
+  if (has && show('week')) h += (progOn() ? weekCard() : '<section class="glass card col tap tint t-blue" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span><span class="row small mut" style="gap:4px">' + (wq.done ? 'Objectif atteint' : wq.cur + ' sur ' + wq.goal + ' séances') + ICON.chev + '</span></div><div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>');
+  if (has && show('p30') && p30Status()) h += p30Card();
+  void quests; void fx; void info;
 
   // Rappel de sauvegarde : toutes les deux semaines, tant que rien n'a été exporté.
   if (!state.installed) { state.installed = Date.now(); save(); }
-  if (has) h += '<button type="button" class="pill glass wide" data-act="home-edit" style="color:var(--mut)">Personnaliser l’accueil</button>';
   return h;
+}
+
+// ---------- Défis : tout ce qui se joue, rangé par rythme ----------
+function viewDefis() {
+  const has = state.workouts.length > 0;
+  const quests = has ? dailyQuests() : [];
+  const fx = feats();
+  let h = '<div class="col" style="gap:4px"><span class="label violet">Défis</span><h1 class="h1">À battre</h1><span class="small mut">Tout ce qui se gagne, du plus court au plus long : aujourd’hui, cette semaine, ce mois-ci, et ta campagne.</span></div>';
+  if (quests.length) {
+    const n = quests.filter((q) => q.done).length;
+    h += head('Aujourd’hui', 't-teal', '<span class="small mut">' + n + ' quête' + (n > 1 ? 's' : '') + ' sur ' + quests.length + '</span>')
+      + '<section class="glass card tap tint t-teal" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + quests.map(questRow).join('') + '</section>';
+  }
+  if (has) h += head('Cette semaine', 't-red') + bossCard();
+  h += head('Ce mois-ci', 't-gold') + p30Card() + (has ? testCard() + seasonCard() : '');
+  if (has) celebrateSeason();
+  h += head('Campagne', 't-violet', '<button type="button" class="small mut row" style="gap:4px" data-act="camp-all">Les 6 chapitres' + ICON.chev + '</button>') + campNow();
+  h += head('Figures', 't-pink') + dojoView();
+  const got = fx.list.filter((f) => f.done).length;
+  h += head('Hauts faits', 't-gold') + '<section class="glass card row tap tint t-gold" role="button" tabindex="0" data-act="feats" style="gap:14px"><span class="medal" style="background:linear-gradient(160deg,#F3DFA8,#B8913F);color:#24190A;border:none">' + ICON.medal + '</span><div class="col grow" style="gap:2px"><span class="h2">' + got + ' sur ' + fx.list.length + '</span><span class="small mut">Des exploits durs qui débloquent titres et couleurs d’emblème.</span></div>' + ICON.chev + '</section>';
+  return h;
+}
+
+// ---------- Moi : profil, historique, réglages ----------
+function viewMoi() {
+  const lv = levelInfo(totalXp()), info = rankInfo(), title = myTitle();
+  let h = '<section class="glass card row tap" role="button" tabindex="0" data-act="profile" style="gap:14px;align-items:center"><span class="moiemb">' + rankSvg(info.rank.letter, false, null, 'emb') + '</span><div class="col grow" style="gap:4px;min-width:0"><span class="label violet">' + (title ? esc(title) : 'Rang ' + info.rank.letter + ' · ' + esc(info.rank.name)) + '</span><span class="h2">Niveau ' + lv.level + '</span><div class="bar thin"><div style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></div></div><span class="small mut">' + (lv.need - lv.into) + ' XP pour le niveau ' + (lv.level + 1) + '</span></div>' + ICON.chev + '</section>';
+  h += '<div class="tiles3">' + [['settings', ICON.gear, 'Réglages'], ['guide', ICON.book, 'Guide'], ['export', ICON.save, 'Sauvegarder']].map(([a, ic, l]) => '<button type="button" class="glass tile3" data-act="' + a + '"><span class="ico">' + ic + '</span><span class="small" style="font-weight:600">' + l + '</span></button>').join('') + '</div>';
+  return h + viewHistory();
 }
 
 // ---------- Exercices non reconnus ----------
@@ -178,10 +172,10 @@ const GUIDE = [
     ['cooldown', 'Retour au calme', '6 étirements guidés en 3 minutes.'],
     ['gps', 'Course GPS', 'Distance, allure, lièvre, voix à chaque kilomètre et tracé de la course.'],
   ]],
-  ['Aventure', [
-    ['adv-heros', 'Ton héros', 'Un personnage qui grossit là où tu travailles et dégonfle là où tu ne fais plus rien. Compare-le à toi il y a 3 mois. L’aura prend la couleur de ton rang, et 6 tenues se gagnent dans le reste de l’app.'],
-    ['camp-open', 'Campagne', '6 chapitres de 5 étapes, chacun fini par un boss. Chaque étape est une vraie performance, vérifiée dans ton historique. +50 XP par étape, +250 par boss.'],
-    ['adv-dojo', 'Dojo des figures', '9 figures (équilibre, corbeau, L-sit, planche…) en étapes, avec un chrono de tenue. Les étapes réussies font monter ta ceinture, de blanche à noire.'],
+  ['Défis', [
+    ['p30', 'Programmes de 30 jours', 'Un but précis (pompes +50 %, 60 s en équilibre, premier pistol…), 10 à 15 minutes par jour en plus de ta semaine. Test au jour 1, ajustement aux jours 10 et 20, test final au jour 30.'],
+    ['camp-all', 'Campagne', '6 chapitres de 5 étapes, chacun fini par un boss. Chaque étape est une vraie performance, vérifiée dans ton historique. +50 XP par étape, +250 par boss.'],
+    ['', 'Figures', '9 figures (équilibre, corbeau, L-sit, planche…) en étapes, avec un chrono de tenue. Les étapes réussies font monter ta ceinture, de blanche à noire.'],
   ]],
   ['Être guidé', [
     ['checkin', 'Bilan du matin et forme', 'Environ 1 min 30 le matin : heures de sommeil, courbatures, énergie, stress, pouls au repos (le doigt sur la caméra de derrière, 60 s) et test de réaction (20 s). Après 7 matins, tout est comparé à ta propre moyenne, et le score apprend tout seul ce qui annonce tes bonnes séances (fiabilité affichée).'],
@@ -227,7 +221,7 @@ function sheetGuide() {
 }
 
 // ---------- Personnaliser l'accueil ----------
-const HOME_CARDS = [['forme', 'Ta forme du jour'], ['cap', 'Grand objectif'], ['camp', 'Campagne'], ['mtest', 'Test du mois'], ['coach', 'Coach'], ['boss', 'Boss de la semaine'], ['tiles', 'Rang et hauts faits'], ['season', 'Saison du mois'], ['quick', 'Pompes du jour'], ['quests', 'Quêtes du jour'], ['goal', 'Objectif en cours'], ['week', 'Ta semaine']];
+const HOME_CARDS = [['forme', 'Ta forme du jour'], ['coach', 'Coach'], ['week', 'Ta semaine'], ['p30', 'Programme de 30 jours']];
 function show(k) { return !(state.settings.hide || {})[k]; }
 function sheetHomeEdit() {
   const h = '<div class="col" style="gap:4px"><span class="label violet">Accueil</span><h1 class="h1">Personnaliser</h1><span class="small mut">Choisis les cartes affichées sur l’accueil. La séance du programme reste toujours en haut. Tout reste accessible ailleurs.</span></div>'
@@ -623,11 +617,11 @@ function modeSettings() {
 }
 
 export function render() {
-  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory, aventure: viewAventure };
+  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewMoi, moi: viewMoi, defis: viewDefis };
   // L'animation d'arrivée ne joue que quand on change d'écran, pas à chaque série cochée.
   $('app').classList.toggle('enter', ui.enter);
   ui.enter = false;
-  if (ui.tab === 'repas') ui.tab = 'aventure';
+  if (ui.tab === 'repas' || ui.tab === 'aventure' || ui.tab === 'history') ui.tab = ui.tab === 'history' ? 'moi' : 'defis';
   let html;
   try { html = (views[ui.tab] || viewHome)(); } catch (e) {
     console.error(e);
