@@ -6,8 +6,6 @@ import { EXOS, FICHES } from './data.js';
 import { esc, plural, ui, ACTIONS, ICON, sheet, $ } from './ui.js';
 import { TYPES, nextType, plan, testDue, minutes, weekIdx, weakQuality } from './programme.js';
 import { forme, charge, lightAdvice, lightWeek, activePains, PAINS, predictions, predLine, reussites, baseOf } from './forme.js';
-import { targets, todayMenu, dayTotals, nutriInsight, weightTrend, weekMenu } from './repas.js';
-import { PLATS } from './plats.js';
 import { tally } from './bilan.js';
 import { understand, closest, resetCtx, clean } from './cerveau.js';
 import { weekPlan } from './semaine.js';
@@ -308,34 +306,27 @@ function answer(id, arg) {
     return { text: t, btns: [btn('prog', 'Voir ma séance adaptée', '', true)] };
   }
   if (id === 'food') {
-    const T = targets(), k = todayMenu(), td = dayTotals(dkeyNow());
-    const hour = new Date().getHours();
-    const t = ['Ton objectif : ' + T.kcal + ' kcal et ' + T.p + ' g de protéines par jour (prise de masse propre, +250 à 500 g par semaine). Aujourd’hui, déjà noté : ' + td.kcal + ' kcal et ' + td.p + ' g.'];
-    let next = hour < 10 ? ['b', 'Ce matin'] : hour < 14 ? ['l', 'Ce midi'] : hour < 17 ? ['g', 'Pour le goûter'] : ['d', 'Ce soir'];
-    if (hit(arg, 'soir') || hit(arg, 'diner')) next = ['d', 'Ce soir']; else if (hit(arg, 'midi') || hit(arg, 'dejeuner')) next = ['l', 'Ce midi']; else if (hit(arg, 'matin') || hit(arg, 'petit')) next = ['b', 'Au petit-déjeuner']; else if (hit(arg, 'gouter')) next = ['g', 'Pour le goûter'];
-    const x = platOf(k[next[0]]);
-    if (x) t.push(next[1] + ' : ' + x.name + ' (' + x.kcal + ' kcal, ' + x.p + ' g de protéines pour ta part).' + (x.why ? ' ' + x.why : ''));
-    if (hit(arg, 'faim')) t.push('Faim entre deux repas : banane et lait chocolaté, ou deux pains au lait avec des cacahuètes. Ça tient jusqu’au repas suivant.');
-    if (hour >= 17 && T.p - td.p > 10) t.push('Il te manque ' + (T.p - td.p) + ' g de protéines : un fromage blanc ou un grand verre de lait avant de dormir.');
-    t.push(nutriInsight());
-    return { text: t, btns: [btn('coach-tab', 'Ouvrir Repas', ' data-tab="repas"', true), btn('courses', 'Courses', ' data-w="w"')] };
+    const L = bodyLog(), kg = L.length ? L[0].kg : 65, p = Math.round(kg * 1.8);
+    const t = ['Pour prendre du muscle : environ ' + p + ' g de protéines par jour (1,8 g par kilo), et un peu plus que ta faim à chaque repas.'];
+    if (hit(arg, 'faim')) t.push('Faim entre deux repas : banane et lait chocolaté, ou deux pains au lait avec des cacahuètes.');
+    t.push('Le plus simple : de la viande, du lait, du fromage blanc ou des œufs à chaque repas, un goûter dans ton sac, et un grand verre de lait avant de dormir.');
+    t.push('Pèse-toi une fois par semaine : si la balance ne bouge pas en 2 semaines, mange un peu plus.');
+    return { text: t, btns: [btn('body', 'Ma balance', '', true)] };
   }
   if (id === 'weight') {
-    const T = targets(), tr = weightTrend(), L = bodyLog();
-    if (!L.length) return { text: ['Tu ne t’es pas encore pesé dans l’app.', 'Pèse-toi une fois par semaine, le matin, avant de manger : c’est ta courbe qui règle tes calories toute seule.'], btns: [btn('weigh', 'Me peser', '', true)] };
+    const L = bodyLog();
+    if (!L.length) return { text: ['Tu ne t’es pas encore pesé dans l’app.', 'Pèse-toi une fois par semaine, le matin, avant de manger.'], btns: [btn('body', 'Me peser', '', true)] };
     const t = ['Dernière pesée : ' + fr(L[0].kg, 1) + ' kg, il y a ' + plural(Math.max(0, Math.round((Date.now() - L[0].d) / DAY)), 'jour', 'jours') + '.'];
-    if (tr) t.push('Ta courbe : ' + (tr.rate >= 0 ? '+' : '') + fr(tr.rate, 2) + ' kg par semaine. ' + (tr.rate < 0.15 ? 'Trop lent pour une prise de masse : mange plus, surtout au goûter et le soir.' : tr.rate > 0.6 ? 'Un peu trop vite : une partie est du gras, garde des parts normales.' : 'Pile dans le bon couloir (0,25 à 0,5 kg) : c’est du muscle.'));
-    else t.push('Encore quelques pesées sur 10 jours, et je calcule ton rythme.');
-    t.push('Ton objectif de calories : ' + T.kcal + ' kcal par jour' + (T.adj ? ', déjà ajusté de ' + (T.adj > 0 ? '+' : '') + T.adj + ' kcal d’après ta balance.' : '.'));
-    return { text: t, btns: [btn('weigh', 'Nouvelle pesée', '', true), btn('coach-tab', 'Repas', ' data-tab="repas"')] };
+    const old = L.find((x) => L[0].d - x.d >= 14 * DAY);
+    if (old) { const rate = (L[0].kg - old.kg) / ((L[0].d - old.d) / (7 * DAY)); t.push('Ton rythme : ' + (rate >= 0 ? '+' : '') + fr(rate, 2) + ' kg par semaine. ' + (rate < 0.15 ? 'Trop lent pour prendre du muscle : mange plus, surtout au goûter et le soir.' : rate > 0.6 ? 'Un peu trop vite : une partie est du gras.' : 'Pile dans le bon couloir (0,25 à 0,5 kg) : c’est du muscle.')); }
+    else t.push('Encore quelques pesées sur 2 semaines, et je calcule ton rythme.');
+    return { text: t, btns: [btn('body', 'Nouvelle pesée', '', true)] };
   }
   if (id === 'tomorrow') {
     const P = weekPlan(), ti = (new Date().getDay() + 6) % 7;
     if (ti === 6) return { text: ['Demain, c’est lundi : une nouvelle semaine commence. Ton plan se refait tout seul, la première séance sera « ' + label(nextType()) + ' ».', 'Ce soir : prépare ton sac et couche-toi tôt.'] };
     const d = P.days[ti + 1];
-    const m = platOf(weekMenu(monday0Now())[ti + 1].d);
     const t = ['Demain (' + d.name.toLowerCase() + ') : ' + (d.kind === 'seance' ? d.label + ', ' + d.sub + '.' : d.kind === 'course' ? d.label.toLowerCase() + '.' : 'repos prévu.')];
-    if (m) t.push('Au dîner : ' + m.name.charAt(0).toLowerCase() + m.name.slice(1) + '.');
     t.push(forme().score < 60 ? 'Ta forme est moyenne : vise 8 h 30 de sommeil cette nuit pour arriver frais.' : 'Une bonne nuit, et tu pourras pousser.');
     return { text: t, btns: [btn('plan', 'Ma semaine', '', true)] };
   }
@@ -389,10 +380,10 @@ function answer(id, arg) {
   }
   if (id === 'hello') {
     const h = new Date().getHours();
-    return { text: [(h < 12 ? 'Salut. ' : h < 18 ? 'Salut. ' : 'Bonsoir. ') + 'Forme ' + forme().score + ' % aujourd’hui.' + (doneToday ? ' Ta séance est faite.' : ' Au programme : « ' + name + ' ».'), 'Pose-moi n’importe quelle question : séance, fatigue, repas, records, course, un exercice précis…'] };
+    return { text: [(h < 12 ? 'Salut. ' : h < 18 ? 'Salut. ' : 'Bonsoir. ') + 'Forme ' + forme().score + ' % aujourd’hui.' + (doneToday ? ' Ta séance est faite.' : ' Au programme : « ' + name + ' ».'), 'Pose-moi n’importe quelle question : séance, fatigue, figures, records, course, un exercice précis…'] };
   }
   if (id === 'thanks') return { text: [pick(['Avec plaisir. Continue comme ça.', 'De rien. On se retrouve après ta séance.', 'Quand tu veux.'])] };
-  if (id === 'who') return { text: ['Je suis le coach d’Ascension. Je ne suis pas une IA en ligne : je lis tes séances, ton bilan du matin, tes repas et ta balance, directement dans ton téléphone, et je calcule mes réponses.', 'Rien ne part sur internet. Plus tu notes, plus mes réponses sont précises.'] };
+  if (id === 'who') return { text: ['Je suis le coach d’Ascension. Je ne suis pas une IA en ligne : je lis tes séances, ton bilan du matin et ta balance, directement dans ton téléphone, et je calcule mes réponses.', 'Rien ne part sur internet. Plus tu notes, plus mes réponses sont précises.'] };
   if (id === 'exo') return exoAnswer(arg);
   return { text: ['Je n’ai pas compris.'] };
 }
@@ -400,7 +391,6 @@ function answer(id, arg) {
 const hit = (words, w) => Array.isArray(words) && words.some((x) => x.startsWith(w));
 const dkeyNow = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const monday0Now = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
-const platOf = (id) => PLATS.find((p) => p.id === id) || null;
 const dateTxt = (ms) => new Date(ms).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
 
 // Tout ce que je sais sur un exercice : record, dernière fois, objectif, tendance, prévision, place dans le programme, technique.
@@ -469,8 +459,6 @@ function briefing() {
     const goals = L.filter((e) => e.main).slice(0, 2).map((e) => { const s = lastSets(e.name); const b = s && s.find((x) => x.r || x.t); return b ? exoName(e.name) + ' ' + (b.t && !b.r ? (b.t + 5) + ' s' : (b.r + 1) + ' répétitions') + (b.w ? ' à ' + fr(b.w, 1) + ' kg' : '') : null; }).filter(Boolean);
     p.push('Au programme : « ' + label(type) + ' »' + (f.mode === 'leger' ? ' allégée' : '') + (goals.length ? ', vise ' + goals.join(' et ') : '') + '.');
   }
-  const T = targets(), td = dayTotals(dkeyNow()), m = platOf(todayMenu().d);
-  p.push('Repas : ' + td.p + ' g de protéines sur ' + T.p + (m ? ', ce soir ' + m.name.charAt(0).toLowerCase() + m.name.slice(1) : '') + '.');
   return p.join(' ');
 }
 function draw(typing) {
@@ -482,7 +470,7 @@ function draw(typing) {
   h += '<span class="label">Demande au coach</span><div class="chat" id="coachchat">' + chat.map(bubble).join('') + (typing ? '<div class="cb typing"><i></i><i></i><i></i></div>' : '') + '</div>';
   h += '<form class="askrow" id="coachform"><input class="textin" id="coachq" placeholder="Écris ta question…" autocomplete="off" enterkeyhint="send" value="' + esc(draftQ) + '"><button type="submit" class="pill gold-btn" aria-label="Envoyer">' + ICON.up + '</button></form>';
   h += '<div class="row wrap" style="gap:8px">' + Q.map(([k, l]) => '<button type="button" class="pill sm glass" data-act="coach-ask" data-q="' + k + '">' + l + '</button>').join('') + '</div>';
-  h += '<span class="small dim">Le coach lit tes séances, ton bilan du matin, tes repas et ta balance, dans ton téléphone, sans internet. Ce n’est pas un avis médical.</span>';
+  h += '<span class="small dim">Le coach lit tes séances, ton bilan du matin et ta balance, dans ton téléphone, sans internet. Ce n’est pas un avis médical.</span>';
   sheet(h, 1, 'full');
   const c = $('coachchat'); if (c && chat.length) { const last = c.lastElementChild; if (last) last.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
   const fm = $('coachform');

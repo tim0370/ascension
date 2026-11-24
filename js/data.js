@@ -905,6 +905,13 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 47, items: [
+    'L’onglet Repas laisse la place à Aventure. Ta balance reste dans Progrès, et le coach répond toujours sur ce qu’il faut manger',
+    'Ton héros : un personnage qui grossit là où tu travailles et dégonfle là où tu ne fais plus rien. Compare-le à toi il y a 3 mois',
+    'L’aura de ton héros prend la couleur de ton rang, et 6 tenues se gagnent : niveau 10, 10 km, ceinture verte, 3 boss, campagne finie',
+    'Campagne : 6 chapitres de 5 étapes, chacun fini par un boss. Chaque étape est une vraie performance, vérifiée dans ton historique',
+    'Dojo : 9 figures en étapes (équilibre, corbeau, L-sit, planche, dragon flag…), avec un chrono de tenue et une ceinture qui monte jusqu’à noire',
+  ] },
   { v: 46, items: [
     'Nouvel onglet Repas : calories et protéines du jour pour une prise de masse propre, ajustées toutes seules d’après ta balance. Un repas se note en 2 touches',
     'Menus de la semaine pour toute la famille (légumes cachés, pas de poisson, bavette un dimanche sur deux), recettes simples, et la liste de courses de la semaine et du mois à envoyer à ta mère',

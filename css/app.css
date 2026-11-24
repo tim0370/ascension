@@ -764,3 +764,44 @@ h1, .h1, .h2, .big, .small, .label { overflow-wrap: break-word; }
   .gearbtn { width: 38px; height: 38px; border-radius: 13px; }
 }
 .qico.todo { background: rgba(255, 255, 255, 0.06); color: var(--mut); border: 1px dashed rgba(255, 255, 255, 0.18); }
+
+/* ---------- Aventure (v47) : héros, campagne, dojo ---------- */
+.advtabs { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
+.advtabs button { flex: 1 1 0; min-width: 0; height: 38px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--mut); }
+.advtabs button.on { background: var(--violet); color: #fff; box-shadow: 0 4px 16px rgba(139, 108, 246, 0.35); }
+.herocard { overflow: hidden; }
+.herocard .seg2 button { white-space: nowrap; }
+.herobox { display: flex; justify-content: center; margin: 4px -16px 0; background: radial-gradient(80% 70% at 50% 60%, rgba(132, 104, 232, 0.12), transparent 70%); }
+.hero { width: min(100%, 300px); height: auto; display: block; }
+.outfits { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.outfit { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; text-align: left; padding: 12px 14px; border-radius: 18px; min-width: 0; }
+.outfit.on { border-color: rgba(166, 141, 255, 0.8); box-shadow: 0 0 0 1px rgba(166, 141, 255, 0.5) inset; }
+.outfit.locked { opacity: 0.5; }
+.camp { display: flex; flex-direction: column; gap: 14px; }
+.chap { gap: 12px; border-color: color-mix(in srgb, var(--cc) 35%, transparent); background-image: linear-gradient(160deg, color-mix(in srgb, var(--cc) 12%, transparent), transparent 60%); }
+.chap.lock { opacity: 0.55; }
+.chap .path { position: relative; display: flex; flex-direction: column; }
+.chap .path::before { content: ''; position: absolute; left: 22px; top: 28px; bottom: 28px; width: 2px; background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--cc) 50%, transparent) 0 6px, transparent 6px 12px); }
+.prow { position: relative; display: flex; align-items: center; gap: 14px; padding: 7px 0; text-align: left; width: 100%; }
+.prow.off { opacity: 0.6; }
+.node { flex: none; position: relative; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: #1A1430; border: 2px solid color-mix(in srgb, var(--cc) 55%, transparent); color: var(--cc); font-weight: 700; font-size: 16px; }
+.node b { font-weight: 700; }
+.node svg { width: 22px; height: 22px; }
+.node.ok { background: var(--cc); color: #120E1F; border-color: var(--cc); box-shadow: 0 0 16px color-mix(in srgb, var(--cc) 60%, transparent); }
+.node.cur { border-color: var(--cc); box-shadow: 0 0 0 6px color-mix(in srgb, var(--cc) 18%, transparent); animation: nodepulse 1.8s ease-in-out infinite; }
+.node.off { opacity: 0.45; }
+.node.boss { width: 40px; height: 40px; margin: 3px; border-radius: 12px; transform: rotate(45deg); border-color: #FF5A6E; color: #FF8A9A; }
+.node.boss > * { transform: rotate(-45deg); }
+.node.boss.ok { background: #FF5A6E; color: #120E1F; }
+@keyframes nodepulse { 50% { box-shadow: 0 0 0 11px color-mix(in srgb, var(--cc) 6%, transparent); } }
+.figgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.figtile { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px 12px; border-radius: 20px; text-align: left; min-width: 0; }
+.figtile .fig { width: 100%; height: auto; border-radius: 12px; }
+.figtile.done { border-color: rgba(205, 170, 98, 0.55); }
+.figtile .dots { display: flex; gap: 4px; }
+.figtile .dots i { width: 14px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); border: 0; }
+.figtile .dots i.done { background: var(--gold); }
+.figtile .dots i.current { background: var(--violet-soft); }
+.figbox { border-radius: 18px; overflow: hidden; }
+.figbox .fig { width: 100%; height: auto; display: block; }
+.stepn.ok { background: var(--gold); color: #17120A; }

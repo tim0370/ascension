@@ -222,6 +222,7 @@ export function totalXp() {
   for (const day of Object.values(state.quests || {})) for (const xp of Object.values(day)) n += xp;
   n += Object.keys(state.feats || {}).length * 100; // hauts faits
   n += (state.goals || []).filter((g) => g.done).length * 150; // objectifs atteints (objectifs.js)
+  n += Object.keys(state.camp || {}).reduce((k, id) => k + (id.endsWith('-b') ? 250 : 50), 0); // campagne (campagne.js)
   return n;
 }
 
@@ -473,7 +474,7 @@ export function importHevy(text) {
 }
 
 // ---------- Sauvegarde complète ----------
-export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines, prefs: state.prefs, body: state.body, rankSeen: state.rankSeen, feats: state.feats, goals: state.goals, prog: state.prog, rankV: state.rankV, measures: state.measures, checkins: state.checkins, pains: state.pains, food: state.food }); }
+export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines, prefs: state.prefs, body: state.body, rankSeen: state.rankSeen, feats: state.feats, goals: state.goals, prog: state.prog, rankV: state.rankV, measures: state.measures, checkins: state.checkins, pains: state.pains, food: state.food, camp: state.camp }); }
 export function importJson(text) {
   const data = JSON.parse(text);
   if (!data || data.app !== 'ascension' || !Array.isArray(data.workouts)) throw new Error("Ce fichier n'est pas une sauvegarde de l'app.");
@@ -492,6 +493,7 @@ export function importJson(text) {
   if (data.rankV) state.rankV = data.rankV;
   if (data.checkins && typeof data.checkins === 'object') state.checkins = Object.assign({}, data.checkins, state.checkins);
   if (data.food && typeof data.food === 'object') state.food = Object.assign({}, data.food, state.food);
+  if (data.camp && typeof data.camp === 'object') state.camp = Object.assign({}, data.camp, state.camp);
   if (Array.isArray(data.measures)) { const k = new Set((state.measures || []).map((m) => m.d + m.k)); state.measures = (state.measures || []).concat(data.measures.filter((m) => !k.has(m.d + m.k))); }
   save();
   return { added };

@@ -13,7 +13,8 @@ import { routinesCard, viewWorkout, usualTime, tick, renderRest, keepAwake, onIn
 import { progCard, progOn, isBeginner, todayList } from './programme.js';
 import { formeCard, painCard } from './forme.js';
 import { weekCard, lundiBanner } from './semaine.js';
-import { viewRepas } from './repas.js';
+import { viewAventure } from './aventure.js';
+import { campCard, checkCamp } from './campagne.js';
 import { capCard, ensureCap, bigGoal } from './cap.js';
 import { testCard } from './test.js';
 import { dailyQuests, streak, SHIELD_MAX, SHIELD_EVERY, feats, myTitle, titles, skins, SKINS } from './quetes.js';
@@ -57,6 +58,7 @@ function viewHome() {
   const quests = has ? dailyQuests() : []; // avant le calcul d'XP : une quête réussie rapporte tout de suite
   const fx = feats(); // hauts faits (et ceux qui viennent d'être réussis)
   celebrateGoals(checkGoals()); // objectifs atteints
+  checkCamp(); // étapes de la campagne
   const wq = has ? weekQuest() : null;
   const xp = totalXp();
   const lv = levelInfo(xp);
@@ -118,6 +120,7 @@ function viewHome() {
 
   // 2. Défis : boss de la semaine et saison du mois
   let defis = '';
+  if (has && show('camp')) defis += campCard();
   if (has && show('mtest')) defis += testCard();
   if (has && show('boss')) defis += bossCard();
   if (has) { if (show('season')) defis += seasonCard(); celebrateSeason(); }
@@ -175,16 +178,16 @@ const GUIDE = [
     ['cooldown', 'Retour au calme', '6 étirements guidés en 3 minutes.'],
     ['gps', 'Course GPS', 'Distance, allure, lièvre, voix à chaque kilomètre et tracé de la course.'],
   ]],
-  ['Manger', [
-    ['', 'Onglet Repas', 'Calories et protéines du jour, calculées pour une prise de masse propre et ajustées toutes seules d’après ta balance. Note un repas en 2 touches.'],
-    ['courses', 'Menus et courses', 'Les dîners de la semaine pour toute la famille (légumes cachés, pas de poisson), et la liste de courses de la semaine et du mois à envoyer à ta mère.'],
-    ['recettes', 'Recettes', 'Petit-déjeuner en 5 minutes, midi en 10 minutes, goûter dans le sac, dîners de famille.'],
+  ['Aventure', [
+    ['adv-heros', 'Ton héros', 'Un personnage qui grossit là où tu travailles et dégonfle là où tu ne fais plus rien. Compare-le à toi il y a 3 mois. L’aura prend la couleur de ton rang, et 6 tenues se gagnent dans le reste de l’app.'],
+    ['camp-open', 'Campagne', '6 chapitres de 5 étapes, chacun fini par un boss. Chaque étape est une vraie performance, vérifiée dans ton historique. +50 XP par étape, +250 par boss.'],
+    ['adv-dojo', 'Dojo des figures', '9 figures (équilibre, corbeau, L-sit, planche…) en étapes, avec un chrono de tenue. Les étapes réussies font monter ta ceinture, de blanche à noire.'],
   ]],
   ['Être guidé', [
     ['checkin', 'Bilan du matin et forme', 'Environ 1 min 30 le matin : heures de sommeil, courbatures, énergie, stress, pouls au repos (le doigt sur la caméra de derrière, 60 s) et test de réaction (20 s). Après 7 matins, tout est comparé à ta propre moyenne, et le score apprend tout seul ce qui annonce tes bonnes séances (fiabilité affichée).'],
     ['forme', 'Charge et ce qui te réussit', 'Ta charge des 8 dernières semaines, la semaine légère conseillée quand il faut, et ce qui te fait mieux performer (heure, repos, sommeil).'],
     ['pain', 'Signaler une douleur', 'Épaules, poignets, genoux… pendant 7 jours, tes séances évitent les exercices qui la sollicitent.'],
-    ['coach', 'Coach', 'Écris-lui ta question comme à un ami (« jsuis crevé », « mon record aux dips », « quoi manger ce soir », « j’ai 20 min »). Il lit tes séances, ton bilan du matin, tes repas et ta balance, dans ton téléphone, sans internet. Point du jour en haut, mot du coach en fin de séance.'],
+    ['coach', 'Coach', 'Écris-lui ta question comme à un ami (« jsuis crevé », « mon record aux dips », « j’ai mal au genou », « j’ai 20 min »). Il lit tes séances, ton bilan du matin et ta balance, dans ton téléphone, sans internet. Point du jour en haut, mot du coach en fin de séance.'],
     ['cap', 'Grand objectif', 'Un but de 12 semaines choisi d’après ton point faible, avec la prise de masse en parallèle. Le programme fait revenir son exercice plus souvent, et la date d’arrivée est estimée.'],
     ['mtest', 'Test du mois', '6 épreuves une fois par mois (pompes, dips, burpees, saut, chaise, course), comparées aux garçons de 16 à 19 ans.'],
     ['', 'Pendant la séance', 'Objectif par série, fantôme de la dernière fois, compteur de pompes à la caméra, et « facile, bien, très dur » pour régler la séance suivante.'],
@@ -224,7 +227,7 @@ function sheetGuide() {
 }
 
 // ---------- Personnaliser l'accueil ----------
-const HOME_CARDS = [['forme', 'Ta forme du jour'], ['cap', 'Grand objectif'], ['mtest', 'Test du mois'], ['coach', 'Coach'], ['boss', 'Boss de la semaine'], ['tiles', 'Rang et hauts faits'], ['season', 'Saison du mois'], ['quick', 'Pompes du jour'], ['quests', 'Quêtes du jour'], ['goal', 'Objectif en cours'], ['week', 'Ta semaine']];
+const HOME_CARDS = [['forme', 'Ta forme du jour'], ['cap', 'Grand objectif'], ['camp', 'Campagne'], ['mtest', 'Test du mois'], ['coach', 'Coach'], ['boss', 'Boss de la semaine'], ['tiles', 'Rang et hauts faits'], ['season', 'Saison du mois'], ['quick', 'Pompes du jour'], ['quests', 'Quêtes du jour'], ['goal', 'Objectif en cours'], ['week', 'Ta semaine']];
 function show(k) { return !(state.settings.hide || {})[k]; }
 function sheetHomeEdit() {
   const h = '<div class="col" style="gap:4px"><span class="label violet">Accueil</span><h1 class="h1">Personnaliser</h1><span class="small mut">Choisis les cartes affichées sur l’accueil. La séance du programme reste toujours en haut. Tout reste accessible ailleurs.</span></div>'
@@ -620,10 +623,11 @@ function modeSettings() {
 }
 
 export function render() {
-  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory, repas: viewRepas };
+  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory, aventure: viewAventure };
   // L'animation d'arrivée ne joue que quand on change d'écran, pas à chaque série cochée.
   $('app').classList.toggle('enter', ui.enter);
   ui.enter = false;
+  if (ui.tab === 'repas') ui.tab = 'aventure';
   let html;
   try { html = (views[ui.tab] || viewHome)(); } catch (e) {
     console.error(e);
