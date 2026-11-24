@@ -1,14 +1,18 @@
 // Coach : lit tout ton historique et te parle comme un entraîneur. Tout est calculé dans le téléphone,
 // sans internet ni IA : forme du matin, charge, douleurs, stagnation, records prévus, ce qui te réussit,
 // régularité, équilibre, course, rang. Les phrases changent d'un jour à l'autre.
-import { state, sorted, exoName, runs, weekGoal, weekQuest, dur, fr, pace } from './store.js';
+import { state, save, sorted, exoName, runs, weekGoal, weekQuest, dur, fr, pace, lastSets, exoHistory, measureOf } from './store.js';
 import { EXOS, FICHES } from './data.js';
-import { esc, plural, ACTIONS, ICON, sheet, $ } from './ui.js';
+import { esc, plural, ui, ACTIONS, ICON, sheet, $ } from './ui.js';
 import { TYPES, nextType, plan, testDue, minutes, weekIdx, weakQuality } from './programme.js';
-import { forme, charge, lightAdvice, lightWeek, activePains, PAINS, predictions, predLine, reussites } from './forme.js';
+import { forme, charge, lightAdvice, lightWeek, activePains, PAINS, predictions, predLine, reussites, baseOf } from './forme.js';
+import { targets, todayMenu, dayTotals, nutriInsight, weightTrend, weekMenu } from './repas.js';
+import { PLATS } from './plats.js';
+import { tally } from './bilan.js';
+import { understand, closest, resetCtx, clean } from './cerveau.js';
 import { weekPlan } from './semaine.js';
 import { bodyStats, ZONES } from './corps.js';
-import { rankInfo, balance } from './stats.js';
+import { rankInfo, balance, bodyLog } from './stats.js';
 import { streak } from './quetes.js';
 
 const DAY = 864e5;
@@ -79,7 +83,7 @@ export function insights() {
   // Aujourd'hui
   if (P.length) out.push({ tone: 'warn', title: 'Douleur : ' + P.map((p) => PAINS[p.z].toLowerCase()).join(' et '), text: 'Tes séances évitent les exercices qui la sollicitent. Si ça dure plus d’une semaine, montre-la à un médecin ou un kiné.', act: 'pain' });
   if (doneToday) out.push({ tone: 'good', title: 'Séance faite', text: pick(['C’est fait pour aujourd’hui. Mange des protéines, bois, et dors au moins 8 heures : c’est là que le muscle se construit.', 'Bien joué. Le progrès se fait maintenant, pendant la récupération : un vrai repas et une bonne nuit.', 'Séance dans la boîte. Ce soir : protéines, eau, et au lit pas trop tard.']) });
-  else if (!f.ci && new Date().getHours() < 14) out.push({ tone: 'info', title: 'Ton bilan du matin', text: 'Quatre touches pour savoir comment tu as dormi et récupéré. Sans lui, ton score de forme n’est qu’une estimation.', act: 'checkin' });
+  else if (!f.ci && new Date().getHours() < 14) out.push({ tone: 'info', title: 'Ton bilan du matin', text: 'Une minute et demie : tes heures de sommeil, ton pouls au repos et ta réaction disent comment tu as récupéré. Sans lui, ton score de forme n’est qu’une estimation.', act: 'checkin' });
   if (!doneToday) {
     if (f.mode === 'leger') out.push({ tone: 'warn', title: 'Forme ' + f.score + ' %', text: (lightWeek() ? 'Semaine légère : ' : '') + 'J’ai allégé « ' + label(type) + ' » (une série de moins partout). ' + pick(['Mieux vaut une séance propre qu’une séance forcée.', 'Tu gardes le rythme sans creuser la fatigue.', 'Demain tu repartiras plus fort.']), act: 'forme' });
     else if (f.mode === 'record') { const pr = predictions().find((x) => plan(type, '').some((e) => e.name === x.name)) || predictions()[0]; out.push({ tone: 'good', title: 'Jour de record', text: 'Forme ' + f.score + ' %, tout est au vert.' + (pr ? ' Vise ' + exoName(pr.name) + ' : ' + pr.text + ' aujourd’hui.' : ' Donne tout sur les exercices principaux.'), act: 'today' }); }
@@ -304,12 +308,143 @@ function answer(id, arg) {
     return { text: t, btns: [btn('prog', 'Voir ma séance adaptée', '', true)] };
   }
   if (id === 'food') {
-    const bw = (state.body && state.body.length) ? state.body.slice().sort((a, b) => b.d - a.d)[0].kg : null;
-    const p = bw ? Math.round(bw * 1.6) : null;
-    return { text: [(p ? 'Avec ' + fr(bw, 1) + ' kg, vise environ ' + p + ' g de protéines par jour.' : 'Vise environ 1,6 g de protéines par kilo de ton poids, chaque jour (note ton poids dans Progrès pour que je le calcule).'), 'Où en trouver : œufs (6 g chacun), poulet ou thon (25 g pour 100 g), fromage blanc (8 g pour 100 g), lentilles, lait.', 'Après la séance : un vrai repas dans les 2 heures, avec des protéines et des féculents (riz, pâtes, pain).', 'Et de l’eau : un grand verre avant, pendant et après.'] };
+    const T = targets(), k = todayMenu(), td = dayTotals(dkeyNow());
+    const hour = new Date().getHours();
+    const t = ['Ton objectif : ' + T.kcal + ' kcal et ' + T.p + ' g de protéines par jour (prise de masse propre, +250 à 500 g par semaine). Aujourd’hui, déjà noté : ' + td.kcal + ' kcal et ' + td.p + ' g.'];
+    let next = hour < 10 ? ['b', 'Ce matin'] : hour < 14 ? ['l', 'Ce midi'] : hour < 17 ? ['g', 'Pour le goûter'] : ['d', 'Ce soir'];
+    if (hit(arg, 'soir') || hit(arg, 'diner')) next = ['d', 'Ce soir']; else if (hit(arg, 'midi') || hit(arg, 'dejeuner')) next = ['l', 'Ce midi']; else if (hit(arg, 'matin') || hit(arg, 'petit')) next = ['b', 'Au petit-déjeuner']; else if (hit(arg, 'gouter')) next = ['g', 'Pour le goûter'];
+    const x = platOf(k[next[0]]);
+    if (x) t.push(next[1] + ' : ' + x.name + ' (' + x.kcal + ' kcal, ' + x.p + ' g de protéines pour ta part).' + (x.why ? ' ' + x.why : ''));
+    if (hit(arg, 'faim')) t.push('Faim entre deux repas : banane et lait chocolaté, ou deux pains au lait avec des cacahuètes. Ça tient jusqu’au repas suivant.');
+    if (hour >= 17 && T.p - td.p > 10) t.push('Il te manque ' + (T.p - td.p) + ' g de protéines : un fromage blanc ou un grand verre de lait avant de dormir.');
+    t.push(nutriInsight());
+    return { text: t, btns: [btn('coach-tab', 'Ouvrir Repas', ' data-tab="repas"', true), btn('courses', 'Courses', ' data-w="w"')] };
   }
+  if (id === 'weight') {
+    const T = targets(), tr = weightTrend(), L = bodyLog();
+    if (!L.length) return { text: ['Tu ne t’es pas encore pesé dans l’app.', 'Pèse-toi une fois par semaine, le matin, avant de manger : c’est ta courbe qui règle tes calories toute seule.'], btns: [btn('weigh', 'Me peser', '', true)] };
+    const t = ['Dernière pesée : ' + fr(L[0].kg, 1) + ' kg, il y a ' + plural(Math.max(0, Math.round((Date.now() - L[0].d) / DAY)), 'jour', 'jours') + '.'];
+    if (tr) t.push('Ta courbe : ' + (tr.rate >= 0 ? '+' : '') + fr(tr.rate, 2) + ' kg par semaine. ' + (tr.rate < 0.15 ? 'Trop lent pour une prise de masse : mange plus, surtout au goûter et le soir.' : tr.rate > 0.6 ? 'Un peu trop vite : une partie est du gras, garde des parts normales.' : 'Pile dans le bon couloir (0,25 à 0,5 kg) : c’est du muscle.'));
+    else t.push('Encore quelques pesées sur 10 jours, et je calcule ton rythme.');
+    t.push('Ton objectif de calories : ' + T.kcal + ' kcal par jour' + (T.adj ? ', déjà ajusté de ' + (T.adj > 0 ? '+' : '') + T.adj + ' kcal d’après ta balance.' : '.'));
+    return { text: t, btns: [btn('weigh', 'Nouvelle pesée', '', true), btn('coach-tab', 'Repas', ' data-tab="repas"')] };
+  }
+  if (id === 'tomorrow') {
+    const P = weekPlan(), ti = (new Date().getDay() + 6) % 7;
+    if (ti === 6) return { text: ['Demain, c’est lundi : une nouvelle semaine commence. Ton plan se refait tout seul, la première séance sera « ' + label(nextType()) + ' ».', 'Ce soir : prépare ton sac et couche-toi tôt.'] };
+    const d = P.days[ti + 1];
+    const m = platOf(weekMenu(monday0Now())[ti + 1].d);
+    const t = ['Demain (' + d.name.toLowerCase() + ') : ' + (d.kind === 'seance' ? d.label + ', ' + d.sub + '.' : d.kind === 'course' ? d.label.toLowerCase() + '.' : 'repos prévu.')];
+    if (m) t.push('Au dîner : ' + m.name.charAt(0).toLowerCase() + m.name.slice(1) + '.');
+    t.push(forme().score < 60 ? 'Ta forme est moyenne : vise 8 h 30 de sommeil cette nuit pour arriver frais.' : 'Une bonne nuit, et tu pourras pousser.');
+    return { text: t, btns: [btn('plan', 'Ma semaine', '', true)] };
+  }
+  if (id === 'time') {
+    const mn = arg || 15;
+    const r2 = type === 'test' ? rot : type;
+    if (mn < 20) return { text: ['En ' + mn + ' minutes, le plus efficace : un Tabata en pompes (4 min), 1 minute de pause, un Tabata en squats sautés, 1 minute de pause, un Tabata en dips sur le banc.', 'Ou les pompes du jour : 30 pompes au moins, en autant de séries qu’il faut, et ta journée compte.'], btns: [btn('chrono2', 'Tabata', '', true), btn('quick', 'Pompes du jour')] };
+    const mode = mn < 35 ? 'court' : mn < 60 ? '' : 'gros';
+    const L = plan(r2, mode);
+    return { text: ['Avec ' + mn + ' minutes : « ' + label(r2) + ' » en version ' + (mode === 'court' ? 'courte' : mode === 'gros' ? 'grosse séance' : 'normale') + ', environ ' + minutes(L, false) + ' minutes, ' + plural(L.length, 'exercice', 'exercices') + '.', mode === 'court' ? 'Deux séries par exercice, les plus importants en premier : tu gardes l’essentiel.' : mode === 'gros' ? 'Une série de plus sur les deux premiers exercices et deux exercices en bonus.' : 'La séance complète, échauffement compris.'], btns: [startBtn(r2, mode || 'normal', 'Commencer', true)] };
+  }
+  if (id === 'rest') {
+    return { text: ['Le muscle se construit pendant le repos, pas pendant la séance. Un muscle travaillé dur a besoin de 48 heures.', 'C’est pour ça que ton programme alterne : pompes, jambes, dips, complet. Tu peux t’entraîner plusieurs jours de suite sans retravailler les mêmes muscles.', 'Deux fois par jour : inutile à ton niveau. Mieux vaut une vraie séance et bien manger.', 'Un jour de repos actif : marche, vélo, étirements, ou le retour au calme guidé.'], btns: [btn('cooldown', 'Étirements', '', true), btn('coach-tab', 'Ma récupération', ' data-tab="progress"')] };
+  }
+  if (id === 'doms') {
+    const z = bodyStats();
+    const sore = Object.keys(z).filter((k) => z[k].rec < 70).map((k) => ZONES[k].name.toLowerCase());
+    return { text: ['Les courbatures arrivent 24 à 48 heures après un effort nouveau ou plus dur. Ce ne sont pas des déchirures : elles partent seules en 2 à 4 jours.', sore.length ? 'D’après tes séances, encore en récupération : ' + sore.slice(0, 4).join(', ') + '.' : 'D’après tes séances, tes muscles sont récupérés.', 'Ce qui aide vraiment : bouger doucement (marche, étirements légers), dormir, manger des protéines. Tu peux t’entraîner, en évitant de reprendre les mêmes muscles à fond.'], btns: [btn('coach-tab', 'Carte du corps', ' data-tab="progress"', true), btn('cooldown', 'Étirements')] };
+  }
+  if (id === 'pulse') {
+    const L = Object.entries(state.checkins || {}).filter(([, v]) => v.hr).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+    const R = Object.entries(state.checkins || {}).filter(([, v]) => v.rt).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+    if (!L.length && !R.length) return { text: ['Ton pouls au repos et ton temps de réaction se mesurent dans le bilan du matin : 60 secondes le doigt sur la caméra, puis 20 secondes de réaction.', 'Après 7 matins, je connais ta base. Un pouls plus haut que d’habitude ou une réaction plus lente annoncent la fatigue avant que tu la sentes.'], btns: [btn('checkin', 'Bilan du matin', '', true)] };
+    const t = [];
+    if (L.length) { const b = baseOf('hr', '9999'); t.push('Pouls au repos : ' + L[0][1].hr + ' bpm ce dernier matin' + (b.v ? ', pour une base de ' + Math.round(b.v) + '.' : ' (base connue après 7 mesures, encore ' + (7 - b.n) + ').')); if (b.v && L[0][1].hr - b.v >= 4) t.push('5 battements au-dessus de ta base, c’est souvent un manque de sommeil, un début de rhume ou une grosse fatigue : séance allégée.'); }
+    if (R.length) { const b = baseOf('rt', '9999'); t.push('Réaction : ' + R[0][1].rt + ' ms' + (b.v ? ', pour une base de ' + Math.round(b.v) + ' ms.' : '.')); }
+    t.push('Un pouls au repos qui baisse sur des mois, c’est le signe que ton cœur devient plus endurant : la course du dimanche y est pour beaucoup.');
+    return { text: t, btns: [btn('forme', 'Ma forme', '', true)] };
+  }
+  if (id === 'stats') {
+    const m0 = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+    const p0 = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).getTime();
+    const cur = tally(state.workouts.filter((w) => w.start >= m0)), prev = tally(state.workouts.filter((w) => w.start >= p0 && w.start < m0));
+    const all = tally(state.workouts);
+    const t = ['Depuis le début : ' + plural(all.n, 'séance', 'séances') + ', ' + all.sets + ' séries, ' + all.pompes + ' pompes, ' + all.dips + ' dips, ' + fr(all.km, 1) + ' km courus.'];
+    t.push('Ce mois-ci : ' + plural(cur.n, 'séance', 'séances') + ', ' + cur.pompes + ' pompes, ' + plural(cur.prs, 'record', 'records') + '. Le mois dernier : ' + plural(prev.n, 'séance', 'séances') + ', ' + prev.pompes + ' pompes.');
+    if (prev.n) t.push(cur.n >= prev.n ? 'Tu es déjà au niveau du mois dernier.' : 'Encore ' + plural(prev.n - cur.n, 'séance', 'séances') + ' pour égaler le mois dernier.');
+    return { text: t, btns: [btn('career', 'Ma carrière', '', true), btn('parcours', 'Mon parcours')] };
+  }
+  if (id === 'warmup') return { text: ['L’échauffement se lance tout seul au début de chaque séance : 4 à 5 minutes, articulations puis montée en rythme.', 'Il réduit le risque de blessure et te rend plus fort dès la première série. Ne le saute que si tu es pressé, et fais alors une série légère de chaque exercice.'], btns: [btn('prog', 'Ma séance', '', true)] };
+  if (id === 'stretch') return { text: ['Après la séance : le retour au calme guidé, 6 étirements de 30 secondes. Il ne fait pas grossir les muscles, mais il garde ta souplesse et détend.', 'Pour gagner en souplesse pour de vrai : 10 minutes, 3 fois par semaine, en tenant chaque étirement 30 à 60 secondes.'], btns: [btn('cooldown', 'Retour au calme', '', true)] };
+  if (id === 'pullup') return { text: ['Sans barre de traction, ton dos travaille avec :', '1. Le rowing haltère (dans « Dips et dos ») : lourd, dos plat, coude qui frotte les côtes.', '2. Le rowing élastique, en bonus.', '3. Le rowing inversé sous les barres de dips, pieds au sol puis sur le banc : c’est la meilleure préparation aux tractions.', 'Le jour où tu as une barre, je l’ajouterai : 8 rowings inversés pieds surélevés propres, c’est en général assez pour ta première traction.'], btns: [btn('exo', 'Rowing inversé', ' data-name="Inverted Row"', true)] };
+  if (id === 'stress') {
+    const t = ['Le stress fatigue autant qu’une séance : ton corps récupère moins bien. Les périodes de bac blanc ou de contrôles comptent.', 'Ce qui marche : garder les séances (le sport fait baisser le stress), mais en version allégée ou courte, et dormir plus plutôt que réviser tard.', 'Après une séance, 5 minutes de respiration lente (4 secondes pour inspirer, 6 pour expirer) calment pour de vrai.'];
+    return { text: t, btns: [startBtn(type === 'test' ? rot : type, 'court', 'Séance courte', true), btn('cooldown', 'Retour au calme')] };
+  }
+  if (id === 'method') return { text: ['Les repères de ton programme :', 'Force : 3 à 6 répétitions lourdes (avec le gilet ou un haltère), 2 à 3 minutes de repos.', 'Muscle : 8 à 15 répétitions, 1 min 30 de repos, arrête-toi 1 ou 2 répétitions avant l’échec.', 'Endurance : 15 répétitions et plus, repos court.', 'La règle qui fait progresser : chaque séance, une répétition de plus que la dernière fois. Quand tu dépasses 15, ajoute du lest ou passe à la version plus dure : l’app le fait toute seule quand tu atteins le cap.'], btns: [btn('prog', 'Ma séance', '', true)] };
+  if (id === 'skill') {
+    const ri = rankInfo().q.find((x) => x.id === 'maitrise');
+    return { text: ['Les figures (équilibre sur les mains, L-sit, corbeau) se travaillent en début de séance, quand tu es frais : c’est le bloc « Habileté » de chaque séance.', 'Elles progressent avec la fréquence, pas avec la fatigue : plusieurs fois par semaine, en courtes séries propres.', 'Ta maîtrise du corps est à ' + (ri ? ri.letter : 'E') + '. Un handstand de 30 secondes contre le mur, c’est la lettre B.'], btns: [btn('exo', 'Équilibre sur les mains', ' data-name="Handstand Hold"', true)] };
+  }
+  if (id === 'hello') {
+    const h = new Date().getHours();
+    return { text: [(h < 12 ? 'Salut. ' : h < 18 ? 'Salut. ' : 'Bonsoir. ') + 'Forme ' + forme().score + ' % aujourd’hui.' + (doneToday ? ' Ta séance est faite.' : ' Au programme : « ' + name + ' ».'), 'Pose-moi n’importe quelle question : séance, fatigue, repas, records, course, un exercice précis…'] };
+  }
+  if (id === 'thanks') return { text: [pick(['Avec plaisir. Continue comme ça.', 'De rien. On se retrouve après ta séance.', 'Quand tu veux.'])] };
+  if (id === 'who') return { text: ['Je suis le coach d’Ascension. Je ne suis pas une IA en ligne : je lis tes séances, ton bilan du matin, tes repas et ta balance, directement dans ton téléphone, et je calcule mes réponses.', 'Rien ne part sur internet. Plus tu notes, plus mes réponses sont précises.'] };
+  if (id === 'exo') return exoAnswer(arg);
   return { text: ['Je n’ai pas compris.'] };
 }
+// ---------- Aides pour les réponses ----------
+const hit = (words, w) => Array.isArray(words) && words.some((x) => x.startsWith(w));
+const dkeyNow = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const monday0Now = () => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.getTime(); };
+const platOf = (id) => PLATS.find((p) => p.id === id) || null;
+const dateTxt = (ms) => new Date(ms).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+
+// Tout ce que je sais sur un exercice : record, dernière fois, objectif, tendance, prévision, place dans le programme, technique.
+function exoAnswer(name) {
+  if (!name) return { text: ['De quel exercice parles-tu ? Écris son nom, par exemple « dips » ou « pompes déclinées ».'] };
+  if (name === 'Running') return answer('run');
+  const nm = exoName(name);
+  const H = exoHistory(name);
+  const time = measureOf(name) === 'time';
+  const t = [];
+  if (!H.list.length) t.push(nm + ' : jamais fait dans l’app pour l’instant.');
+  else {
+    t.push(nm + ' : ' + plural(H.list.length, 'séance', 'séances') + '. Record : ' + showSet(name, H.most.set) + ' (' + dateTxt(H.most.date) + ')' + (H.heavy && H.heavy.set !== H.most.set ? ', le plus lourd : ' + showSet(name, H.heavy.set) : '') + '.');
+    const L = H.list[0];
+    const done = L.sets.filter((s) => s.done !== false && (s.r || s.t));
+    if (done.length) {
+      const b = done[0];
+      t.push('Dernière fois (' + dateTxt(L.date) + ') : ' + done.map((s) => (time ? (s.t || 0) + ' s' : s.r)).join(', ') + (b.w ? ' avec ' + fr(b.w, 1) + ' kg' : '') + '. Prochain objectif : ' + (time ? (b.t || 0) + 5 + ' s' : (b.r || 0) + 1 + ' répétitions') + ' sur la première série.');
+    }
+  }
+  const tr = exoTrends().find((x) => x.name === name);
+  if (tr && tr.stuck) t.push('Tu stagnes dessus depuis 3 séances. ' + stuckTip(tr).join(' '));
+  else if (tr && tr.n >= 3 && tr.gain >= 0.05) t.push('Progrès : +' + Math.round(tr.gain * 100) + ' % en ' + plural(Math.max(1, Math.round((tr.last.date - tr.first.date) / (7 * DAY))), 'semaine', 'semaines') + '.');
+  const pr = tr && tr.stuck ? null : predictions(name)[0];
+  if (pr) t.push('Prochain record prévu : ' + pr.text + ' ' + whenTxt2(pr) + '.');
+  // Place dans le programme
+  for (const k of ['push', 'legs', 'dips', 'full']) {
+    const T = TYPES[k];
+    const s = T.slots.find((x) => x.ladder.includes(name));
+    if (!s) continue;
+    const i = s.ladder.indexOf(name);
+    t.push('Dans ton programme : « ' + T.label + ' »' + (s.bloc ? ', bloc ' + s.bloc.toLowerCase() : '') + '.' + (s.up && s.up[i] && s.ladder[i + 1] ? ' À ' + s.up[i] + (time ? ' s' : ' répétitions') + ', tu passes à ' + exoName(s.ladder[i + 1]) + '.' : ''));
+    break;
+  }
+  const F = FICHES[name];
+  if (F && F.erreurs && F.erreurs.length) t.push('À surveiller : ' + F.erreurs.slice(0, 2).map((e) => e.charAt(0).toLowerCase() + e.slice(1).replace(/\.$/, '')).join(' ; ') + '.');
+  if (F && (F.facile || F.dur)) t.push((F.dur ? 'Plus dur : ' + exoName(F.dur) + '.' : '') + (F.facile ? ' Plus facile : ' + exoName(F.facile) + '.' : ''));
+  return { text: t, btns: [btn('exo', 'Fiche complète', ' data-name="' + esc(name) + '"', true)] };
+}
+const whenTxt2 = (p) => (p.soon ? 'dès ta prochaine séance' : 'vers le ' + dateTxt(p.at));
+
+// Ce que le coach dit quand il ne comprend pas : il propose ce qui s'en approche.
+const LBL = Object.fromEntries([['tomorrow', 'Et demain ?'], ['time', 'J’ai peu de temps'], ['weight', 'Mon poids'], ['pulse', 'Mon pouls'], ['stats', 'Mes chiffres'], ['doms', 'Des courbatures'], ['rest', 'Le repos'], ['warmup', 'L’échauffement'], ['stretch', 'Les étirements'], ['pullup', 'Le dos sans barre'], ['stress', 'Je suis stressé'], ['method', 'Séries et repos'], ['skill', 'Les figures'], ['progress', 'Progresser'], ['exo', 'Un exercice']].concat(Q));
+
 const clockP = (s) => { s = Math.round(s); return Math.floor(s / 60) + "'" + String(s % 60).padStart(2, '0'); };
 
 // ---------- La fenêtre du coach ----------
@@ -318,29 +453,80 @@ function bubble(m) {
   if (m.me) return '<div class="cb me">' + esc(m.text) + '</div>';
   return '<div class="cb">' + m.text.map((p) => '<p>' + esc(p) + '</p>').join('') + (m.btns ? '<div class="row wrap" style="gap:8px;margin-top:8px">' + [].concat(m.btns).join('') + '</div>' : '') + '</div>';
 }
+function briefing() {
+  // Le point du jour, en une phrase par sujet : forme, séance avec objectifs chiffrés, repas, semaine.
+  const ws = real();
+  if (!ws.length) return '';
+  const type = testDue() ? 'test' : nextType();
+  const L = plan(type, '');
+  const f = forme(L);
+  const t0 = day0(Date.now());
+  const doneToday = ws.some((w) => w.start >= t0);
+  const p = [];
+  p.push((f.est ? 'Forme estimée ' : 'Forme ') + f.score + ' %' + (f.ci && f.ci.h ? ', ' + Math.floor(f.ci.h) + ' h' + (f.ci.h % 1 ? ' ' + String(Math.round((f.ci.h % 1) * 60)).padStart(2, '0') : '') + ' de sommeil' : '') + (f.ci && f.ci.hr ? ', pouls ' + f.ci.hr : '') + '.');
+  if (doneToday) p.push('Séance faite : place à la récupération.');
+  else {
+    const goals = L.filter((e) => e.main).slice(0, 2).map((e) => { const s = lastSets(e.name); const b = s && s.find((x) => x.r || x.t); return b ? exoName(e.name) + ' ' + (b.t && !b.r ? (b.t + 5) + ' s' : (b.r + 1) + ' répétitions') + (b.w ? ' à ' + fr(b.w, 1) + ' kg' : '') : null; }).filter(Boolean);
+    p.push('Au programme : « ' + label(type) + ' »' + (f.mode === 'leger' ? ' allégée' : '') + (goals.length ? ', vise ' + goals.join(' et ') : '') + '.');
+  }
+  const T = targets(), td = dayTotals(dkeyNow()), m = platOf(todayMenu().d);
+  p.push('Repas : ' + td.p + ' g de protéines sur ' + T.p + (m ? ', ce soir ' + m.name.charAt(0).toLowerCase() + m.name.slice(1) : '') + '.');
+  return p.join(' ');
+}
 function draw(typing) {
   const L = insights();
+  const br = briefing();
   let h = '<div class="row" style="gap:12px;align-items:center"><span class="coachav big">' + ICON.bolt + '</span><div class="col" style="gap:2px"><span class="label violet">D’après tes ' + plural(real().length, 'séance', 'séances') + '</span><h1 class="h1">Coach</h1></div></div>';
-  h += '<div class="col" style="gap:10px">' + L.slice(0, 5).map((i) => '<div class="tip ' + i.tone + (i.act ? ' tap' : '') + '"' + (i.act ? ' role="button" tabindex="0" data-act="coach-ask" data-q="' + i.act + '"' : '') + '><i></i><div class="col grow" style="gap:2px"><span style="font-weight:700">' + esc(i.title) + '</span><span class="small" style="color:var(--soft)">' + esc(i.text) + '</span></div>' + (i.act ? ICON.chev : '') + '</div>').join('') + '</div>';
+  if (br) h += '<section class="glass card col tint t-violet" style="gap:6px"><span class="label violet">Ton point du jour</span><span class="small" style="color:var(--soft)">' + esc(br) + '</span></section>';
+  h += '<div class="col" style="gap:10px">' + L.slice(0, 4).map((i) => '<div class="tip ' + i.tone + (i.act ? ' tap' : '') + '"' + (i.act ? ' role="button" tabindex="0" data-act="coach-ask" data-q="' + i.act + '"' : '') + '><i></i><div class="col grow" style="gap:2px"><span style="font-weight:700">' + esc(i.title) + '</span><span class="small" style="color:var(--soft)">' + esc(i.text) + '</span></div>' + (i.act ? ICON.chev : '') + '</div>').join('') + '</div>';
   h += '<span class="label">Demande au coach</span><div class="chat" id="coachchat">' + chat.map(bubble).join('') + (typing ? '<div class="cb typing"><i></i><i></i><i></i></div>' : '') + '</div>';
+  h += '<form class="askrow" id="coachform"><input class="textin" id="coachq" placeholder="Écris ta question…" autocomplete="off" enterkeyhint="send" value="' + esc(draftQ) + '"><button type="submit" class="pill gold-btn" aria-label="Envoyer">' + ICON.up + '</button></form>';
   h += '<div class="row wrap" style="gap:8px">' + Q.map(([k, l]) => '<button type="button" class="pill sm glass" data-act="coach-ask" data-q="' + k + '">' + l + '</button>').join('') + '</div>';
-  h += '<span class="small dim">Le coach lit seulement tes données, dans ton téléphone, sans internet. Ce n’est pas un avis médical.</span>';
+  h += '<span class="small dim">Le coach lit tes séances, ton bilan du matin, tes repas et ta balance, dans ton téléphone, sans internet. Ce n’est pas un avis médical.</span>';
   sheet(h, 1, 'full');
   const c = $('coachchat'); if (c && chat.length) { const last = c.lastElementChild; if (last) last.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  const fm = $('coachform');
+  if (fm) fm.onsubmit = (ev) => { ev.preventDefault(); const v = $('coachq').value.trim(); if (v) { draftQ = ''; askText(v); } };
+  const qi = $('coachq'); if (qi) qi.oninput = () => { draftQ = qi.value; };
 }
+let draftQ = '';
 
+function reply(a) {
+  draw(true);
+  setTimeout(() => { if (!$('coachchat')) return; chat.push(a); draw(false); }, 450 + Math.min(700, a.text.join(' ').length * 2));
+}
 function ask(id, arg, label) {
   if (['quick', 'prog', 'checkin'].includes(id)) { ACTIONS[id]({ dataset: {} }); return; }
-  const q = Q.find((x) => x[0] === id);
-  chat.push({ me: true, text: label || (q ? q[1] : '') });
+  chat.push({ me: true, text: label || LBL[id] || '' });
   let a = answer(id, arg);
   if (id === 'pain' && !arg) a = { text: ['Où as-tu mal ? Pendant 7 jours, je retirerai de tes séances les exercices qui sollicitent cette zone.'], btns: Object.keys(PAINS).map((k) => btn('coach-ask', PAINS[k], ' data-q="pain" data-arg="' + k + '" data-l="' + PAINS[k] + '"')).join('') };
-  draw(true);
-  setTimeout(() => { if (!$('coachchat')) return; chat.push(a); draw(false); }, 550);
+  reply(a);
+}
+// Question écrite librement.
+function askText(text) {
+  chat.push({ me: true, text });
+  const u = understand(text);
+  let a;
+  try {
+    if (u.id === 'pain') a = u.zone ? answer('pain', u.zone) : { text: ['Où as-tu mal ? Je retirerai de tes séances, pendant 7 jours, les exercices qui sollicitent cette zone.'], btns: Object.keys(PAINS).map((k) => btn('coach-ask', PAINS[k], ' data-q="pain" data-arg="' + k + '" data-l="' + PAINS[k] + '"')).join('') };
+    else if (u.id === 'exo' || ((u.id === 'stuck' || u.id === 'record') && u.exo)) a = exoAnswer(u.exo);
+    else if (u.id === 'progress') a = answer('stuck');
+    else if (u.id === 'time') a = answer('time', u.min);
+    else if (u.id === 'food') a = answer('food', u.words);
+    else if (u.id === 'forme' || u.id === 'tired' || u.id === 'sleep' || u.id) a = answer(u.id, u.words);
+    else {
+      const near = closest(u).filter((x) => LBL[x]);
+      a = { text: [pick(['Je n’ai pas bien compris.', 'Je ne suis pas sûr de comprendre.', 'Hmm, je n’ai pas saisi.']) + (near.length ? ' Tu voulais parler de ça ?' : ' Essaie avec d’autres mots : « je suis fatigué », « mon record aux dips », « quoi manger ce soir », « j’ai 20 minutes »…')],
+        btns: near.length ? near.map((x) => btn('coach-ask', LBL[x], ' data-q="' + x + '"')).join('') : Q.slice(0, 4).map(([k, l]) => btn('coach-ask', l, ' data-q="' + k + '"')).join('') };
+    }
+  } catch (e) { console.error(e); a = { text: ['Je n’ai pas réussi à calculer ça. Pose ta question autrement ?'] }; }
+  if (a.text[0] === 'Je n’ai pas compris.') a = exoAnswer(u.exo || null);
+  reply(a);
 }
 
 Object.assign(ACTIONS, {
-  coach: () => { chat = []; draw(false); },
+  coach: () => { chat = []; resetCtx(); draw(false); },
+  'coach-tab': (el) => { ui.tab = el.dataset.tab; ui.enter = true; import('./app.js').then((a) => { a.render(); }); document.getElementById('sheet').innerHTML = ''; document.body.classList.remove('locked'); },
   'coach-ask': (el) => ask(el.dataset.q, el.dataset.arg, el.dataset.l),
   'coach-go': (el) => { ACTIONS['prog-start'](el); },
 });

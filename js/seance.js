@@ -3,7 +3,8 @@
 import { EXOS, FICHES, WARMUP, GROUPES, AKA } from './data.js';
 import { figure } from './anim.js';
 import { progCard, progDone, progPlan, progOn } from './programme.js';
-import { predictions, whenTxt } from './forme.js';
+import { predictions, whenTxt, checkin, dayKey } from './forme.js';
+import { targets, dayTotals } from './repas.js';
 import { camOk } from './camera.js';
 import { dailyQuests, feats } from './quetes.js';
 import { beep, wakeAudio } from './sound.js';
@@ -654,6 +655,18 @@ function sheetSummary(w, label, xpBefore, qNew, fNew) {
   let h = '<div class="col center" style="gap:6px"><span class="label violet">Séance terminée</span><h1 class="h1" style="font-size:30px">' + esc(label) + '</h1>'
     + '<span class="num gold-text" style="font-size:66px;line-height:1.1">+<span id="xp-count">0</span> XP</span></div>';
   if (w.grade) h += '<section class="glass card gradecard g' + w.grade + '"><span class="grade">' + w.grade + '</span><div class="col grow" style="gap:3px"><span class="label">Note de la séance</span><span style="font-weight:600">' + esc(GRADE_TXT[w.grade]) + '</span><span class="small mut">Séries faites, objectifs atteints, records et duel contre ton fantôme · ' + w.score + ' sur 100</span></div></section>';
+  // Le mot du coach : ce que la séance dit de toi, et la suite.
+  try {
+    const ups = lines.filter((l) => l.up).length, downs = lines.filter((l) => l.delta.charAt(0) === '-').length, ci = checkin(w.start);
+    const t = [];
+    if (recs.length) t.push(plural(recs.length, 'record', 'records') + ' aujourd’hui.' + (ci && ci.f >= 75 ? ' Ton score du matin (' + ci.f + ') l’annonçait.' : ''));
+    else if (prev && ups >= Math.max(1, lines.length / 2)) t.push('Mieux que la dernière fois sur ' + ups + ' exercice' + (ups > 1 ? 's' : '') + ' sur ' + lines.length + ' : la progression continue.');
+    else if (prev && downs > ups) t.push('Un peu moins bien que la dernière fois sur ' + downs + ' exercice' + (downs > 1 ? 's' : '') + (ci && ci.h && ci.h < 7 ? ' : tes ' + String(ci.h).replace('.', ',') + ' h de sommeil y sont sûrement pour quelque chose.' : '. Une séance moyenne ne change rien à la tendance.'));
+    else t.push('Séance faite, c’est ce qui compte le plus.');
+    const T = targets(), td = dayTotals(dayKey(Date.now()));
+    t.push('Maintenant : un vrai repas avec des protéines dans les 2 heures' + (T.p - td.p > 0 ? ' (il te reste ' + (T.p - td.p) + ' g à manger aujourd’hui)' : '') + ', puis une bonne nuit.');
+    h += '<section class="glass card row tint t-cyan" style="gap:12px;align-items:flex-start"><span class="coachav">' + ICON.bolt + '</span><div class="col grow" style="gap:4px"><span class="label violet">Le mot du coach</span><span class="small" style="color:var(--soft)">' + esc(t.join(' ')) + '</span></div></section>';
+  } catch (e) { console.error(e); }
   h += '<section class="glass card hud col" style="gap:10px"><div class="row between"><span class="h2">Niveau ' + after.level + '</span>'
     + (levelUp ? '<span class="tag gold">Niveau supérieur</span>' : '<span class="small mut">Encore ' + (after.need - after.into) + ' XP</span>') + '</div>'
     + '<div class="bar"><div id="xp-bar" style="transition:width 1.2s cubic-bezier(0.2,0.8,0.2,1);width:' + (levelUp ? 0 : Math.round((before.into / before.need) * 100)) + '%"></div></div></section>';

@@ -719,3 +719,48 @@ h1, .h1, .h2, .big, .small, .label { overflow-wrap: break-word; }
   .modes4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .seg2 button { padding: 6px 6px; font-size: 11.5px; }
 }
+/* v46 : bilan du matin (pouls, réaction, sommeil, fiabilité) */
+.ci-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bigtime { height: 56px; font-size: 22px; font-weight: 700; text-align: center; color-scheme: dark; }
+.ciopt.on { border-color: var(--violet); background: rgba(139, 108, 246, 0.2); }
+.pulsebox { position: relative; border-radius: 24px; background: rgba(255, 90, 110, 0.06); border: 1px solid var(--line); overflow: hidden; }
+.pulsebox canvas { display: block; width: 100%; height: 120px; }
+.pulsenum { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0 16px; }
+.pulsenum .num { font-size: 56px; line-height: 1; }
+.rtzone { width: 100%; min-height: 46vh; border-radius: 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 20px; text-align: center; color: #fff; border: 1px solid var(--line); touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.rtzone.wait, .rtzone.pause, .rtzone.done { background: rgba(255, 255, 255, 0.05); }
+.rtzone.go { background: #2FBF7F; }
+.rtzone.early { background: rgba(255, 90, 110, 0.35); }
+.relpill { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; background: rgba(255, 255, 255, 0.08); color: var(--mut); }
+.relpill.r-high { background: rgba(63, 214, 155, 0.18); color: #3FD69B; }
+.relpill.r-mid { background: rgba(255, 176, 59, 0.18); color: #FFB03B; }
+.relpill.r-low { background: rgba(255, 90, 110, 0.18); color: #FF8A99; }
+
+/* v46 : onglet Repas */
+.qico.done { background: rgba(63, 214, 155, 0.18); color: var(--vert); }
+.modes3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.modes3 .pill { padding-left: 4px; padding-right: 4px; min-width: 0; }
+.linkbtn { color: var(--violet-soft); font-weight: 600; font-size: 14px; text-decoration: underline; text-underline-offset: 3px; background: none; border: 0; padding: 0; align-self: flex-start; }
+.stepn { width: 24px; height: 24px; flex-shrink: 0; border-radius: 8px; display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 13px; background: rgba(139, 108, 246, 0.2); color: var(--violet-soft); }
+.shop { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 6px 0; border-top: 1px solid var(--line); color: var(--txt); font: inherit; font-size: 15px; background: none; }
+.shop .qico { width: 28px; height: 28px; border-radius: 9px; border: 1.5px solid rgba(255, 255, 255, 0.2); }
+.shop .qico svg { width: 16px; height: 16px; }
+.shop.on .grow { text-decoration: line-through; opacity: 0.45; }
+.gearbtn { width: 44px; height: 44px; flex-shrink: 0; border-radius: 15px; display: grid; place-items: center; color: var(--mut); background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); }
+.gearbtn svg { width: 21px; height: 21px; }
+/* v46 : coach, question libre */
+.askrow { display: flex; gap: 8px; align-items: center; }
+.askrow .textin { flex: 1 1 auto; min-width: 0; height: 48px; }
+.askrow .pill { width: 48px; height: 48px; padding: 0; flex-shrink: 0; display: grid; place-items: center; }
+.askrow .pill svg { width: 20px; height: 20px; }
+/* v46 : test du mois */
+.pbar { position: relative; height: 8px; border-radius: 999px; background: linear-gradient(90deg, rgba(255, 90, 110, 0.5), rgba(255, 176, 59, 0.5) 40%, rgba(63, 214, 155, 0.6)); }
+.pbar i { position: absolute; top: 50%; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 3px rgba(13, 10, 24, 0.9), 0 2px 10px rgba(0, 0, 0, 0.5); }
+.topbar .who .h2, .topbar .who .label { overflow-wrap: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 389px) {
+  .topbar { gap: 8px; }
+  .topbar .emb, .topbar .emb svg { width: 46px; height: 52px; }
+  .topbar .flame { padding: 0 10px 0 8px; font-size: 16px; }
+  .gearbtn { width: 38px; height: 38px; border-radius: 13px; }
+}
+.qico.todo { background: rgba(255, 255, 255, 0.06); color: var(--mut); border: 1px dashed rgba(255, 255, 255, 0.18); }

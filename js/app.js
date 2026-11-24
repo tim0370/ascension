@@ -13,6 +13,9 @@ import { routinesCard, viewWorkout, usualTime, tick, renderRest, keepAwake, onIn
 import { progCard, progOn, isBeginner, todayList } from './programme.js';
 import { formeCard, painCard } from './forme.js';
 import { weekCard, lundiBanner } from './semaine.js';
+import { viewRepas } from './repas.js';
+import { capCard, ensureCap, bigGoal } from './cap.js';
+import { testCard } from './test.js';
 import { dailyQuests, streak, SHIELD_MAX, SHIELD_EVERY, feats, myTitle, titles, skins, SKINS } from './quetes.js';
 import { bossCard } from './boss.js';
 import './course.js';
@@ -68,7 +71,7 @@ function viewHome() {
   let h = '<div class="topbar"><button type="button" class="emb tap" data-act="profile" aria-label="Mon profil">' + rankSvg(info.rank.letter, false, null, 'emb') + '</button>'
     + '<button type="button" class="who tap" data-act="level"><span class="label violet">' + (title ? esc(title) : 'Rang ' + info.rank.letter + ' · ' + esc(info.rank.name)) + '</span>'
     + '<span class="h2">Niveau ' + lv.level + '</span><div class="bar thin" style="width:100%"><div style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></div></div></button>'
-    + flamePill(st) + '</div>';
+    + flamePill(st) + '<button type="button" class="gearbtn" data-act="settings" aria-label="Réglages">' + ICON.gear + '</button></div>';
 
 
   // Le bloc principal : la séance en cours, ou celle du programme
@@ -115,6 +118,7 @@ function viewHome() {
 
   // 2. Défis : boss de la semaine et saison du mois
   let defis = '';
+  if (has && show('mtest')) defis += testCard();
   if (has && show('boss')) defis += bossCard();
   if (has) { if (show('season')) defis += seasonCard(); celebrateSeason(); }
   if (defis) h += head('Défis', 't-red') + defis;
@@ -133,7 +137,8 @@ function viewHome() {
       + (next ? '<div class="col" style="gap:6px;margin-top:auto"><span class="small" style="font-weight:600">' + esc(next.desc) + '</span><div class="bar thin gold"><div style="width:' + Math.round((next.cur / next.goal) * 100) + '%"></div></div></div>' : '<span class="small mut" style="margin-top:auto">Tout est débloqué</span>')
       + '</section></div>';
   }
-  const goal = (state.goals || []).find((g) => !g.done);
+  if (has && show('cap')) prog += capCard();
+  const goal = (state.goals || []).find((g) => !g.done && !g.big);
   if (goal && show('goal')) {
     prog += '<section class="glass card tint t-pink" style="padding:2px 16px">' + goalRow(goal, true) + '</section>';
   }
@@ -170,11 +175,18 @@ const GUIDE = [
     ['cooldown', 'Retour au calme', '6 étirements guidés en 3 minutes.'],
     ['gps', 'Course GPS', 'Distance, allure, lièvre, voix à chaque kilomètre et tracé de la course.'],
   ]],
+  ['Manger', [
+    ['', 'Onglet Repas', 'Calories et protéines du jour, calculées pour une prise de masse propre et ajustées toutes seules d’après ta balance. Note un repas en 2 touches.'],
+    ['courses', 'Menus et courses', 'Les dîners de la semaine pour toute la famille (légumes cachés, pas de poisson), et la liste de courses de la semaine et du mois à envoyer à ta mère.'],
+    ['recettes', 'Recettes', 'Petit-déjeuner en 5 minutes, midi en 10 minutes, goûter dans le sac, dîners de famille.'],
+  ]],
   ['Être guidé', [
-    ['checkin', 'Bilan du matin et forme', '4 touches le matin (sommeil, courbatures, énergie, stress) : ton score de forme, expliqué point par point. Forme basse : séance allégée toute seule. Forme haute : jour de record.'],
+    ['checkin', 'Bilan du matin et forme', 'Environ 1 min 30 le matin : heures de sommeil, courbatures, énergie, stress, pouls au repos (le doigt sur la caméra de derrière, 60 s) et test de réaction (20 s). Après 7 matins, tout est comparé à ta propre moyenne, et le score apprend tout seul ce qui annonce tes bonnes séances (fiabilité affichée).'],
     ['forme', 'Charge et ce qui te réussit', 'Ta charge des 8 dernières semaines, la semaine légère conseillée quand il faut, et ce qui te fait mieux performer (heure, repos, sommeil).'],
     ['pain', 'Signaler une douleur', 'Épaules, poignets, genoux… pendant 7 jours, tes séances évitent les exercices qui la sollicitent.'],
-    ['coach', 'Coach', 'Il lit ton historique et ton bilan du matin : quoi faire aujourd’hui, records prévus, stagnation, point faible, fatigue, motivation. Pose-lui tes questions.'],
+    ['coach', 'Coach', 'Écris-lui ta question comme à un ami (« jsuis crevé », « mon record aux dips », « quoi manger ce soir », « j’ai 20 min »). Il lit tes séances, ton bilan du matin, tes repas et ta balance, dans ton téléphone, sans internet. Point du jour en haut, mot du coach en fin de séance.'],
+    ['cap', 'Grand objectif', 'Un but de 12 semaines choisi d’après ton point faible, avec la prise de masse en parallèle. Le programme fait revenir son exercice plus souvent, et la date d’arrivée est estimée.'],
+    ['mtest', 'Test du mois', '6 épreuves une fois par mois (pompes, dips, burpees, saut, chaise, course), comparées aux garçons de 16 à 19 ans.'],
     ['', 'Pendant la séance', 'Objectif par série, fantôme de la dernière fois, compteur de pompes à la caméra, et « facile, bien, très dur » pour régler la séance suivante.'],
     ['', 'Voix du coach', 'Dans les réglages, partie Son : elle annonce chaque série à la fin du repos.'],
     ['', 'Notifications', 'Dans les réglages : fin du repos, rappel de séance, flamme, boss.'],
@@ -212,7 +224,7 @@ function sheetGuide() {
 }
 
 // ---------- Personnaliser l'accueil ----------
-const HOME_CARDS = [['forme', 'Ta forme du jour'], ['coach', 'Coach'], ['boss', 'Boss de la semaine'], ['tiles', 'Rang et hauts faits'], ['season', 'Saison du mois'], ['quick', 'Pompes du jour'], ['quests', 'Quêtes du jour'], ['goal', 'Objectif en cours'], ['week', 'Ta semaine']];
+const HOME_CARDS = [['forme', 'Ta forme du jour'], ['cap', 'Grand objectif'], ['mtest', 'Test du mois'], ['coach', 'Coach'], ['boss', 'Boss de la semaine'], ['tiles', 'Rang et hauts faits'], ['season', 'Saison du mois'], ['quick', 'Pompes du jour'], ['quests', 'Quêtes du jour'], ['goal', 'Objectif en cours'], ['week', 'Ta semaine']];
 function show(k) { return !(state.settings.hide || {})[k]; }
 function sheetHomeEdit() {
   const h = '<div class="col" style="gap:4px"><span class="label violet">Accueil</span><h1 class="h1">Personnaliser</h1><span class="small mut">Choisis les cartes affichées sur l’accueil. La séance du programme reste toujours en haut. Tout reste accessible ailleurs.</span></div>'
@@ -608,7 +620,7 @@ function modeSettings() {
 }
 
 export function render() {
-  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory };
+  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory, repas: viewRepas };
   // L'animation d'arrivée ne joue que quand on change d'écran, pas à chaque série cochée.
   $('app').classList.toggle('enter', ui.enter);
   ui.enter = false;
@@ -682,6 +694,15 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { ke
 
 setInterval(tick, 500);
 
+// v46 : son choix « 4 séances + course » (objectif 5 par semaine, course comprise) et son grand objectif choisi par l'app.
+// Seulement pour le programme complet et un historique fourni (pas pour un débutant qui commence).
+try {
+  if (!state.settings.g46) {
+    state.settings.g46 = 1;
+    if (state.settings.level !== 'debutant' && !state.settings.noProg && state.workouts.length >= 30) { state.settings.weekGoal = 5; ensureCap(); }
+    save();
+  }
+} catch (e) { console.error('v46', e); }
 if (state.active) { ui.tab = 'workout'; keepAwake(); }
 initSound();
 render();

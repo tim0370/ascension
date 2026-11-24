@@ -152,6 +152,15 @@ const TEST = [
   { ladder: ['Hollow Rock'], label: 'Hollow rock le plus long', t: 30 },
 ];
 
+// Grand objectif (cap.js) : où ajouter son exercice quand il n'est pas déjà dans la séance.
+const CAP_INJ = {
+  explo: { types: ['legs', 'full'], slot: Object.assign({ sets: 3, r: 5 }, EXPLO) },
+  force: { types: ['push'], slot: { ladder: ['Triceps Dip'], sets: 3, r: 6, w: 15 } },
+  endu: { types: ['legs', 'dips'], slot: { ladder: ['Push Up'], sets: 2, r: 25 } },
+  maitrise: { types: ['legs', 'dips', 'full'], slot: Object.assign({}, HAND, { sets: 3 }) },
+};
+const bigCap = () => (state.goals || []).find((g) => g.big && !g.big.off && !g.done && Date.now() < g.big.end + 14 * DAY) || null;
+
 // ---------- Où tu en es ----------
 const day0 = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
 
@@ -217,13 +226,19 @@ export function plan(type, mode) {
   if (!mode && lightWeek()) mode = 'leger';
   let slots = T.slots.slice();
   if (mode === 'gros') slots = slots.concat(T.bonus);
+  // Grand objectif : son exercice revient dans plus de séances, au début (quand tu es frais).
+  const big = bigCap();
+  if (big && !isBeginner() && CAP_INJ[big.big.q] && CAP_INJ[big.big.q].types.includes(type) && !slots.some((s) => s.ladder.includes(big.name))) {
+    const at = slots[0] && slots[0].bloc === 'Habileté' ? 1 : 0;
+    slots.splice(at, 0, Object.assign({}, CAP_INJ[big.big.q].slot, big.w ? { w: big.w } : {}, { bloc: 'Objectif' }));
+  }
   return applyPains(slots.map((s, i) => {
     let n = s.sets + (s.main && wk >= 1 ? 1 : 0) + (mode === 'gros' && i < 2 ? 1 : 0);
     if (mode === 'court') n = i < 4 ? 2 : 1;
     if (mode === 'leger') n = Math.max(s.main ? 2 : 1, n - 1);
     const p = pickLevel(s);
     const one = s.t ? { t: s.t } : { r: s.r, w: s.w || 0 };
-    return { name: p.name, fresh: p.fresh, main: !!s.main, bloc: s.bloc || '', next: p.next, cap: p.cap, sets: Array.from({ length: n }, () => Object.assign({}, one)) };
+    return { name: p.name, fresh: p.fresh, main: !!s.main, bloc: big && p.name === big.name ? 'Objectif' : s.bloc || '', next: p.next, cap: p.cap, sets: Array.from({ length: n }, () => Object.assign({}, one)) };
   }).slice(0, mode === 'court' ? 5 : 99));
 }
 
@@ -322,7 +337,7 @@ export function progCard(main, doneToday, noForme) {
     + '<button type="button" class="pill gold-btn grow" data-act="prog-start" data-type="' + type + '" data-mode="' + auto + '">' + (type === 'test' ? 'Faire le re-test' : 'Commencer') + '</button></div></section>';
 }
 
-const BLOC_C = { 'Habileté': 'var(--violet-soft)', Force: 'var(--rouge)', 'Explosivité': 'var(--flamme)', Muscle: 'var(--gold)', Gainage: '#6FD3E8', Endurance: 'var(--vert)' };
+const BLOC_C = { Objectif: 'var(--gold)', 'Habileté': 'var(--violet-soft)', Force: 'var(--rouge)', 'Explosivité': 'var(--flamme)', Muscle: 'var(--gold)', Gainage: '#6FD3E8', Endurance: 'var(--vert)' };
 function planList(list) {
   return '<div class="list">' + list.map((e, i) => '<button type="button" class="item" data-act="exo" data-name="' + esc(e.name) + '"><span class="num dim" style="width:20px">' + (i + 1) + '</span><div class="col grow" style="gap:2px;min-width:0">'
     + (e.bloc ? '<span class="label" style="color:' + (BLOC_C[e.bloc] || 'var(--mut)') + ';font-size:10px">' + esc(e.bloc) + '</span>' : '')
@@ -347,7 +362,7 @@ export function sheetProg(type) {
   if (!state.active) h += '<button type="button" class="pill gold-btn wide big" data-act="prog-start" data-type="' + t + '" data-mode="' + (t === 'test' ? '' : mode || 'normal') + '">Commencer</button>';
   h += '<div class="col" style="gap:8px"><span class="label">Changer de séance</span><div class="list">'
     + order().concat(isBeginner() ? [] : ['faible'], 'test').filter((x) => x !== t).map((x) => '<button type="button" class="item" data-act="prog" data-type="' + x + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(title(x)) + '</span><span class="small mut">' + esc(x === 'test' ? 'Tes max, pour mettre à jour tes lettres' : TYPES[x].desc) + '</span></div>' + ICON.chev + '</button>').join('')
-    + '</div><span class="small mut">' + (isBeginner() ? 'Le programme débutant tourne : haut du corps, bas du corps, tout le corps.' : 'Pensé pour être fort partout. Quatre séances tournent : pompes, jambes, dips, complet. Chacune commence par une figure (quand tu es frais), puis la force, l’explosivité, le muscle et le gainage. Une fois par semaine, la séance « point faible » cible ta qualité la plus basse, et la course du dimanche travaille la vitesse.') + ' Un cycle dure 4 semaines : 3 semaines où ça monte, puis le re-test. Tu peux changer de niveau dans les Réglages.</span></div>'
+    + '</div><span class="small mut">' + (isBeginner() ? 'Le programme débutant tourne : haut du corps, bas du corps, tout le corps.' : 'Pensé pour être fort partout, sur 4 séances et une course par semaine. Quatre séances tournent : pompes, jambes, dips, complet. Chacune commence par une figure (quand tu es frais), puis la force, l’explosivité, le muscle et le gainage. Une fois par semaine, la séance « point faible » cible ta qualité la plus basse, et la course du dimanche travaille la vitesse.') + ' Un cycle dure 4 semaines : 3 semaines où ça monte, puis le re-test. Tu peux changer de niveau dans les Réglages.</span></div>'
     + '<button type="button" class="pill sm glass wide" data-act="close" style="color:var(--mut)">Fermer</button>';
   sheet(h);
 }

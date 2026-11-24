@@ -905,6 +905,15 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 46, items: [
+    'Nouvel onglet Repas : calories et protéines du jour pour une prise de masse propre, ajustées toutes seules d’après ta balance. Un repas se note en 2 touches',
+    'Menus de la semaine pour toute la famille (légumes cachés, pas de poisson, bavette un dimanche sur deux), recettes simples, et la liste de courses de la semaine et du mois à envoyer à ta mère',
+    'Bilan du matin bien plus fiable : heures de sommeil, pouls au repos mesuré avec la caméra, test de réaction. Comparé à ta propre moyenne, et le score apprend tout seul ce qui annonce tes bonnes séances',
+    'Le coach comprend tes questions écrites librement, même vite et avec des fautes. Il lit tout : séances, forme, repas, balance. Point du jour en haut, et un mot du coach à la fin de chaque séance',
+    'Grand objectif de 12 semaines, choisi d’après ton point faible : le programme s’y adapte et estime ta date d’arrivée',
+    'Test du mois : 6 épreuves comparées aux garçons de ton âge',
+    'Compteur caméra aussi pour les dips, les squats et les burpees. Les Réglages sont en haut de l’accueil',
+  ] },
   { v: 45, items: [
     'Ta forme du jour : un bilan du matin en 4 touches (sommeil, courbatures, énergie, stress), mélangé à la fatigue de tes muscles et à ta charge. Chaque point du score est expliqué',
     'Séance adaptée à ta forme : forme basse, l’app l’allège toute seule ; forme au top, c’est un jour de record',

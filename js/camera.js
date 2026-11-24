@@ -6,7 +6,16 @@ import { state, save, exoName } from './store.js';
 import { $, esc, ACTIONS, ICON, sheet, closeSheet, toast } from './ui.js';
 import { render } from './app.js';
 
-export const camOk = (name) => /push ?up/i.test(name) && !/handstand/i.test(name);
+// Compteur possible : pompes, dips, squats et burpees (tous comptés par la lumière qui baisse quand le corps s'approche).
+export const camOk = (name) => (/push ?up|dip|squat|burpee/i.test(name)) && !/handstand|pike|bench dip|split|pistol|bulgarian|jump squat/i.test(name);
+const PLACE = {
+  pompes: ['Téléphone à plat sous ta poitrine, écran vers le haut.', 'Pose le téléphone à plat par terre, sous ta poitrine, écran vers le haut. À chaque descente, ta poitrine cache la lumière : c’est ce que l’app compte.'],
+  dips: ['Téléphone à plat par terre, entre les barres, sous toi.', 'Pose le téléphone à plat entre les barres de dips, écran vers le haut, juste sous ton buste. À chaque descente, ton corps se rapproche et cache la lumière.'],
+  squat: ['Téléphone à plat par terre, entre tes pieds.', 'Pose le téléphone à plat entre tes pieds, écran vers le haut. Quand tu descends, tes cuisses et ton buste cachent la lumière.'],
+  burpee: ['Téléphone à plat sous ta poitrine.', 'Pose le téléphone à plat là où arrivera ta poitrine en position de pompe, écran vers le haut. Chaque passage au sol compte une répétition.'],
+};
+const placeOf = (name) => PLACE[/dip/i.test(name) ? 'dips' : /squat/i.test(name) ? 'squat' : /burpee/i.test(name) ? 'burpee' : 'pompes'];
+let target = null; // compteur lancé hors séance (test du mois) : { name, keep(n) }
 
 let cam = null;
 
@@ -20,10 +29,12 @@ function curSet() {
   return ex ? { ex, s: ex.sets[a.setIdx || 0] } : null;
 }
 
-export function sheetCam() {
-  const c = curSet();
+export function sheetCam(tg) {
+  target = tg || null;
+  const c = target ? { ex: { name: target.name } } : curSet();
   if (!c) return;
-  const h = '<div class="col" style="gap:4px"><span class="label violet">Compteur caméra · essai</span><h1 class="h1">' + esc(exoName(c.ex.name)) + '</h1><span class="small mut">Téléphone à plat sous ta poitrine, écran vers le haut.</span></div>'
+  const P = placeOf(c.ex.name);
+  const h = '<div class="col" style="gap:4px"><span class="label violet">Compteur caméra · essai</span><h1 class="h1">' + esc(exoName(c.ex.name)) + '</h1><span class="small mut">' + P[0] + '</span></div>'
     + '<div class="camview"><video id="cam-v" playsinline muted autoplay></video><div class="camcount"><span class="num" id="cam-n">0</span><span class="small" id="cam-st">Préparation…</span></div>'
     + '<div class="camlevel"><i id="cam-lv"></i></div></div>'
     + '<div class="row" style="gap:10px"><button type="button" class="stepbtn sm" data-act="cam-fix" data-d="-1" aria-label="Une de moins">' + ICON.minus + '</button>'
@@ -32,7 +43,7 @@ export function sheetCam() {
     + '<button type="button" class="pill gold-btn wide big" data-act="cam-keep" id="cam-keep">Garder 0 répétition</button>'
     + '<button type="button" class="pill glass wide" data-act="cam-cancel">Annuler</button>'
     + '<div class="col" style="gap:6px"><span class="label">Comment le poser</span>'
-    + '<span class="small mut">Pose le téléphone à plat par terre, sous ta poitrine, écran vers le haut. Tu as 5 secondes pour te mettre en place. À chaque descente, ta poitrine cache la lumière : c’est ce que l’app compte. Il faut une pièce éclairée. Aucune image n’est gardée ni envoyée.</span></div>';
+    + '<span class="small mut">' + P[1] + ' Tu as 5 secondes pour te mettre en place. Il faut une pièce éclairée. Aucune image n’est gardée ni envoyée.</span></div>';
   sheet(h, 1, 'full');
   start();
 }
@@ -114,11 +125,13 @@ function stop() {
 
 Object.assign(ACTIONS, {
   cam: () => sheetCam(),
+  'cam-exo': (el) => sheetCam({ name: el.dataset.name, keep: null }),
   'cam-fix': (el) => { if (!cam) return; cam.n = Math.max(0, cam.n + Number(el.dataset.d)); show(); },
   'cam-keep': () => {
-    const c = curSet();
     const n = cam ? cam.n : 0;
     stop();
+    if (target && target.keep) { const k = target.keep; target = null; k(n); return; }
+    const c = curSet();
     if (c && c.s && n > 0) { c.s.r = n; save(); toast(n + ' répétitions comptées : valide la série'); }
     closeSheet(); render();
   },

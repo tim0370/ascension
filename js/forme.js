@@ -5,7 +5,8 @@
 import { EXOS } from './data.js';
 import { state, save, sorted, exoName } from './store.js';
 import { bodyStats, musclesOf, ZONES } from './corps.js';
-import { esc, plural, ACTIONS, ICON, sheet, closeBtn, toast } from './ui.js';
+import { $, esc, plural, ACTIONS, ICON, sheet, closeBtn, toast } from './ui.js';
+import { pulseHtml, startPulse, stopPulse, wristHtml, startWrist, stopWrist, reactHtml, startReaction, stopReaction, median } from './mesure.js';
 
 const DAY = 864e5;
 const day0 = (ms) => { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); };
@@ -14,7 +15,9 @@ export const dayKey = (ms) => { const d = new Date(ms); return d.getFullYear() +
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 const rerender = () => import('./app.js').then((a) => a.render());
 // La forme se calcule toujours sur la séance du jour, comme sur l'accueil.
-const openForme = () => import('./programme.js').then((p) => sheetForme(p.todayList()));
+let todayRef = null; // la séance du jour, connue une fois programme.js chargé
+const openForme = () => import('./programme.js').then((p) => { todayRef = p.todayList; sheetForme(p.todayList()); });
+setTimeout(() => import('./programme.js').then((p) => { todayRef = p.todayList; }), 0);
 
 // ---------- Le bilan du matin ----------
 export const CI = [
@@ -26,15 +29,180 @@ export const CI = [
 export function checkin(ms) { return (state.checkins || {})[dayKey(ms || Date.now())] || null; }
 const ciList = () => Object.entries(state.checkins || {}).map(([k, v]) => Object.assign({ k }, v)).sort((a, b) => (a.k < b.k ? 1 : -1));
 
+// Le bilan en 6 étapes (environ 1 min 30) : heures de sommeil, 3 ressentis en une touche, pouls au repos (60 s), réaction (20 s).
+// Pouls et réaction sont des mesures, pas des impressions : comparés à TA moyenne, ils trahissent la fatigue.
+const STEPS = ['sleep', 'c', 'e', 'x', 'pulse', 'react'];
+const hm = (t) => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : null; };
+export function sleepHours(bed, wake) {
+  const a = hm(bed), b = hm(wake);
+  if (a === null || b === null) return null;
+  let d = b - a;
+  if (d <= 0) d += 1440;
+  return Math.round((d / 60) * 4) / 4;
+}
+const hTxt = (h) => Math.floor(h) + ' h' + (h % 1 ? ' ' + String(Math.round((h % 1) * 60)).padStart(2, '0') : '');
+const sFromH = (h) => (h < 5 ? 1 : h < 6 ? 2 : h < 7 ? 3 : h < 8 ? 4 : 5);
+
 let draft = null;
+function stepHead(i, q) {
+  return '<div class="col" style="gap:6px"><span class="label violet">Bilan du matin · ' + (i + 1) + ' sur ' + STEPS.length + '</span><h1 class="h1">' + q + '</h1></div>'
+    + '<div class="seg" aria-hidden="true">' + STEPS.map((_, j) => '<i class="' + (j <= i ? 'on' : '') + '"></i>').join('') + '</div>';
+}
+const backBtn = (i) => (i ? '<button type="button" class="pill sm glass wide" data-act="ci-back" data-i="' + (i - 1) + '">Retour</button>' : '');
 function sheetCheckin(step) {
   const i = step || 0;
-  const Q = CI[i];
-  let h = '<div class="col" style="gap:6px"><span class="label violet">Bilan du matin · ' + (i + 1) + ' sur 4</span><h1 class="h1">' + Q.q + '</h1></div>'
-    + '<div class="seg" aria-hidden="true">' + CI.map((_, j) => '<i class="' + (j <= i ? 'on' : '') + '"></i>').join('') + '</div>'
-    + '<div class="col" style="gap:10px">' + Q.o.map((o, v) => '<button type="button" class="ciopt glass" data-act="ci" data-i="' + i + '" data-v="' + (v + 1) + '"><span class="cidot c' + (v + 1) + '"></span><span class="grow">' + o + '</span></button>').join('') + '</div>'
-    + (i ? '<button type="button" class="pill sm glass wide" data-act="ci-back" data-i="' + (i - 1) + '">Retour</button>' : '<span class="small mut">Quatre touches, dix secondes. Ton score de forme s’en sert avec ta fatigue musculaire et ta charge d’entraînement.</span>');
-  sheet(h);
+  const k = STEPS[i];
+  draft = draft || {};
+  stopPulse(); stopWrist(); stopReaction();
+  let h;
+  if (k === 'sleep') {
+    const last = ciList().find((x) => x.bed) || {};
+    const bed = draft.bed || last.bed || '23:00', wake = draft.wake || last.wake || '07:00';
+    h = stepHead(i, 'Ta nuit')
+      + '<div class="ci-times"><label class="col" style="gap:6px"><span class="label">Couché à</span><input type="time" class="textin bigtime" id="ci-bed" value="' + bed + '"></label>'
+      + '<label class="col" style="gap:6px"><span class="label">Levé à</span><input type="time" class="textin bigtime" id="ci-wake" value="' + wake + '"></label></div>'
+      + '<section class="glass card col center" style="gap:2px;padding:16px"><span class="num" id="ci-h" style="font-size:40px;line-height:1">' + hTxt(sleepHours(bed, wake) || 0) + '</span><span class="small mut" id="ci-hs">de sommeil</span></section>'
+      + '<button type="button" class="pill gold-btn wide big" data-act="ci-sleep">Suivant</button>'
+      + '<span class="small mut">L’heure où tu t’es endormi à peu près, pas celle où tu as posé ton téléphone. À ton âge, il faut 8 à 10 h pour bien récupérer.</span>';
+  } else if (k === 'pulse') {
+    h = stepHead(i, 'Ton pouls au repos') + '<div id="ci-pz">' + (draft.wrist ? wristHtml() : pulseHtml()) + '</div>'
+      + (draft.wrist ? '' : '<span class="small mut">60 secondes, assis, sans bouger. Le flash s’allume si ton téléphone le permet ; sinon mets-toi face à une lampe ou une fenêtre.</span>')
+      + '<div class="row"><button type="button" class="pill glass grow" data-act="ci-skip" data-i="' + i + '">Passer</button><button type="button" class="pill glass grow" data-act="ci-wrist">' + (draft.wrist ? 'Avec la caméra' : 'Au poignet') + '</button></div>' + backBtn(i);
+  } else if (k === 'react') {
+    h = stepHead(i, 'Ta réaction') + reactHtml()
+      + '<span class="small mut">20 secondes. Quand tu es fatigué, ton cerveau répond plus lentement que d’habitude, même si tu ne le sens pas.</span>'
+      + '<div class="row"><button type="button" class="pill glass grow" data-act="ci-skip" data-i="' + i + '">Passer</button></div>' + backBtn(i);
+  } else {
+    const Q = CI.find((q) => q.k === k);
+    h = stepHead(i, Q.q)
+      + '<div class="col" style="gap:10px">' + Q.o.map((o, v) => '<button type="button" class="ciopt glass' + (draft[k] === v + 1 ? ' on' : '') + '" data-act="ci" data-i="' + i + '" data-v="' + (v + 1) + '"><span class="cidot c' + (v + 1) + '"></span><span class="grow">' + o + '</span></button>').join('') + '</div>' + backBtn(i);
+  }
+  sheet(h, 1, k === 'pulse' || k === 'react' ? 'full' : '');
+  if (k === 'pulse' && !draft.wrist) startPulse((r) => {
+    if (r) { draft.hr = r.bpm; draft.hrq = r.q; draft.hrm = 'cam'; toast(r.bpm + ' battements par minute'); sheetCheckin(i + 1); }
+    else { const st = $('pl-st'); if (st) st.textContent = 'Mesure pas assez nette. Réessaie sans bouger, ou prends ton pouls au poignet.'; const z = $('ci-pz'); if (z) z.insertAdjacentHTML('beforeend', '<button type="button" class="pill gold-btn wide" data-act="ci-retry" data-i="' + i + '">Réessayer</button>'); }
+  });
+  if (k === 'react') startReaction((r) => { if (r) { draft.rt = r.ms; setTimeout(() => saveCheckin(), 1200); } else setTimeout(() => { if ($('rt-z')) sheetCheckin(i); }, 1800); });
+}
+document.addEventListener('input', (ev) => {
+  if (ev.target.id !== 'ci-bed' && ev.target.id !== 'ci-wake') return;
+  const h = sleepHours($('ci-bed').value, $('ci-wake').value);
+  $('ci-h').textContent = h === null ? '–' : hTxt(h);
+  $('ci-hs').textContent = h !== null && (h < 3 || h > 13) ? 'vérifie les heures' : 'de sommeil';
+});
+
+function saveCheckin() {
+  if (!draft) return;
+  stopPulse(); stopWrist(); stopReaction();
+  const prev = checkin() || {};
+  const c = Object.assign({ at: Date.now() }, draft);
+  delete c.wrist;
+  if (!c.c || !c.e || !c.x) { sheetCheckin(STEPS.findIndex((k) => !c[k])); return; }
+  if (prev.hr && !c.hr) { c.hr = prev.hr; c.hrq = prev.hrq; c.hrm = prev.hrm; } // refaire le bilan garde la mesure déjà faite
+  if (prev.rt && !c.rt) c.rt = prev.rt;
+  state.checkins = state.checkins || {};
+  const key = dayKey(Date.now());
+  state.checkins[key] = c;
+  // Le score du matin est gardé : on le compare plus tard à ta séance pour savoir s'il voit juste.
+  const f = forme(todayRef ? todayRef() : null);
+  c.f = f.score;
+  c.pv = {};
+  for (const p of f.parts) if (p.k) c.pv[p.k] = Math.round(p.v);
+  const keys = Object.keys(state.checkins).sort();
+  while (keys.length > 400) delete state.checkins[keys.shift()];
+  save();
+  draft = null;
+  rerender();
+  openForme();
+}
+
+// ---------- Ta base : ta moyenne des matins précédents ----------
+const BASE_N = 7;
+export function baseOf(field, beforeKey) {
+  const L = ciList().filter((x) => x.k < beforeKey && x[field] && Date.now() - new Date(x.k + 'T12:00:00').getTime() < 60 * DAY).slice(0, 21).map((x) => x[field]);
+  return { n: L.length, v: L.length >= BASE_N ? median(L) : null };
+}
+
+// Les morceaux du bilan, notés de 0 à 100, avec leur poids de base (total 50).
+const CI_W = { sl: 16, hr: 10, rt: 6, c: 6, e: 8, x: 4 };
+const CI_N = { sl: 'Sommeil', hr: 'Pouls au repos', rt: 'Réaction', c: 'Courbatures', e: 'Énergie', x: 'Stress' };
+function ciParts(ci, key) {
+  const out = [];
+  // Sommeil : 4 h 30 ou moins = 0, 8 h 30 ou plus = 100.
+  if (ci.h) {
+    const b = baseOf('h', key);
+    let v = clamp(((ci.h - 4.5) / 4) * 100, 0, 100);
+    let txt = hTxt(ci.h) + (ci.bed ? ' (' + ci.bed + ' → ' + ci.wake + ')' : '');
+    if (b.v && ci.h < b.v - 0.75) { txt += ', ' + hTxt(Math.round((b.v - ci.h) * 4) / 4) + ' de moins que d’habitude'; v = Math.max(0, v - 10); }
+    out.push({ k: 'sl', v, txt });
+  } else if (ci.s) out.push({ k: 'sl', v: pct(ci.s), txt: CI[0].o[ci.s - 1] });
+  if (ci.hr) {
+    const b = baseOf('hr', key);
+    if (b.v) {
+      const d = ci.hr - b.v;
+      out.push({ k: 'hr', v: clamp(100 - Math.max(0, d - 1) * 9, 0, 100), txt: ci.hr + ' bpm, ' + (d >= 3 ? Math.round(d) + ' de plus que ta base (' + Math.round(b.v) + ') : ton corps récupère encore' : d <= -2 ? 'sous ta base (' + Math.round(b.v) + ') : bien reposé' : 'comme d’habitude (' + Math.round(b.v) + ')') });
+    } else out.push({ k: 'hr', v: 75, txt: ci.hr + ' bpm · ta base est connue après ' + BASE_N + ' mesures (encore ' + (BASE_N - b.n) + ')' });
+  }
+  if (ci.rt) {
+    const b = baseOf('rt', key);
+    if (b.v) {
+      const r = ci.rt / b.v;
+      out.push({ k: 'rt', v: clamp(100 - Math.max(0, r - 1.02) * 600, 0, 100), txt: ci.rt + ' ms, ' + (r > 1.06 ? Math.round((r - 1) * 100) + ' % plus lent que ta base (' + Math.round(b.v) + ' ms)' : r < 0.97 ? 'plus vif que d’habitude' : 'comme d’habitude (' + Math.round(b.v) + ' ms)') });
+    } else out.push({ k: 'rt', v: 75, txt: ci.rt + ' ms · ta base est connue après ' + BASE_N + ' tests (encore ' + (BASE_N - b.n) + ')' });
+  }
+  for (const q of CI.slice(1)) if (ci[q.k]) out.push({ k: q.k, v: pct(ci[q.k]), txt: q.o[ci[q.k] - 1] });
+  return out;
+}
+
+// ---------- Le score s'ajuste tout seul ----------
+// Pour chaque morceau du bilan : est-ce qu'il annonce vraiment tes bonnes et tes mauvaises séances ?
+// Ce qui prédit bien pèse plus, ce qui ne prédit rien pèse moins.
+let calCache = null;
+function perfByDay() {
+  const m = {};
+  for (const x of perfs()) m[dayKey(x.w.start)] = x.p;
+  return m;
+}
+const corr = (a, b) => {
+  const n = a.length;
+  if (n < 3) return 0;
+  const ma = a.reduce((s, x) => s + x, 0) / n, mb = b.reduce((s, x) => s + x, 0) / n;
+  let num = 0, da = 0, db = 0;
+  for (let i = 0; i < n; i++) { num += (a[i] - ma) * (b[i] - mb); da += (a[i] - ma) ** 2; db += (b[i] - mb) ** 2; }
+  return da && db ? num / Math.sqrt(da * db) : 0;
+};
+export function calibration() {
+  const sig = state.workouts.length + ':' + Object.keys(state.checkins || {}).length;
+  if (calCache && calCache.sig === sig) return calCache;
+  const P = perfByDay();
+  const rows = ciList().filter((x) => P[x.k] !== undefined);
+  const w = {}, info = {};
+  for (const k of Object.keys(CI_W)) {
+    const xs = [], ys = [];
+    for (const x of rows) {
+      const v = x.pv && x.pv[k] !== undefined ? x.pv[k] : k === 'sl' && x.s ? pct(x.s) : CI.find((q) => q.k === k) && x[k] ? pct(x[k]) : null;
+      if (v !== null) { xs.push(v); ys.push(P[x.k]); }
+    }
+    const r = corr(xs, ys);
+    w[k] = xs.length >= 8 ? CI_W[k] * clamp(1 + 1.5 * r, 0.5, 1.8) : CI_W[k];
+    info[k] = { n: xs.length, r };
+  }
+  // Fiabilité : le score du matin a-t-il annoncé juste (au-dessus de ta moyenne = séance meilleure que d'habitude) ?
+  const pairs = rows.filter((x) => x.f).map((x) => [x.f, P[x.k]]);
+  let hits = 0;
+  if (pairs.length) {
+    const mf = median(pairs.map((p) => p[0])), mp = median(pairs.map((p) => p[1]));
+    for (const [f, p] of pairs) if ((f >= mf) === (p >= mp)) hits++;
+  }
+  calCache = { sig, w, info, n: pairs.length, hits, rows: rows.length };
+  return calCache;
+}
+export function reliability() {
+  const c = calibration();
+  if (c.n < 6) return { level: 'learn', txt: 'En apprentissage : ' + c.n + ' séance' + (c.n > 1 ? 's' : '') + ' sur 6 avec un bilan du matin. Plus tu le fais, plus le score devient juste.', n: c.n };
+  const r = c.hits / c.n;
+  const level = r >= 0.7 ? 'high' : r >= 0.55 ? 'mid' : 'low';
+  return { level, n: c.n, hits: c.hits, txt: 'Ton score du matin a vu juste ' + c.hits + ' fois sur ' + c.n + ' (bonne ou moins bonne séance que d’habitude). ' + (level === 'high' ? 'Fiabilité élevée.' : level === 'mid' ? 'Fiabilité correcte, elle monte avec le temps.' : 'Fiabilité encore faible : le score ajuste ses poids tout seul.') };
 }
 
 // ---------- La charge d'entraînement ----------
@@ -84,8 +252,14 @@ export function lightAdvice() {
 }
 
 // ---------- Le score de forme ----------
-const pct = (v) => ((v - 1) / 4) * 100;
-function ciScore(c) { return (pct(c.s) * 20 + pct(c.e) * 12 + pct(c.c) * 10 + pct(c.x) * 8) / 50; }
+function pct(v) { return ((v - 1) / 4) * 100; }
+// Note du bilan seul (0 à 100), avec les poids ajustés.
+function ciScore(c) {
+  const P = ciParts(c, c.k || dayKey(c.at || Date.now()));
+  const W = calibration().w;
+  const tw = P.reduce((n, p) => n + W[p.k], 0);
+  return tw ? P.reduce((n, p) => n + p.v * W[p.k], 0) / tw : 50;
+}
 
 // Récupération des muscles que la séance va travailler (ou de ceux travaillés ces 4 derniers jours).
 function muscles(list) {
@@ -112,7 +286,11 @@ export function forme(list) {
   const muTxt = mu.tired.length ? 'Encore fatigués : ' + mu.tired.slice(0, 3).join(', ') + '.' : mu.pct >= 90 ? 'Tout ce que tu vas travailler est récupéré.' : 'Presque récupéré.';
   let parts;
   if (ci) {
-    parts = CI.map((q, i) => ({ name: q.name, max: [20, 10, 12, 8][i], v: pct(ci[q.k]), txt: q.o[ci[q.k] - 1] }));
+    // Les poids du bilan (50 points) : ceux de base, ajustés d'après tes séances, répartis entre les mesures faites.
+    const P = ciParts(ci, dayKey(Date.now()));
+    const W = calibration().w;
+    const tw = P.reduce((n, p) => n + W[p.k], 0);
+    parts = P.map((p) => ({ k: p.k, name: CI_N[p.k], max: (W[p.k] / tw) * 50, v: p.v, txt: p.txt }));
     parts.push({ name: 'Muscles', max: 35, v: mu.pct, txt: muTxt }, { name: 'Charge', max: 15, v: cs, txt: chTxt });
   } else {
     parts = [{ name: 'Muscles', max: 70, v: mu.pct, txt: muTxt }, { name: 'Charge', max: 30, v: cs, txt: chTxt }];
@@ -144,7 +322,7 @@ export function formeCard(list) {
   const f = forme(list);
   if (!f.ci) {
     return '<section class="glass card formecard tint t-teal"><div class="row" style="gap:14px;align-items:center">' + formeRing(f, 58)
-      + '<div class="col grow" style="gap:2px;min-width:0"><span class="label violet">Forme estimée</span><span style="font-weight:700">Fais ton bilan du matin</span><span class="small mut">4 touches pour un vrai score, pas une estimation.</span></div></div>'
+      + '<div class="col grow" style="gap:2px;min-width:0"><span class="label violet">Forme estimée</span><span style="font-weight:700">Fais ton bilan du matin</span><span class="small mut">1 min 30 : sommeil, pouls, réaction. Un vrai score, pas une estimation.</span></div></div>'
       + '<div class="row"><button type="button" class="pill glass" data-act="forme">Détail</button><button type="button" class="pill gold-btn grow" data-act="checkin">Bilan du matin</button></div></section>';
   }
   const low = f.parts.slice().sort((a, b) => a.pts / a.max - b.pts / b.max)[0];
@@ -161,9 +339,16 @@ export function sheetForme(list) {
     + (f.est ? '<span class="small mut" style="text-align:center">Score estimé sans ton bilan du matin.</span>' : '') + '</div>';
   if (f.est) h += '<button type="button" class="pill gold-btn wide" data-act="checkin">Faire mon bilan du matin</button>';
   h += '<section class="glass card col" style="gap:12px"><span class="label violet">D’où vient ton score</span>'
-    + f.parts.map((p) => '<div class="col" style="gap:5px"><div class="row between" style="gap:10px"><span style="font-weight:600">' + p.name + '</span><span class="small mut" style="white-space:nowrap">' + p.pts + ' sur ' + p.max + '</span></div>'
+    + f.parts.map((p) => '<div class="col" style="gap:5px"><div class="row between" style="gap:10px"><span style="font-weight:600">' + p.name + '</span><span class="small mut" style="white-space:nowrap">' + p.pts + ' sur ' + Math.round(p.max) + '</span></div>'
       + '<div class="bar thin"><div style="width:' + Math.round(p.v) + '%;background:' + COL[p.v >= 70 ? 'ok' : p.v >= 45 ? 'mid' : 'low'] + '"></div></div><span class="small mut">' + esc(p.txt) + '</span></div>').join('')
-    + '<span class="small dim">Le bilan du matin compte pour la moitié, la fatigue de tes muscles pour un tiers, ta charge d’entraînement pour le reste.</span></section>';
+    + '<span class="small dim">Le bilan du matin compte pour la moitié (sommeil, pouls, réaction et ressentis), la fatigue de tes muscles pour un tiers, ta charge d’entraînement pour le reste.</span></section>';
+  // Fiabilité
+  const R0 = reliability(), cal = calibration();
+  const moved = Object.keys(CI_W).filter((k) => cal.info[k].n >= 8 && Math.abs(cal.w[k] / CI_W[k] - 1) >= 0.2);
+  h += '<section class="glass card col" style="gap:8px"><div class="row between" style="gap:10px"><span class="label violet">Fiabilité du score</span><span class="relpill r-' + R0.level + '">' + ({ learn: 'En apprentissage', high: 'Élevée', mid: 'Correcte', low: 'À affiner' })[R0.level] + '</span></div>'
+    + '<span class="small" style="color:var(--soft)">' + esc(R0.txt) + '</span>'
+    + (moved.length ? '<span class="small mut">Ajusté pour toi : ' + moved.map((k) => CI_N[k].toLowerCase() + (cal.w[k] > CI_W[k] ? ' compte plus' : ' compte moins')).join(', ') + ', d’après tes ' + cal.rows + ' séances avec bilan.</span>' : '<span class="small mut">Après 8 séances avec un bilan, chaque mesure pèse selon ce qu’elle annonce vraiment chez toi.</span>')
+    + '</section>';
   // Charge
   const c = f.charge;
   const mx = Math.max(10, ...c.weeks.map((w) => w.v));
@@ -181,7 +366,8 @@ export function sheetForme(list) {
   h += '<section class="glass card col" style="gap:10px"><span class="label violet">Ce qui te réussit</span>' + R.map((r) => '<div class="row" style="gap:10px;align-items:flex-start"><span class="errdot" style="margin-top:7px"></span><span class="small" style="color:var(--soft)">' + esc(r) + '</span></div>').join('') + '</section>';
   // Derniers bilans
   const L = ciList().slice(0, 7);
-  if (L.length) h += '<section class="glass card col" style="gap:8px"><span class="label">Tes derniers bilans</span>' + L.map((x) => '<div class="row between" style="gap:10px"><span class="small">' + new Date(x.k + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }) + '</span><span class="small mut" style="text-align:right">' + CI.map((q) => q.o[x[q.k] - 1]).slice(0, 1).join('') + ' · énergie ' + CI[2].o[x.e - 1].toLowerCase() + '</span></div>').join('') + '</section>';
+  if (L.length) h += '<section class="glass card col" style="gap:8px"><span class="label">Tes derniers bilans</span>' + L.map((x) => '<div class="row between" style="gap:10px"><span class="small">' + new Date(x.k + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }) + '</span><span class="small mut" style="text-align:right">'
+    + [x.h ? hTxt(x.h) + ' de sommeil' : x.s ? CI[0].o[x.s - 1] : '', x.hr ? x.hr + ' bpm' : '', x.rt ? x.rt + ' ms' : '', x.f ? 'forme ' + x.f : ''].filter(Boolean).join(' · ') + '</span></div>').join('') + '</section>';
   if (!f.est) h += '<button type="button" class="pill sm glass wide" data-act="checkin">Refaire mon bilan du matin</button>';
   h += '<span class="small dim">Calculé dans ton téléphone, à partir de ton bilan du matin et de tes séances. Ce n’est pas un avis médical.</span>';
   sheet(h + closeBtn, 1, 'full');
@@ -290,19 +476,27 @@ export function reussites() {
 Object.assign(ACTIONS, {
   checkin: () => { draft = {}; sheetCheckin(0); },
   'ci-back': (el) => sheetCheckin(+el.dataset.i),
+  'ci-sleep': () => {
+    const bed = $('ci-bed').value, wake = $('ci-wake').value, h = sleepHours(bed, wake);
+    if (h === null || h < 2 || h > 14) { toast('Vérifie tes heures de coucher et de lever'); return; }
+    Object.assign(draft, { bed, wake, h, s: sFromH(h) });
+    sheetCheckin(1);
+  },
   ci: (el) => {
     const i = +el.dataset.i;
-    draft = draft || {};
-    draft[CI[i].k] = +el.dataset.v;
-    if (i < CI.length - 1) { sheetCheckin(i + 1); return; }
-    state.checkins = state.checkins || {};
-    state.checkins[dayKey(Date.now())] = Object.assign({ at: Date.now() }, draft);
-    const keys = Object.keys(state.checkins).sort();
-    while (keys.length > 400) delete state.checkins[keys.shift()];
-    save();
-    draft = null;
-    rerender();
-    openForme();
+    draft[STEPS[i]] = +el.dataset.v;
+    sheetCheckin(i + 1);
+  },
+  'ci-skip': (el) => { const i = +el.dataset.i; if (i + 1 >= STEPS.length) saveCheckin(); else sheetCheckin(i + 1); },
+  'ci-retry': (el) => sheetCheckin(+el.dataset.i),
+  'ci-wrist': () => { draft.wrist = !draft.wrist; sheetCheckin(STEPS.indexOf('pulse')); },
+  'wr-go': () => startWrist(),
+  'wr-ok': () => {
+    const n = Math.round(Number(String($('wr-c').value).replace(',', '.')));
+    if (!(n >= 8 && n <= 40)) { toast('Indique le nombre de battements comptés en 15 secondes'); return; }
+    draft.hr = n * 4; draft.hrm = 'main'; draft.hrq = 'moyenne';
+    toast(draft.hr + ' battements par minute');
+    sheetCheckin(STEPS.indexOf('pulse') + 1);
   },
   forme: () => openForme(),
   'light-on': () => { state.settings.lightWeek = monday0(Date.now()); save(); toast('Semaine légère : une série de moins partout jusqu’à dimanche'); rerender(); openForme(); },
