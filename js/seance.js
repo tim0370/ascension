@@ -2,7 +2,7 @@
 // repos, choix et fiche d'un exercice, modification d'une routine ou d'une séance passée, bilan de fin.
 import { EXOS, FICHES, WARMUP, GROUPES, AKA } from './data.js';
 import { figure } from './anim.js';
-import { progCard, progDone, progPlan, progOn } from './programme.js';
+import { progCard, progDone, progPlan, progOn, stepEntry, stepUp, nextStep, curStep, stepDesc, STEPS } from './programme.js';
 import { predictions, whenTxt, checkin, dayKey } from './forme.js';
 import { p30Done } from './prog30.js';
 import { monthAgo } from './coach.js';
@@ -136,10 +136,34 @@ export function startWorkout(id, opts) {
   top();
 }
 
+// Exercice à étapes (programme A/B) : la charge et la fourchette de l'étape, l'objectif plafonné au haut de la fourchette.
+// Nouvelle étape (ou lest plus lourd que la dernière fois) : on repart au bas de la fourchette.
+function stepify(ex, pe) {
+  const time = measureOf(ex.name) === 'time', f = time ? 't' : 'r', W = (pe.sets[0] && pe.sets[0].w) || 0;
+  Object.assign(ex, { step: pe.step, lo: pe.lo, hi: pe.hi, max: !!pe.max, how: pe.how || '', ready: !!pe.ready, stall: !!pe.stall });
+  if (pe.rest && !(state.prefs[ex.name] || {}).rest) ex.rest = pe.rest;
+  const g = ex.ghost, prevW = g ? Math.max(0, ...g.map((x) => x.w || 0)) : 0;
+  const at = (state.settings.stepAt || {})[pe.step] || 0;
+  const lastW = sorted().find((w) => w.exercises.some((e) => e.name === ex.name));
+  const stepNew = !!(at && lastW && lastW.start < at), heavier = !!g && prevW < W - 0.01;
+  const fresh = !g || heavier || stepNew;
+  if (fresh) { ex.ghost = null; ex.sets.forEach((x) => { x[f] = pe.lo; x.w = W; }); }
+  else ex.sets.forEach((x) => { x.w = Math.max(x.w || 0, W); });
+  // Objectif : la dernière fois + 1, plafonné au haut de la fourchette (si tu es déjà au-dessus, garde ton chiffre).
+  if (!pe.max) ex.goals = ex.sets.map((x, i) => { const gg = !fresh && ex.goals[i], base = gg && gg[f] ? gg[f] : pe.lo; return { [f]: x[f] >= pe.hi ? x[f] : Math.max(pe.lo, Math.min(pe.hi, base)) }; });
+  if (pe.max) ex.coach = '';
+  else if (stepNew) ex.coach = 'Nouvelle étape : repars à ' + pe.lo + (time ? ' s' : '') + ', puis monte d’une répétition à chaque séance.';
+  else if (heavier) ex.coach = 'Avec ' + String(W).replace('.', ',') + ' kg, plus lourd que la dernière fois (' + (prevW ? String(prevW).replace('.', ',') + ' kg' : 'sans lest') + ') : vise ' + pe.lo + ' à ' + pe.hi + '.';
+  else if (pe.ready) ex.coach = 'Haut de la fourchette atteint la dernière fois : tu peux passer à l’étape suivante.';
+  else if (pe.stall) ex.coach = 'Bloqué depuis 3 séances : fais la descente en 3 secondes, ou ajoute une série (4 au maximum).';
+  else if (/^Tu passes 12/.test(ex.coach || '')) ex.coach = '';
+}
+
 // Démarre une séance préparée par le programme guidé (programme.js).
 export function startPlan(p) {
   const a = { title: p.title, label: p.label, routineId: null, start: Date.now(), view: 'list', idx: 0, setIdx: 0, rest: null, prog: p.prog,
     exercises: p.exercises.map((e) => Object.assign(buildExo(e.name, e.sets, p.title), e.bloc ? { bloc: e.bloc } : {}, e.alt ? { alt: e.alt } : {})) };
+  if (!p.test) p.exercises.forEach((pe, i) => { if (pe.step) stepify(a.exercises[i], pe); });
   // Re-test : au poids du corps, et sans objectif affiché (c'est ton max du jour).
   if (p.test) { a.test = true; for (const e of a.exercises) { for (const x of e.sets) x.w = 0; e.goals = e.goals.map(() => null); } }
   if (p.express) a.express = true;
@@ -242,7 +266,10 @@ function viewFocus(a) {
   h += feelCard(a);
   h += '<div class="row" style="align-items:flex-start;gap:12px"><div class="col grow" style="gap:4px"><span class="label violet">Exercice ' + (a.idx + 1) + ' sur ' + n + '</span><h1 class="h1" style="font-size:30px">' + esc(exoName(ex.name)) + '</h1>'
     + '<span class="small mut">' + (ex.prev ? 'La dernière fois : ' + esc(ex.prev) : 'Première fois sur cet exercice') + '</span>'
+    + (ex.step && !ex.max ? '<span class="small" style="color:var(--soft)">Fourchette : ' + ex.lo + ' à ' + ex.hi + (time ? ' s' : ' répétitions') + '</span>' : '')
+    + (ex.how ? '<span class="small" style="color:var(--violet-soft)">' + esc(ex.how) + '</span>' : '')
     + (ex.coach ? '<span class="coach">' + ICON.bolt + esc(ex.coach) + '</span>' : '')
+    + (ex.ready && !ex.sets.some((x) => x.done) && STEPS[ex.step] ? '<button type="button" class="pill sm gold-btn" data-act="ex-stepup" data-i="' + a.idx + '" style="align-self:flex-start;margin-top:4px">Passer à l’étape suivante</button>' : '')
     + (ex.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(ex.note) + '</span>' : '')
     + (() => { const F = FICHES[ex.name] || {}; const L = [['facile', 'Plus facile'], ['dur', 'Plus dur']].filter(([k]) => F[k] && EXOS[F[k]]); return L.length && !ex.sets.some((x) => x.done) ? '<div class="row wrap" style="gap:6px;margin-top:4px">' + L.map(([k, l]) => '<button type="button" class="pill sm glass" data-act="ex-swap" data-name="' + esc(F[k]) + '">' + l + ' : ' + esc(exoName(F[k])) + '</button>').join('') + '</div>' : ''; })() + '</div>'
     + '<button type="button" class="figbtn" data-act="exo" data-name="' + esc(ex.name) + '" aria-label="Voir comment faire">' + figure(ex.name) + '</button></div>';
@@ -318,11 +345,18 @@ function sheetExMenu(i) {
   const a = state.active;
   const ex = a && a.exercises[i];
   if (!ex) return;
-  const time = measureOf(ex.name) === 'time', lest = lestOf(ex.name), rest = restOf(ex.name), n = a.exercises.length;
-  const item = (act, label) => '<button type="button" class="item" data-act="' + act + '" data-i="' + i + '"><span class="grow" style="font-weight:500">' + label + '</span>' + ICON.chev + '</button>';
+  const time = measureOf(ex.name) === 'time', lest = lestOf(ex.name), rest = ex.rest || restOf(ex.name), n = a.exercises.length;
+  const item = (act, label, extra) => '<button type="button" class="item" data-act="' + act + '" data-i="' + i + '"' + (extra || '') + '><span class="grow" style="font-weight:500">' + label + '</span>' + ICON.chev + '</button>';
+  const F = FICHES[ex.name] || {}, todo = ex.sets.some((x) => !x.done);
+  const vary = [['facile', 'Plus facile'], ['dur', 'Plus dur']].filter(([k]) => F[k] && EXOS[F[k]] && F[k] !== ex.name && todo).map(([k, l]) => item('ex-swapi', l + ' : ' + esc(exoName(F[k])), ' data-name="' + esc(F[k]) + '"')).join('');
+  const S = ex.step && STEPS[ex.step], nx = S && nextStep(ex.step);
   sheet('<div class="col"><span class="label">Exercice ' + (i + 1) + ' sur ' + n + '</span><h1 class="h1">' + esc(exoName(ex.name)) + '</h1></div><div class="list">'
     + '<button type="button" class="item" data-act="exo" data-name="' + esc(ex.name) + '"><span class="grow" style="font-weight:500">' + (FICHES[ex.name] ? 'Comment le faire, mon historique et mon record' : 'Mon historique et mon record') + '</span>' + ICON.chev + '</button>'
     + item('ex-why', 'Pourquoi cet exercice ?')
+    + (S && todo && !ex.max && nx ? item('ex-stepup', 'Passer à l’étape suivante : ' + esc(exoName(nx.n) + (nx.w ? ' avec ' + nx.w + ' kg' : ''))) : '')
+    + vary
+    + (ex.ghost && todo ? item('ex-reset', 'Remettre comme la dernière fois') : '')
+    + (i < n - 1 && todo ? item('ex-later', 'Faire plus tard (à la fin de la séance)') : '')
     + (i > 0 ? item('ex-up', 'Monter dans la séance') : '') + (i < n - 1 ? item('ex-down', 'Descendre dans la séance') : '')
     + (i < n - 1 ? item('ex-ss', ex.ss ? 'Ne plus enchaîner avec le suivant' : 'Supersérie : enchaîner avec « ' + esc(exoName(a.exercises[i + 1].name)) + ' » sans repos') : '')
     + item('ex-replace', 'Remplacer par un autre exercice')
@@ -331,7 +365,7 @@ function sheetExMenu(i) {
     + item('del-exo', 'Retirer de la séance') + '</div>'
     + '<label class="col" style="gap:8px"><span class="label">Note pour cet exercice</span><input class="textin" id="ex-note" data-i="' + i + '" placeholder="Par exemple : prise large, banc au cran 3" value="' + esc(ex.note || '') + '"></label>'
     + '<div class="col" style="gap:8px"><span class="label">Repos après chaque série</span><div class="row" style="flex-wrap:wrap;gap:8px">'
-    + [45, 60, 90, 120, 150, 180].map((s) => '<button type="button" class="pill sm ' + (s === rest ? 'gold-btn' : 'glass') + '" data-act="ex-rest" data-i="' + i + '" data-s="' + s + '">' + clock(s) + '</button>').join('') + '</div></div>' + closeBtn);
+    + [45, 60, 90, 120, 150, 180, 240].map((s) => '<button type="button" class="pill sm ' + (s === rest ? 'gold-btn' : 'glass') + '" data-act="ex-rest" data-i="' + i + '" data-s="' + s + '">' + clock(s) + '</button>').join('') + '</div></div>' + closeBtn);
 }
 
 function moveExo(i, d) {
@@ -842,14 +876,14 @@ export function renderRest() {
     $('rest').innerHTML = '<div class="restbig' + (over ? ' end' : '') + '" data-over="' + over + '" data-big="true"><span class="label violet">' + (over ? 'Repos terminé' : 'Repos') + '</span>'
       + '<svg style="display:none"><circle id="rest-ring"/></svg><span class="num" id="rest-time">' + (over ? 'C’est reparti' : clock(left)) + '</span>'
       + (nextTxt ? '<span class="rb-next">Ensuite : ' + esc(nextTxt) + '</span>' : '')
-      + '<div class="row" style="gap:10px">' + (over ? '' : '<button type="button" class="pill glass" data-act="rest-more">+ 15 s</button>') + '<button type="button" class="pill glass" data-act="rest-skip">' + (over ? 'OK' : 'Passer') + '</button><button type="button" class="pill glass" data-act="rest-big">Réduire</button></div></div>';
+      + '<div class="row" style="gap:10px">' + (over ? '' : '<button type="button" class="pill glass" data-act="rest-less">− 15 s</button><button type="button" class="pill glass" data-act="rest-more">+ 15 s</button>') + '<button type="button" class="pill glass" data-act="rest-skip">' + (over ? 'OK' : 'Passer') + '</button><button type="button" class="pill glass" data-act="rest-big">Réduire</button></div></div>';
     return;
   }
   $('rest').innerHTML = '<div class="rest glass row' + (over ? ' end' : '') + '" data-over="' + over + '" data-big="false" style="gap:14px">'
     + '<svg role="img" aria-label="Repos" width="52" height="52" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="4"/>'
     + '<circle id="rest-ring" cx="32" cy="32" r="27" fill="none" stroke="' + (over ? '#D8BD82' : '#8468E8') + '" stroke-width="4" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="' + offset + '" transform="rotate(-90 32 32)"/></svg>'
-    + '<div class="col grow tap" data-act="rest-big" role="button" aria-label="Afficher le repos en grand" style="gap:0;min-width:0"><span class="label violet">' + (over ? 'Repos terminé' : 'Repos · toucher pour agrandir') + '</span><span class="num" id="rest-time" style="font-size:28px;line-height:1.1">' + (over ? 'C’est reparti' : clock(left)) + '</span>' + (nextTxt && !over ? '<span class="small mut" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ensuite : ' + esc(nextTxt) + '</span>' : '') + '</div>'
-    + (over ? '' : '<button type="button" class="pill sm glass" data-act="rest-more">+ 15 s</button>')
+    + '<div class="col grow tap" data-act="rest-big" role="button" aria-label="Afficher le repos en grand" style="gap:0;min-width:0"><span class="label violet">' + (over ? 'Repos terminé' : 'Repos') + '</span><span class="num" id="rest-time" style="font-size:28px;line-height:1.1">' + (over ? 'C’est reparti' : clock(left)) + '</span>' + (nextTxt && !over ? '<span class="small mut" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ensuite : ' + esc(nextTxt) + '</span>' : '') + '</div>'
+    + (over ? '' : '<button type="button" class="pill sm glass rx" data-act="rest-less" aria-label="Moins 15 secondes">−15</button><button type="button" class="pill sm glass rx" data-act="rest-more" aria-label="Plus 15 secondes">+15</button>')
     + '<button type="button" class="pill sm glass" data-act="rest-skip">' + (over ? 'OK' : 'Passer') + '</button></div>';
 }
 
@@ -983,7 +1017,23 @@ Object.assign(ACTIONS, {
     if (!on) for (const s of ex.sets) if (!s.done) s.w = 0;
     save(); render(); sheetExMenu(i);
   },
-  'ex-rest': (el) => { const i = +el.dataset.i; setPref(state.active.exercises[i].name, { rest: +el.dataset.s }); sheetExMenu(i); },
+  'ex-rest': (el) => { const i = +el.dataset.i, ex = state.active.exercises[i]; setPref(ex.name, { rest: +el.dataset.s }); if (ex.rest) ex.rest = +el.dataset.s; save(); sheetExMenu(i); },
+  'ex-swapi': (el) => { const a = state.active; a.idx = +el.dataset.i; closeSheet(); ACTIONS['ex-swap'](el); },
+  'ex-later': (el) => { const a = state.active, i = +el.dataset.i, [ex] = a.exercises.splice(i, 1); a.exercises.push(ex); if (a.idx === i) { a.idx = Math.max(0, a.exercises.findIndex((e) => !exDone(e))); a.setIdx = firstTodo(a.exercises[a.idx]); } else if (a.idx > i) a.idx -= 1; save(); closeSheet(); render(); toast(exoName(ex.name) + ' : à la fin de la séance'); },
+  'ex-reset': (el) => { const ex = state.active.exercises[+el.dataset.i]; const g = ex.ghost || []; ex.sets.forEach((x, k) => { const p = g[k] || g[g.length - 1]; if (!x.done && p) { x.r = p.r; x.t = p.t; x.w = p.w; } }); save(); closeSheet(); render(); toast('Remis comme la dernière fois'); },
+  'ex-stepup': (el) => {
+    const a = state.active, i = +el.dataset.i, ex = a.exercises[i];
+    if (!ex || !ex.step || !stepUp(ex.step)) return;
+    const pe = stepEntry(ex.step, ex.sets.length), done = ex.sets.filter((x) => x.done);
+    const nw = buildExo(pe.name, pe.sets, a.title);
+    Object.assign(nw, ex.bloc ? { bloc: ex.bloc } : {});
+    stepify(nw, Object.assign({}, pe, { ready: false, stall: false }));
+    nw.coach = 'Nouvelle étape : repars à ' + pe.lo + ', puis monte d’une répétition à chaque séance.'; nw.ghost = null;
+    if (done.length && pe.name === ex.name) { nw.sets.splice(0, done.length, ...done); }
+    a.exercises[i] = nw; a.setIdx = firstTodo(nw);
+    save(); closeSheet(); render();
+    toast(STEPS[ex.step].label + ' : ' + stepDesc(ex.step, curStep(ex.step)));
+  },
   'del-exo': (el) => {
     const a = state.active, i = +el.dataset.i;
     if (!confirm('Retirer cet exercice de la séance ?')) return;
@@ -1008,6 +1058,7 @@ Object.assign(ACTIONS, {
   cancel: () => { if (confirm('Abandonner la séance ? Rien ne sera enregistré.')) { state.active = null; save(); ui.tab = 'home'; ui.enter = true; render(); renderRest(); } },
   finish: () => { finishWorkout(); renderRest(); },
   'rest-more': () => { state.active.rest.end += 15000; state.active.rest.total += 15; save(); renderRest(); },
+  'rest-less': () => { const r = state.active.rest; if (!r) return; r.end = Math.max(Date.now() + 5000, r.end - 15000); save(); renderRest(); },
   'rest-skip': () => { state.active.rest = null; save(); renderRest(); },
   chrono: () => {
     const a = state.active;

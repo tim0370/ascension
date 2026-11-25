@@ -186,7 +186,7 @@ function sheetUnknown() {
 // ---------- Guide de l'app ----------
 const GUIDE = [
   ['S’entraîner', [
-    ['prog', 'Programme guidé', 'Pensé pour être fort partout : 4 séances qui tournent (figure, force, explosivité, muscle, gainage), une séance « point faible » par semaine, et un re-test toutes les 4 semaines.'],
+    ['prog', 'Programme guidé', 'Full Body A et B en alternance, la course le dimanche. Chaque exercice a une fourchette de répétitions : quand toutes tes séries touchent le haut, l’app te propose l’étape suivante (lest, variante, descente lente). Rien ne change sans ton accord.'],
     ['plan', 'Plan de la semaine', 'Tes 7 jours remplis par l’app : séances, course du dimanche, repos. Il se refait tout seul si tu rates un jour.'],
     ['settings', 'Choisir son programme', 'Dans les Réglages : programme complet, programme débutant (3 séances faciles au poids du corps) ou sans programme (tes routines sur l’accueil).'],
     ['routines', 'Mes routines', 'Tes listes d’exercices : touche une routine, puis « Modifier les exercices » pour en ajouter ou en retirer. Et la séance libre.'],

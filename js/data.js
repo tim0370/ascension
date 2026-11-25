@@ -905,6 +905,15 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 53, items: [
+    'Programme complet : tes séances Full Body A et B, en alternance, au poids du corps (gilet autorisé partout) et avec les haltères pour le dos. 3 séries en général, 4 au maximum.',
+    'Chaque exercice a une fourchette de répétitions (par exemple 8 à 12). Quand toutes tes séries touchent le haut, l’app te propose l’étape suivante : plus de lest, une variante plus dure ou une descente lente. Rien ne change sans ton accord.',
+    'Si un exercice ne bouge plus pendant 3 séances, le coach te dit quoi changer (une seule chose à la fois).',
+    'Repos : bouton « − 15 s » à côté de « + 15 s », et un repos de 4 minutes au choix.',
+    'Menu ⋯ d’un exercice : « Faire plus tard », « Plus facile / Plus dur » à tout moment, « Remettre comme la dernière fois » et « Passer à l’étape suivante ».',
+    'Photos : compare ta dernière photo à celle d’il y a 3 mois. Sans pesée récente, la carte du poids se range dans les Réglages.',
+    'Coach : une astuce simple par semaine pour manger un peu plus, sans rien noter.',
+  ] },
   { v: 52, items: [
     'Séance : supersérie (deux exercices enchaînés sans repos), série dégressive, série jusqu’à l’échec, tempo guidé, boutons « Plus facile / Plus dur », et « Pourquoi cet exercice ? » dans le menu ⋯',
     'Repos : il s’allonge si c’était très dur et se raccourcit si c’était facile ; touche-le pour l’afficher en grand, avec l’exercice suivant',

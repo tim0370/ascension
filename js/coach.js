@@ -4,7 +4,7 @@
 import { state, save, sorted, exoName, runs, weekGoal, weekQuest, dur, fr, pace, lastSets, exoHistory, measureOf } from './store.js';
 import { EXOS, FICHES } from './data.js';
 import { esc, plural, ui, ACTIONS, ICON, sheet, $ } from './ui.js';
-import { TYPES, nextType, plan, testDue, minutes, weekIdx, weakQuality } from './programme.js';
+import { TYPES, nextType, plan, testDue, minutes, weekIdx, weakQuality, isBeginner, STEPS, stepReady, stepStall, curStep, nextStep } from './programme.js';
 import { forme, charge, lightAdvice, lightWeek, activePains, PAINS, predictions, predLine, reussites, baseOf } from './forme.js';
 import { tally } from './bilan.js';
 import { understand, closest, resetCtx, clean } from './cerveau.js';
@@ -127,6 +127,22 @@ export function insights() {
   if (!doneToday && hr >= 20) out.push({ tone: 'info', title: 'Séance tard', text: 'Après 20 h : échauffement complet, et pas de sauts au maximum en fin de séance, pour t’endormir plus facilement.' });
   else if (!doneToday && hr < 9) out.push({ tone: 'info', title: 'Séance tôt', text: 'Le matin, le corps est raide : 2 minutes d’échauffement en plus, et tes premières séries un peu en dessous de l’objectif.' });
 
+  // Astuce de la semaine : manger un peu plus sans rien compter ni noter (il est mince, petit budget, pas de compléments).
+  if (!isBeginner()) {
+    const wk = Math.floor((day0(now) - 4 * DAY) / (7 * DAY));
+    const FOOD = [
+      'Un bol de flocons d’avoine avec du lait le matin (ou le soir) : pas cher, environ 20 g de protéines et 500 calories en plus, sans te forcer.',
+      'Une cuillère de beurre de cacahuète sur ton pain ou dans tes flocons : 100 calories en deux secondes. C’est la façon la plus simple de grossir un peu.',
+      'Une portion de pâtes ou de riz en plus au repas où tu as le plus faim. Rien à compter : juste un peu plus dans l’assiette.',
+      'Un grand verre de lait à côté de chaque repas : des protéines et des calories, pour presque rien.',
+      'Un vrai repas dans les 2 heures après ta séance, avec de la viande, des œufs cachés dans un plat, ou du fromage. C’est là que le muscle se reconstruit.',
+      'Une collation avant de dormir : yaourt, fromage blanc ou lait. Tes muscles ont de quoi travailler pendant la nuit.',
+      'Dors 8 heures. Le muscle se construit pendant le sommeil : c’est le complément le plus efficace, et il est gratuit.',
+      'Une banane et un verre de lait avant la séance si tu as faim : tu auras plus d’énergie sur les dernières séries.',
+    ];
+    out.push({ tone: 'info', title: 'Astuce de la semaine', text: FOOD[((wk % FOOD.length) + FOOD.length) % FOOD.length] + ' Pour avoir le physique sec et en V, il faut que tes muscles grossissent : sans manger un peu plus, ils ne peuvent pas.' });
+  }
+
   // Ce qui te réussit
   const R = reussites();
   if (R.length && !/^Il me faut|^Pas de grosse/.test(R[0])) out.push({ tone: 'info', title: 'Ce qui te réussit', text: pick(R), act: 'success' });
@@ -138,8 +154,8 @@ export function insights() {
   // Équilibre
   const b = balance();
   const up = b.push + b.pull, low = b.legs;
-  if (b.push > 30 && b.pull * 3 < b.push) out.push({ tone: 'warn', title: 'Dos en retard', text: 'Sur 4 semaines : ' + b.push + ' séries de poussée pour ' + b.pull + ' de tirage. Le rowing protège tes épaules : ne saute pas « Dips et dos ».' });
-  if (up > 30 && low * 3 < up) out.push({ tone: 'warn', title: 'Jambes en retard', text: 'Sur 4 semaines : ' + up + ' séries pour le haut du corps, ' + low + ' pour les jambes. Ne saute pas « Jambes et abdos ».' });
+  if (b.push > 30 && b.pull * 3 < b.push) out.push({ tone: 'warn', title: 'Dos en retard', text: 'Sur 4 semaines : ' + b.push + ' séries de poussée pour ' + b.pull + ' de tirage. Le rowing protège tes épaules : garde bien les deux rowings de tes séances A et B.' });
+  if (up > 30 && low * 3 < up) out.push({ tone: 'warn', title: 'Jambes en retard', text: 'Sur 4 semaines : ' + up + ' séries pour le haut du corps, ' + low + ' pour les jambes. Ne saute pas le pistol ni les fentes.' });
 
   // Course
   const Rn = runs();
@@ -152,11 +168,17 @@ export function insights() {
     }
   } else if (!Rn.length) out.push({ tone: 'info', title: 'Vitesse', text: 'Sans course enregistrée, ta qualité « vitesse » reste au plus bas. Une course de 3 km avec le GPS suffit pour la noter.', act: 'run' });
 
+  // Programme A/B : étapes prêtes et blocages (le plus utile pour avancer)
+  if (!isBeginner()) {
+    const R = Object.keys(STEPS).filter(stepReady), B = Object.keys(STEPS).filter(stepStall);
+    if (R.length) { const k = R[0], nx = nextStep(k); out.push({ tone: 'good', title: 'Prêt à monter : ' + STEPS[k].label.toLowerCase(), text: 'Toutes tes séries ont touché le haut de la fourchette. Étape suivante : ' + exoName(nx.n) + (nx.w ? ' avec ' + nx.w + ' kg' : '') + (nx.how ? ' (' + nx.how.replace(/\.$/, '').toLowerCase() + ')' : '') + '. Tu valides dans la fenêtre du programme, ou sur l’exercice pendant la séance.' + (R.length > 1 ? ' ' + plural(R.length - 1, 'autre exercice est prêt', 'autres exercices sont prêts') + ' aussi.' : ''), act: 'prog' }); }
+    if (B.length) { const k = B[0]; out.push({ tone: 'warn', title: 'Bloqué sur ' + STEPS[k].label.toLowerCase(), text: '3 séances sans dépasser ton chiffre, sous les ' + curStep(k).hi + ' visés. Change une seule chose : descente en 3 secondes, ou une série de plus (4 au maximum). Pas tout le programme.', act: 'prog' }); }
+  }
   // Re-test et rang
   if (testDue()) out.push({ tone: 'info', title: 'Re-test du cycle', text: 'C’est la semaine du re-test : chaque exercice au maximum, 3 minutes de repos. C’est lui qui fait monter tes qualités et ton rang.' });
-  else if (weekIdx() === 2) out.push({ tone: 'info', title: 'Re-test la semaine prochaine', text: 'Dernière semaine du cycle : pousse sur les séries principales.' });
+  else if (isBeginner() && weekIdx() === 2) out.push({ tone: 'info', title: 'Re-test la semaine prochaine', text: 'Dernière semaine du cycle : pousse sur les séries principales.' });
   const ri = rankInfo();
-  if (ri.next) { const q = weakQuality(); out.push({ tone: 'info', title: 'Vers le rang ' + ri.next.letter, text: 'Tu es à ' + Math.round(ri.ratio * 100) + ' % du chemin. Ton point faible : ' + q.name.toLowerCase() + ' (' + q.letter + '). Ta séance point faible de la semaine le cible.', act: 'weak' }); }
+  if (ri.next) { const q = weakQuality(); out.push({ tone: 'info', title: 'Vers le rang ' + ri.next.letter, text: 'Tu es à ' + Math.round(ri.ratio * 100) + ' % du chemin. Ton point faible : ' + q.name.toLowerCase() + ' (' + q.letter + ').' + (isBeginner() ? ' Ta séance point faible de la semaine le cible.' : ''), act: 'weak' }); }
   return out;
 }
 
@@ -214,7 +236,7 @@ function answer(id, arg) {
   const ws = real(), now = Date.now(), t0 = day0(now);
   const st = streak();
   const type = testDue() ? 'test' : nextType();
-  const rot = type === 'test' || type === 'faible' ? 'push' : type;
+  const rot = type === 'test' || type === 'faible' ? (isBeginner() ? 'd-haut' : 'A') : type;
   const name = label(type);
   const f = forme(plan(type, ''));
   const doneToday = ws.some((w) => w.start >= t0);
@@ -279,17 +301,18 @@ function answer(id, arg) {
     }
     const t = ['Tu stagnes sur ' + s.slice(0, 3).map((x) => exoName(x.name)).join(', ') + '.'];
     for (const x of s.slice(0, 2)) t.push(exoName(x.name) + ' (meilleur récent : ' + showSet(x.name, x.last.best) + ') : ' + stuckTip(x).join(' '));
-    t.push('Une stagnation de 2 ou 3 semaines, c’est normal. Le re-test de fin de cycle remet souvent tout en marche.');
+    t.push(isBeginner() ? 'Une stagnation de 2 ou 3 semaines, c’est normal. Le re-test de fin de cycle remet souvent tout en marche.' : 'Une stagnation de 2 ou 3 semaines, c’est normal. Change une seule chose (tempo, une série de plus, 4 au maximum), pas tout le programme.');
     return { text: t };
   }
   if (id === 'weak') {
     const q = weakQuality();
     const all = rankInfo().q.slice().sort((a, b) => a.score - b.score);
     const t = ['Tes qualités, de la plus basse à la plus haute : ' + all.map((x) => x.name.toLowerCase() + ' ' + x.letter).join(', ') + '.'];
-    t.push('Ta séance point faible vise ' + q.name.toLowerCase() + ' : elle arrive une fois par semaine, après 2 séances du programme.');
+    if (isBeginner()) t.push('Ta séance point faible vise ' + q.name.toLowerCase() + ' : elle arrive une fois par semaine, après 2 séances du programme.');
+    else t.push('Ton programme A/B fait tout travailler à chaque séance : ' + q.name.toLowerCase() + ' monte avec tes étapes. Le re-test (fenêtre du programme, « Changer de séance ») met tes lettres à jour quand tu veux.');
     if (all[0].id === 'vitesse') t.push('La vitesse, elle, se travaille en courant : le dimanche, cours 3 à 5 km en tenant une allure un peu plus rapide que d’habitude.');
     t.push('Monter une lettre sur ta qualité la plus basse fait grimper ton rang plus vite que deux lettres ailleurs.');
-    return { text: t, btns: [btn('prog', 'Voir la séance', ' data-type="faible"', true)] };
+    return { text: t, btns: [btn('prog', 'Voir la séance', isBeginner() ? ' data-type="faible"' : '', true)] };
   }
   if (id === 'success') return { text: reussites(), btns: [btn('forme', 'Ma forme', '', true)] };
   if (id === 'rank') {
@@ -356,7 +379,7 @@ function answer(id, arg) {
     const t = ['Pour prendre du muscle : environ ' + p + ' g de protéines par jour (1,8 g par kilo), et un peu plus que ta faim à chaque repas.'];
     if (hit(arg, 'faim')) t.push('Faim entre deux repas : banane et lait chocolaté, ou deux pains au lait avec des cacahuètes.');
     t.push('Le plus simple : de la viande, du lait, du fromage blanc ou des œufs à chaque repas, un goûter dans ton sac, et un grand verre de lait avant de dormir.');
-    t.push('Pèse-toi une fois par semaine : si la balance ne bouge pas en 2 semaines, mange un peu plus.');
+    t.push(bodyLog().some((x) => Date.now() - x.d < 60 * DAY) ? 'Pèse-toi une fois par semaine : si la balance ne bouge pas en 2 semaines, mange un peu plus.' : 'Pas de balance ? Une photo par mois, même endroit et même lumière : si rien ne bouge en 2 mois, mange un peu plus.');
     return { text: t, btns: [btn('body', 'Ma balance', '', true)] };
   }
   if (id === 'weight') {
@@ -414,7 +437,7 @@ function answer(id, arg) {
   }
   if (id === 'warmup') return { text: ['L’échauffement se lance tout seul au début de chaque séance : 4 à 5 minutes, articulations puis montée en rythme.', 'Il réduit le risque de blessure et te rend plus fort dès la première série. Ne le saute que si tu es pressé, et fais alors une série légère de chaque exercice.'], btns: [btn('prog', 'Ma séance', '', true)] };
   if (id === 'stretch') return { text: ['Après la séance : le retour au calme guidé, 6 étirements de 30 secondes. Il ne fait pas grossir les muscles, mais il garde ta souplesse et détend.', 'Pour gagner en souplesse pour de vrai : 10 minutes, 3 fois par semaine, en tenant chaque étirement 30 à 60 secondes.'], btns: [btn('cooldown', 'Retour au calme', '', true)] };
-  if (id === 'pullup') return { text: ['Sans barre de traction, ton dos travaille avec :', '1. Le rowing haltère (dans « Dips et dos ») : lourd, dos plat, coude qui frotte les côtes.', '2. Le rowing élastique, en bonus.', '3. Le rowing inversé sous les barres de dips, pieds au sol puis sur le banc : c’est la meilleure préparation aux tractions.', 'Le jour où tu as une barre, je l’ajouterai : 8 rowings inversés pieds surélevés propres, c’est en général assez pour ta première traction.'], btns: [btn('exo', 'Rowing inversé', ' data-name="Inverted Row"', true)] };
+  if (id === 'pullup') return { text: ['Sans barre de traction, ton dos travaille avec :', '1. Le rowing haltère (séances A et B) : lourd, dos plat, coude qui frotte les côtes.', '2. Le rowing élastique, juste après.', '3. Le rowing inversé sous les barres de dips, pieds au sol puis sur le banc : c’est la meilleure préparation aux tractions.', 'Le jour où tu as une barre, je l’ajouterai : 8 rowings inversés pieds surélevés propres, c’est en général assez pour ta première traction.'], btns: [btn('exo', 'Rowing inversé', ' data-name="Inverted Row"', true)] };
   if (id === 'stress') {
     const t = ['Le stress fatigue autant qu’une séance : ton corps récupère moins bien. Les périodes de bac blanc ou de contrôles comptent.', 'Ce qui marche : garder les séances (le sport fait baisser le stress), mais en version allégée ou courte, et dormir plus plutôt que réviser tard.', 'Après une séance, 5 minutes de respiration lente (4 secondes pour inspirer, 6 pour expirer) calment pour de vrai.'];
     return { text: t, btns: [startBtn(type === 'test' ? rot : type, 'court', 'Séance courte', true), btn('cooldown', 'Retour au calme')] };
@@ -463,7 +486,14 @@ function exoAnswer(name) {
   const pr = tr && tr.stuck ? null : predictions(name)[0];
   if (pr) t.push('Prochain record prévu : ' + pr.text + ' ' + whenTxt2(pr) + '.');
   // Place dans le programme
-  for (const k of ['push', 'legs', 'dips', 'full']) {
+  if (!isBeginner()) for (const k of Object.keys(STEPS)) {
+    const S = STEPS[k], j = S.steps.findIndex((x) => x.n === name);
+    if (j < 0) continue;
+    const cur = curStep(k), nx = nextStep(k);
+    t.push('Dans ton programme : « ' + S.label + ' », étape ' + (S.steps.indexOf(cur) + 1) + ' sur ' + S.steps.length + ' (' + exoName(cur.n) + (cur.w ? ' avec ' + cur.w + ' kg' : '') + ', ' + cur.lo + ' à ' + cur.hi + ').' + (nx && !S.max ? ' Quand toutes tes séries touchent ' + cur.hi + ', tu passes à ' + exoName(nx.n) + (nx.w ? ' avec ' + nx.w + ' kg' : '') + '.' : ''));
+    break;
+  }
+  if (isBeginner()) for (const k of ['push', 'legs', 'dips', 'full']) {
     const T = TYPES[k];
     const s = T.slots.find((x) => x.ladder.includes(name));
     if (!s) continue;

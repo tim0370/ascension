@@ -1119,3 +1119,11 @@ html.textbig .h2 { font-size: 24px; }
 html.textbig .mt { font-size: 18px; }
 html.textbig .chip { font-size: 15px; }
 .resumebar svg, .resumebar .chev { color: #fff !important; opacity: 0.9; }
+
+/* v53 : bandeau de repos avec −15 et +15 (3 boutons tiennent sur 320 px) */
+.rest { gap: 10px !important; padding: 12px 12px; }
+.rest .pill.sm { padding: 0 12px; flex: none; }
+.rest .pill.rx { width: 46px; padding: 0; justify-content: center; }
+.rest .col.grow { min-width: 0; flex: 1 1 0; }
+.rest .col.grow .label { white-space: nowrap; }
+@media (max-width: 400px) { .rest .col.grow .small { display: none; } }

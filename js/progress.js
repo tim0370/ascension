@@ -188,9 +188,14 @@ export function viewProgress() {
   h += '</section>';
 
   const log = bodyLog();
-  h += '<div class="sec"><span class="h2 row" style="gap:10px"><i class="secdot t-pink"></i>Corps</span></div><section class="glass card row tap tint t-pink" role="button" tabindex="0" data-act="body"><div class="col grow"><span class="label">Poids</span>'
-    + '<span class="h2">' + (log.length ? fr(log[0].kg, 1) + ' kg' : 'Pas encore noté') + '</span><span class="small mut">' + (log.length ? 'Noté ' + dateFr(log[0].d) + (log.length > 1 ? ' · ' + (log[0].kg - log[log.length - 1].kg >= 0 ? '+' : '') + fr(log[0].kg - log[log.length - 1].kg, 1) + ' kg depuis le début' : '') : 'Touche pour ajouter une pesée') + '</span></div>' + ICON.chev + '</section>';
-  h += measuresCard();
+  // Sans balance ni mètre (aucune pesée depuis 2 mois) : les photos suffisent ; poids et mensurations restent dans les Réglages.
+  const scale = log.some((x) => Date.now() - x.d < 60 * 864e5);
+  h += '<div class="sec"><span class="h2 row" style="gap:10px"><i class="secdot t-pink"></i>Corps</span></div>';
+  if (scale) {
+    h += '<section class="glass card row tap tint t-pink" role="button" tabindex="0" data-act="body"><div class="col grow"><span class="label">Poids</span>'
+      + '<span class="h2">' + (log.length ? fr(log[0].kg, 1) + ' kg' : 'Pas encore noté') + '</span><span class="small mut">' + (log.length ? 'Noté ' + dateFr(log[0].d) + (log.length > 1 ? ' · ' + (log[0].kg - log[log.length - 1].kg >= 0 ? '+' : '') + fr(log[0].kg - log[log.length - 1].kg, 1) + ' kg depuis le début' : '') : 'Touche pour ajouter une pesée') + '</span></div>' + ICON.chev + '</section>';
+    h += measuresCard();
+  }
   h += '<section class="glass card col tap tint t-pink" role="button" tabindex="0" data-act="photos" style="gap:10px"><div class="row between"><div class="col"><span class="label">Photos</span><span class="h2" id="photo-count">' + (photos ? plural(photos.length, 'photo', 'photos') : 'Photos de suivi') + '</span></div>' + ICON.chev + '</div>'
     + '<span class="small mut">' + photoHint() + '</span></section>';
   if (!photos) listPhotos().then((p) => { photos = p; const el = $('photo-count'); if (el) el.textContent = plural(p.length, 'photo', 'photos'); }).catch(() => { photos = []; });
@@ -241,7 +246,14 @@ async function sheetPhotos() {
     + '<button type="button" class="pill gold-btn wide" data-act="add-photo">Ajouter ou importer des photos</button>'
     + '<span class="small mut">Tu peux en choisir plusieurs d’un coup, par exemple tes anciennes photos de Hevy enregistrées dans ta galerie. Chaque photo garde sa date d’origine, que tu peux corriger en la touchant.</span>';
   if (photos.length) {
-    if (photos.length >= 2) { const a = photos[photos.length - 1], b = photos[0]; h += '<div class="col" style="gap:8px"><span class="label violet">Avant / après</span><div class="beforeafter"><img src="' + b.url + '" alt="Après"><div class="ba-top" style="width:50%"><img src="' + a.url + '" alt="Avant"></div><span class="ba-l">' + dateFr(a.d, true) + '</span><span class="ba-r">' + dateFr(b.d, true) + '</span></div><input type="range" min="0" max="100" value="50" class="ba-range" aria-label="Glisser pour comparer" id="ba-range"><span class="small mut">Glisse pour comparer ta première et ta dernière photo.</span></div>'; }
+    if (photos.length >= 2) {
+      // Comparer la dernière photo à la première, ou à celle d'il y a environ 3 mois (on voit mieux le rythme).
+      const b = photos[0], first = photos[photos.length - 1];
+      const m3 = photos.slice(1).filter((p) => b.d - p.d >= 45 * 864e5).sort((x, y) => Math.abs(b.d - x.d - 90 * 864e5) - Math.abs(b.d - y.d - 90 * 864e5))[0];
+      const use3 = m3 && m3 !== first && ui.baMode !== 'first';
+      const a = use3 ? m3 : first;
+      h += (m3 && m3 !== first ? '<div class="row" style="gap:8px"><button type="button" class="pill sm grow ' + (use3 ? 'gold-btn' : 'glass') + '" data-act="ba-mode" data-m="3m">Il y a 3 mois</button><button type="button" class="pill sm grow ' + (use3 ? 'glass' : 'gold-btn') + '" data-act="ba-mode" data-m="first">Ma première</button></div>' : '');
+      h += '<div class="col" style="gap:8px"><span class="label violet">Avant / après</span><div class="beforeafter"><img src="' + b.url + '" alt="Après"><div class="ba-top" style="width:50%"><img src="' + a.url + '" alt="Avant"></div><span class="ba-l">' + dateFr(a.d, true) + '</span><span class="ba-r">' + dateFr(b.d, true) + '</span></div><input type="range" min="0" max="100" value="50" class="ba-range" aria-label="Glisser pour comparer" id="ba-range"><span class="small mut">Glisse pour comparer ' + (use3 ? 'ta photo d’il y a ' + Math.round((b.d - a.d) / (30 * 864e5)) + ' mois' : 'ta première photo') + ' et ta dernière.</span></div>'; }
     h += '<div class="thumbs">' + photos.map((p) => '<button type="button" data-act="photo" data-id="' + p.id + '" aria-label="Photo du ' + dateFr(p.d, true) + '"><img src="' + p.url + '" alt=""><span>' + dateFr(p.d, true) + '</span></button>').join('') + '</div>'
       + '<button type="button" class="pill glass wide" data-act="export-photos">Exporter toutes mes photos</button>';
   }
@@ -300,6 +312,7 @@ Object.assign(ACTIONS, {
   },
   'del-weight': (el) => { delWeight(+el.dataset.d); render(); sheetBody(); },
   photos: () => { sheetPhotos(); },
+  'ba-mode': (el) => { ui.baMode = el.dataset.m; sheetPhotos(); },
   photo: (el) => sheetPhoto(el.dataset.id),
   'add-photo': () => {
     const input = document.createElement('input');

@@ -2,7 +2,7 @@
 // (la semaine passée en chiffres, en équivalents parlants, et ce qui t'attend).
 import { state, save, sorted, exoName, weekGoal, setText, fr } from './store.js';
 import { esc, plural, ACTIONS, ICON, sheet, closeBtn, checkDark } from './ui.js';
-import { rotation, title, plan, minutes, weakQuality, testDue } from './programme.js';
+import { rotation, title, plan, minutes, weakQuality, testDue, isBeginner } from './programme.js';
 import { forme, charge, loadOf, monday0, predictions, predLine, checkin, CI } from './forme.js';
 import { tally, equiv, tonnes, allRecords } from './bilan.js';
 import { rankInfo } from './stats.js';
@@ -133,7 +133,7 @@ function sheetLundi(mArg) {
     const q = weakQuality();
     const P = weekPlan();
     h += '<section class="glass card col" style="gap:8px"><span class="label violet">Cette semaine</span>'
-      + '<span class="small" style="color:var(--soft)">' + (testDue() ? 'Semaine de re-test : tes lettres vont se mettre à jour.' : 'Objectif : ' + plural(P.goal, 'séance', 'séances') + '. Ta séance point faible vise ' + q.name.toLowerCase() + ' (' + q.letter + ').') + '</span>'
+      + '<span class="small" style="color:var(--soft)">' + (testDue() ? 'Semaine de re-test : tes lettres vont se mettre à jour.' : 'Objectif : ' + plural(P.goal, 'séance', 'séances') + '.' + (isBeginner() ? ' Ta séance point faible vise ' + q.name.toLowerCase() + ' (' + q.letter + ').' : '')) + '</span>'
       + (pr.length ? '<span class="small mut">Records prévus :</span>' + pr.map((x) => '<span class="small" style="color:var(--soft)">' + esc(predLine(x)) + '</span>').join('') : '') + '</section>';
   }
   h += '<div class="row" style="gap:8px"><button type="button" class="pill sm glass grow" data-act="lundi-at" data-m="' + (m - 7 * DAY) + '">Semaine d’avant</button>' + (m < lastMonday() ? '<button type="button" class="pill sm glass grow" data-act="lundi-at" data-m="' + (m + 7 * DAY) + '">Semaine d’après</button>' : '') + '</div>';
