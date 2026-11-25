@@ -350,7 +350,8 @@ export function progCard(main, doneToday, noForme) {
     + (fresh ? '<span class="small gold-text">Nouveau : ' + esc(exoName(fresh.name)) + '</span>' : '')
     + (swaps ? '<span class="small" style="color:#FFB4BE">Adaptée à ta douleur</span>' : '')
     + tag + '</div>'
-    + (main && !doneToday ? '<div class="why"><span class="label">Pourquoi cette séance</span>' + whyList(type, list, f, auto).slice(0, 3).map((t) => '<span class="whyl">' + esc(t) + '</span>').join('') + '<button type="button" class="whymore" data-act="prog">Tout le détail ' + ICON.chev + '</button></div>' : '')
+    + (main && list.length ? '<div class="ctaex">' + list.map((e) => '<span>' + esc(exoName(e.name)) + '</span>').join('') + '</div>' : '')
+    + (main ? '<button type="button" class="whymore" data-act="prog">Détails ' + ICON.chev + '</button>' : '')
     + weeksBar()
     + '<div class="row">' + (type === 'test' ? '' : auto ? '<button type="button" class="pill glass" data-act="prog-start" data-type="' + type + '" data-mode="normal">Normale</button>' : '<button type="button" class="pill glass" data-act="prog-start" data-type="' + type + '" data-mode="court">Courte</button>')
     + '<button type="button" class="pill gold-btn grow" data-act="prog-start" data-type="' + type + '" data-mode="' + auto + '">' + (type === 'test' ? 'Faire le re-test' : 'Commencer') + '</button></div></section>';

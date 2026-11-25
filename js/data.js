@@ -905,6 +905,9 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 50, items: [
+    'La carte de ta séance du jour est plus compacte : la liste de tes exercices d’un coup d’œil, et « Détails » pour savoir pourquoi cette séance est faite pour toi',
+  ] },
   { v: 49, items: [
     'Nouveau look : nouvelles polices (titres en capitales serrées, texte plus lisible), fond gris neutre, violet pour l’app et or seulement pour les récompenses',
     'Plus de barre en bas : le bouton trois traits en haut à droite ouvre le menu complet, et le bouton juste en dessous lance ta séance',

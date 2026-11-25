@@ -1021,3 +1021,7 @@ body::before, body::after { display: none; }
 /* v49 : finitions du tour complet */
 .topbar .who .label { white-space: normal; line-height: 1.2; }
 .cta .ctafig { right: 10px; top: 18px; width: 100px; }
+/* v50 : carte de la séance du jour plus compacte */
+.cta .ctaex { display: flex; flex-wrap: wrap; gap: 6px; }
+.cta .ctaex span { font-size: 13px; font-weight: 500; padding: 5px 10px; border-radius: 999px; background: rgba(255,255,255,0.14); color: #fff; }
+.cta .whymore { align-self: flex-start; margin-top: -4px; }
