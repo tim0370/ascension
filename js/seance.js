@@ -5,6 +5,7 @@ import { figure } from './anim.js';
 import { progCard, progDone, progPlan, progOn } from './programme.js';
 import { predictions, whenTxt, checkin, dayKey } from './forme.js';
 import { p30Done } from './prog30.js';
+import { monthAgo } from './coach.js';
 import { camOk } from './camera.js';
 import { dailyQuests, feats } from './quetes.js';
 import { beep, wakeAudio } from './sound.js';
@@ -667,6 +668,7 @@ function sheetSummary(w, label, xpBefore, qNew, fNew) {
     else if (prev && ups >= Math.max(1, lines.length / 2)) t.push('Mieux que la dernière fois sur ' + ups + ' exercice' + (ups > 1 ? 's' : '') + ' sur ' + lines.length + ' : la progression continue.');
     else if (prev && downs > ups) t.push('Un peu moins bien que la dernière fois sur ' + downs + ' exercice' + (downs > 1 ? 's' : '') + (ci && ci.h && ci.h < 7 ? ' : tes ' + String(ci.h).replace('.', ',') + ' h de sommeil y sont sûrement pour quelque chose.' : '. Une séance moyenne ne change rien à la tendance.'));
     else t.push('Séance faite, c’est ce qui compte le plus.');
+    if (!w.quick && !w.boss) { const m = monthAgo(w); if (m) t.push(m); }
     t.push('Maintenant : un vrai repas avec des protéines dans les 2 heures, puis une bonne nuit.');
     h += '<section class="glass card row tint t-cyan" style="gap:12px;align-items:flex-start"><span class="coachav">' + ICON.bolt + '</span><div class="col grow" style="gap:4px"><span class="label violet">Le mot du coach</span><span class="small" style="color:var(--soft)">' + esc(t.join(' ')) + '</span></div></section>';
   } catch (e) { console.error(e); }

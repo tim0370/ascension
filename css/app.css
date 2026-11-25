@@ -1025,3 +1025,4 @@ body::before, body::after { display: none; }
 .cta .ctaex { display: flex; flex-wrap: wrap; gap: 6px; }
 .cta .ctaex span { font-size: 13px; font-weight: 500; padding: 5px 10px; border-radius: 999px; background: rgba(255,255,255,0.14); color: #fff; }
 .cta .whymore { align-self: flex-start; margin-top: -4px; }
+.pill.sugq { background: rgba(124,92,245,0.18); border: 1px solid rgba(124,92,245,0.55); color: #fff; }

@@ -905,6 +905,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 51, items: [
+    'Coach : en fin de séance, il compare chaque exercice à il y a un mois (« Depuis le 24 octobre : Pompes 14 → 19 rép. »)',
+    'Coach : il te prévient AVANT de stagner. Après 2 séances sans progrès sur un exercice, il te dit quoi changer tout de suite',
+    'Coach : les questions « Pour toi aujourd’hui » changent selon ta journée (séance faite ou non, fatigue, douleur, stagnation…)',
+  ] },
   { v: 50, items: [
     'La carte de ta séance du jour est plus compacte : la liste de tes exercices d’un coup d’œil, et « Détails » pour savoir pourquoi cette séance est faite pour toi',
   ] },

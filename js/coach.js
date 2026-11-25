@@ -40,7 +40,9 @@ function exoTrends() {
     const bBest = before.length ? Math.max(...before.map((x) => amount(x.best))) : 0;
     const first = L[L.length - 1];
     const gain = amount(first.best) ? (rBest - amount(first.best)) / amount(first.best) : 0;
-    out.push({ name, n: L.length, last: L[0], recent, rBest, bBest, stuck: L.length >= 5 && rBest <= bBest, gain, first, hard: recent.filter((x) => x.feel === 'd').length });
+    const stuck = L.length >= 5 && rBest <= bBest;
+    const slow = !stuck && L.length >= 3 && now - L[0].date < 10 * DAY && amount(L[0].best) <= amount(L[2].best) && amount(L[1].best) <= amount(L[2].best);
+    out.push({ name, n: L.length, last: L[0], recent, rBest, bBest, stuck, slow, ref: L[2], gain, first, hard: recent.filter((x) => x.feel === 'd').length });
   }
   return out;
 }
@@ -100,6 +102,9 @@ export function insights() {
   if (best) out.push({ tone: 'good', title: 'Ton plus gros progrès', text: exoName(best.name) + ' : de ' + showSet(best.name, best.first.best) + ' à ' + showSet(best.name, best.recent.find((x) => amount(x.best) === best.rBest).best) + ' en ' + plural(Math.max(1, Math.round((best.last.date - best.first.date) / (7 * DAY))), 'semaine', 'semaines') + ' (+' + Math.round(best.gain * 100) + ' %).' });
   const stuck = tr.filter((t) => t.stuck).sort((a, b) => b.n - a.n);
   if (stuck.length) out.push({ tone: 'warn', title: 'Tu stagnes sur ' + exoName(stuck[0].name), text: 'Pas mieux que ' + showSet(stuck[0].name, stuck[0].last.best) + ' sur tes 3 dernières séances. ' + stuckTip(stuck[0])[0], act: 'stuck' });
+
+  const slow = tr.filter((t) => t.slow).sort((a, b) => b.n - a.n)[0];
+  if (slow) out.push({ tone: 'info', title: 'Ça ralentit sur ' + exoName(slow.name), text: '2 séances sans faire mieux que ' + showSet(slow.name, slow.ref.best).replace(/\.$/, '') + '. Si la prochaine est pareille, tu vas stagner. Change un détail dès maintenant : ' + stuckTip(slow)[0].charAt(0).toLowerCase() + stuckTip(slow)[0].slice(1), act: 'stuck' });
 
   // Ce qui te réussit
   const R = reussites();
@@ -229,6 +234,8 @@ function answer(id, arg) {
     const s = exoTrends().filter((x) => x.stuck);
     if (!s.length) {
       const g = exoTrends().filter((x) => x.n >= 3).sort((a, b) => b.gain - a.gain).slice(0, 2);
+      const sl = exoTrends().filter((x) => x.slow);
+      if (sl.length) return { text: ['Tu ne stagnes pas encore, mais ça ralentit sur ' + sl.slice(0, 2).map((x) => exoName(x.name)).join(' et ') + ' : 2 séances sans faire mieux.'].concat(sl.slice(0, 2).map((x) => exoName(x.name) + ' (à battre : ' + showSet(x.name, x.ref.best) + ') : ' + stuckTip(x).join(' '))).concat(['Agir maintenant évite 3 semaines de stagnation.']) };
       return { text: ['Bonne nouvelle : tu ne stagnes sur aucun exercice en ce moment.'].concat(g.length ? ['Ça avance surtout sur ' + g.map((x) => exoName(x.name) + ' (+' + Math.round(x.gain * 100) + ' %)').join(' et ') + '.'] : []).concat(['Continue d’ajouter une répétition à chaque séance, c’est tout le secret.']) };
     }
     const t = ['Tu stagnes sur ' + s.slice(0, 3).map((x) => exoName(x.name)).join(', ') + '.'];
@@ -430,6 +437,27 @@ function exoAnswer(name) {
   if (F && (F.facile || F.dur)) t.push((F.dur ? 'Plus dur : ' + exoName(F.dur) + '.' : '') + (F.facile ? ' Plus facile : ' + exoName(F.facile) + '.' : ''));
   return { text: t, btns: [btn('exo', 'Fiche complète', ' data-name="' + esc(name) + '"', true)] };
 }
+// Fin de séance : chaque exercice comparé à la séance la plus proche d'il y a un mois (entre 3 et 6 semaines).
+export function monthAgo(w) { return monthTxt(w).replace(/\.\./g, '.'); }
+function monthTxt(w) {
+  const old = real().filter((o) => o.id !== w.id && o.start <= w.start - 21 * DAY && o.start >= w.start - 45 * DAY);
+  if (!old.length) return '';
+  const best = (e) => { const L = e.sets.filter((x) => x.r || x.t); return L.length ? L.reduce((m, x) => (amount(x) > amount(m) ? x : m), L[0]) : null; };
+  const cmp = [];
+  for (const e of w.exercises) {
+    if (e.name === 'Running') continue;
+    const nb = best(e); if (!nb) continue;
+    const src = old.filter((o) => o.exercises.some((x) => x.name === e.name)).sort((a, b) => Math.abs(w.start - a.start - 30 * DAY) - Math.abs(w.start - b.start - 30 * DAY))[0];
+    if (!src) continue;
+    const ob = best(src.exercises.find((x) => x.name === e.name)); if (!ob || isTime(e.name, nb) !== isTime(e.name, ob)) continue;
+    cmp.push({ name: e.name, ob, nb, at: src.start, g: (amount(nb) - amount(ob)) / Math.max(1, amount(ob)) });
+  }
+  if (!cmp.length) return '';
+  const up = cmp.filter((c) => c.g > 0).sort((a, b) => b.g - a.g);
+  if (up.length) return 'Depuis le ' + dateTxt(up[0].at) + ' : ' + up.slice(0, 2).map((c) => exoName(c.name) + ' ' + showSet(c.name, c.ob) + ' → ' + showSet(c.name, c.nb)).join(', ') + '.' + (up.length > 2 ? ' Et ' + plural(up.length - 2, 'autre exercice', 'autres exercices') + ' en hausse.' : '');
+  const c0 = cmp[0];
+  return 'Comparé à il y a un mois, ' + exoName(c0.name) + (c0.g === 0 ? ' n’a pas bougé (' + showSet(c0.name, c0.nb) + ')' : ' est un peu en dessous (' + showSet(c0.name, c0.ob) + ' le ' + dateTxt(c0.at) + ', ' + showSet(c0.name, c0.nb) + ' aujourd’hui)') + '. Une séance ne veut rien dire, mais si ça dure, demande au coach « Pourquoi je stagne ? ».';
+}
 const whenTxt2 = (p) => (p.soon ? 'dès ta prochaine séance' : 'vers le ' + dateTxt(p.at));
 
 // Ce que le coach dit quand il ne comprend pas : il propose ce qui s'en approche.
@@ -469,7 +497,9 @@ function draw(typing) {
   h += '<div class="col" style="gap:10px">' + L.slice(0, 4).map((i) => '<div class="tip ' + i.tone + (i.act ? ' tap' : '') + '"' + (i.act ? ' role="button" tabindex="0" data-act="coach-ask" data-q="' + i.act + '"' : '') + '><i></i><div class="col grow" style="gap:2px"><span style="font-weight:700">' + esc(i.title) + '</span><span class="small" style="color:var(--soft)">' + esc(i.text) + '</span></div>' + (i.act ? ICON.chev : '') + '</div>').join('') + '</div>';
   h += '<span class="label">Demande au coach</span><div class="chat" id="coachchat">' + chat.map(bubble).join('') + (typing ? '<div class="cb typing"><i></i><i></i><i></i></div>' : '') + '</div>';
   h += '<form class="askrow" id="coachform"><input class="textin" id="coachq" placeholder="Écris ta question…" autocomplete="off" enterkeyhint="send" value="' + esc(draftQ) + '"><button type="submit" class="pill gold-btn" aria-label="Envoyer">' + ICON.up + '</button></form>';
-  h += '<div class="row wrap" style="gap:8px">' + Q.map(([k, l]) => '<button type="button" class="pill sm glass" data-act="coach-ask" data-q="' + k + '">' + l + '</button>').join('') + '</div>';
+  const sg = suggest();
+  h += '<span class="label violet">Pour toi aujourd’hui</span><div class="row wrap" style="gap:8px">' + sg.map((k) => '<button type="button" class="pill sm sugq" data-act="coach-ask" data-q="' + k + '">' + LBL[k] + '</button>').join('') + '</div>';
+  h += '<span class="label">Autres questions</span><div class="row wrap" style="gap:8px">' + Q.filter(([k]) => !sg.includes(k)).map(([k, l]) => '<button type="button" class="pill sm glass" data-act="coach-ask" data-q="' + k + '">' + l + '</button>').join('') + '</div>';
   h += '<span class="small dim">Le coach lit tes séances, ton bilan du matin et ta balance, dans ton téléphone, sans internet. Ce n’est pas un avis médical.</span>';
   sheet(h, 1, 'full');
   const c = $('coachchat'); if (c && chat.length) { const last = c.lastElementChild; if (last) last.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
@@ -478,6 +508,26 @@ function draw(typing) {
   const qi = $('coachq'); if (qi) qi.oninput = () => { draftQ = qi.value; };
 }
 let draftQ = '';
+// Les questions qui collent à ta situation du jour, en premier.
+function suggest() {
+  const ws = real();
+  if (!ws.length) return ['today', 'short', 'muscle'];
+  const t0 = day0(Date.now()), done = ws.some((w) => w.start >= t0), out = [];
+  const type = testDue() ? 'test' : nextType(), f = forme(plan(type, ''));
+  if (activePains().length) out.push('pain');
+  if (done) out.push('tomorrow', 'doms', 'food');
+  else {
+    if (f.mode === 'leger') out.push('tired');
+    out.push('today');
+    if (f.ci && f.ci.h && f.ci.h < 7) out.push('sleep');
+    if (Math.floor((t0 - day0(ws[0].start)) / DAY) >= 3) out.push('motiv');
+    out.push('short');
+  }
+  const tr = exoTrends();
+  if (tr.some((x) => x.stuck || x.slow)) out.push('stuck'); else if (predictions().length) out.push('record');
+  if ([0, 1].includes(new Date().getDay())) out.push('week');
+  return [...new Set(out)].filter((k) => LBL[k]).slice(0, 4);
+}
 
 function reply(a) {
   draw(true);
