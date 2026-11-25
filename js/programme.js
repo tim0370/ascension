@@ -3,7 +3,7 @@
 // semaine 1 normale, semaine 2 une série de plus sur les exercices principaux,
 // semaine 3 encore une série de plus et la dernière série au maximum, semaine 4 = re-test de tes qualités.
 // Chaque exercice principal monte tout seul à sa version plus dure quand tu as atteint le cap (ex. 10 pistols assistés → pistol).
-import { ALIAS } from './data.js';
+import { ALIAS, EXOS } from './data.js';
 import { bodyStats, musclesOf, ZONES } from './corps.js';
 import { figure } from './anim.js';
 import { state, save, exoName, measureOf } from './store.js';
@@ -216,6 +216,14 @@ export function rotation(n) {
   return out.slice(0, n);
 }
 
+// Sans matériel (pas chez toi) : chaque exercice qui demande des barres, un banc ou des haltères est remplacé (null = retiré).
+const MINI = { 'Triceps Dip': 'Diamond Push Up', 'Explosive Dip': 'Clap Push Up', 'Tuck L-Sit': 'Hollow Rock', 'L-Sit Hold': 'Hollow Rock', 'Hanging Leg Raise': 'Lying Leg Raise', 'Seated Overhead Press (Dumbbell)': 'Pike Pushup', 'Bent Over Row (Dumbbell)': 'Superman', 'Bent Over Row (Band)': 'Superman', 'Hammer Curl (Dumbbell)': null, 'Lateral Raise (Dumbbell)': null, 'Bicep Curl (Band)': null, 'Standing Calf Raise (Dumbbell)': 'Single Leg Standing Calf Raise' };
+const FIGS = { 'Handstand Hold': HAND, 'Tuck L-Sit': LSIT, 'Crow Pose': CROW };
+export const FIG_CHOICES = [['', 'Varier'], ['Handstand Hold', 'Équilibre'], ['Tuck L-Sit', 'L-sit'], ['Crow Pose', 'Corbeau']];
+const lastReal = () => [...state.workouts].filter((w) => !w.quick && !w.boss).sort((a, b) => b.start - a.start)[0];
+export function comeback() { const w = lastReal(); return !!w && Date.now() - w.start > 10 * DAY; }
+export function vacation() { return (state.settings.vac || 0) > Date.now(); }
+
 // Les exercices d'une séance. mode : '' (normale), 'court', 'gros' ou 'leger' (une série de moins partout).
 // Pendant une semaine légère, la séance normale devient légère. Les douleurs signalées retirent ou remplacent des exercices.
 export function plan(type, mode) {
@@ -223,8 +231,12 @@ export function plan(type, mode) {
     return applyPains((isBeginner() ? TEST_DEB : TEST).map((s) => { const p = pickLevel(s); return { name: p.name, label: s.label, fresh: p.fresh, sets: [s.t ? { t: s.t } : { r: s.r }] }; }), true);
   }
   const T = TYPES[type] || TYPES[order()[0]], wk = Math.min(2, weekIdx());
-  if (!mode && lightWeek()) mode = 'leger';
+  if (!mode && (lightWeek() || comeback())) mode = 'leger';
+  if (!mode && vacation()) mode = 'court';
   let slots = T.slots.slice();
+  // Figure choisie : elle remplace la figure prévue au début de la séance.
+  const fc = state.settings.fig && FIGS[state.settings.fig];
+  if (fc && slots[0] && slots[0].bloc === 'Habileté') slots[0] = fc;
   if (mode === 'gros') slots = slots.concat(T.bonus);
   // Grand objectif : son exercice revient dans plus de séances, au début (quand tu es frais).
   const big = bigCap();
@@ -235,11 +247,19 @@ export function plan(type, mode) {
   return applyPains(slots.map((s, i) => {
     let n = s.sets + (s.main && wk >= 1 ? 1 : 0) + (mode === 'gros' && i < 2 ? 1 : 0);
     if (mode === 'court') n = i < 4 ? 2 : 1;
+    if (mode === 'dix') n = 2;
     if (mode === 'leger') n = Math.max(s.main ? 2 : 1, n - 1);
     const p = pickLevel(s);
     const one = s.t ? { t: s.t } : { r: s.r, w: s.w || 0 };
     return { name: p.name, fresh: p.fresh, main: !!s.main, bloc: big && p.name === big.name ? 'Objectif' : s.bloc || '', next: p.next, cap: p.cap, sets: Array.from({ length: n }, () => Object.assign({}, one)) };
-  }).slice(0, mode === 'court' ? 5 : 99));
+  }).map((e) => {
+    if (mode !== 'mini') return e;
+    if (!(e.name in MINI)) return Object.assign(e, { sets: e.sets.map((x) => Object.assign({}, x, { w: 0 })) });
+    const to = MINI[e.name];
+    if (!to || !EXOS[to]) return null;
+    const time = measureOf(to) === 'time';
+    return Object.assign({}, e, { name: to, next: null, cap: null, alt: e.name, sets: e.sets.map(() => (time ? { t: 30 } : { r: 12, w: 0 })) });
+  }).filter(Boolean).slice(0, mode === 'court' ? 5 : mode === 'dix' ? 3 : 99));
 }
 
 // La séance du jour (pour la forme de l'accueil).
@@ -254,11 +274,11 @@ export function title(type) { return type === 'test' ? 'Re-test' : (TYPES[type] 
 export function progPlan(type, mode) {
   const list = plan(type, mode);
   const p = prog();
-  const extra = mode === 'court' ? ' · courte' : mode === 'gros' ? ' · grosse séance' : mode === 'leger' || (!mode && lightWeek() && type !== 'test') ? ' · allégée' : '';
+  const extra = mode === 'court' ? ' · courte' : mode === 'dix' ? ' · 10 minutes' : mode === 'mini' ? ' · sans matériel' : mode === 'gros' ? ' · grosse séance' : mode === 'leger' || (!mode && lightWeek() && type !== 'test') ? ' · allégée' : '';
   return {
     title: title(type), label: title(type) + extra, exercises: list,
     prog: { type, cycle: p.cycle, week: Math.min(3, weekIdx()) + 1 },
-    test: type === 'test', express: mode === 'court',
+    test: type === 'test', express: mode === 'court' || mode === 'dix',
   };
 }
 
@@ -362,7 +382,7 @@ function planList(list) {
   return '<div class="list">' + list.map((e, i) => '<button type="button" class="item" data-act="exo" data-name="' + esc(e.name) + '"><span class="num dim" style="width:20px">' + (i + 1) + '</span><div class="col grow" style="gap:2px;min-width:0">'
     + (e.bloc ? '<span class="label" style="color:' + (BLOC_C[e.bloc] || 'var(--mut)') + ';font-size:10px">' + esc(e.bloc) + '</span>' : '')
     + '<span style="font-weight:600">' + esc(e.label || exoName(e.name)) + (e.fresh ? ' <span class="small gold-text">nouveau</span>' : '') + '</span>'
-    + '<span class="small mut">' + esc(e.label ? exoName(e.name) : setsSummary(e.sets) + (e.main ? ' · principal' : '')) + (e.next && e.cap ? ' · ' + e.cap + (measureOf(e.name) === 'time' ? ' s' : ' rép.') + ' pour passer à ' + esc(exoName(e.next)) : '') + (e.swap ? ' · remplace ' + esc(exoName(e.swap)) + ' (douleur)' : '') + '</span></div>' + ICON.chev + '</button>').join('') + '</div>';
+    + '<span class="small mut">' + esc(e.label ? exoName(e.name) : setsSummary(e.sets) + (e.main ? ' · principal' : '')) + (e.next && e.cap ? ' · ' + e.cap + (measureOf(e.name) === 'time' ? ' s' : ' rép.') + ' pour passer à ' + esc(exoName(e.next)) : '') + (e.swap ? ' · remplace ' + esc(exoName(e.swap)) + ' (douleur)' : '') + (e.alt ? ' · à la place de ' + esc(exoName(e.alt)) : '') + '</span></div>' + ICON.chev + '</button>').join('') + '</div>';
 }
 
 // Fenêtre du programme : la séance du jour en détail, le cycle, et le choix d'une autre séance.
@@ -372,11 +392,15 @@ export function sheetProg(type) {
   const mode = ui.progMode === undefined || ui.progMode === null ? auto : ui.progMode;
   const list = plan(t, t === 'test' ? '' : mode || 'normal');
   let h = '<div class="col"><span class="label violet">' + weekLabel() + '</span><h1 class="h1">' + esc(title(t)) + '</h1>'
-    + '<span class="small mut">' + esc(weekNote(t)) + '</span></div>' + weeksBar();
+    + '<span class="small mut">' + esc(weekNote(t)) + '</span></div>' + weeksBar()
+    + '<div class="cyclelab"><span>Base</span><span>+1 série</span><span>Au max</span><span>Re-test</span></div>';
   h += '<section class="glass card why"><span class="label violet">Pourquoi cette séance est faite pour toi</span>' + whyList(t, list, forme(list), mode === 'leger').map((x) => '<span class="whyl">' + esc(x) + '</span>').join('') + '</section>';
   if (t !== 'test') {
-    h += '<div class="modes4">' + [['court', 'Courte'], ['leger', 'Allégée'], ['', 'Normale'], ['gros', 'Grosse']].map(([m, l]) => '<button type="button" class="pill sm ' + (m === mode ? 'gold-btn' : 'glass') + '" data-act="prog-mode" data-mode="' + m + '" data-type="' + t + '">' + l + '</button>').join('') + '</div>';
-    if (mode === 'leger') h += '<span class="small mut">Allégée : une série de moins sur chaque exercice. ' + (auto ? 'Conseillée aujourd’hui d’après ta forme.' : '') + '</span>';
+    h += '<div class="modes4">' + [['dix', '10 min'], ['court', 'Courte'], ['leger', 'Allégée'], ['', 'Normale'], ['gros', 'Grosse'], ['mini', 'Sans matériel']].map(([m, l]) => '<button type="button" class="pill sm ' + (m === mode ? 'gold-btn' : 'glass') + '" data-act="prog-mode" data-mode="' + m + '" data-type="' + t + '">' + l + '</button>').join('') + '</div>';
+    if (mode === 'leger') h += '<span class="small mut">Allégée : une série de moins sur chaque exercice. ' + (comeback() ? 'Conseillée : plus de 10 jours sans séance, on reprend en douceur.' : auto ? 'Conseillée aujourd’hui d’après ta forme.' : '') + '</span>';
+    if (mode === 'dix') h += '<span class="small mut">10 minutes : les 3 premiers exercices, 2 séries chacun. Elle compte pour ta semaine et ta flamme.</span>';
+    if (mode === 'mini') h += '<span class="small mut">Sans matériel : ce qui demande des barres, un banc ou des haltères est remplacé par un exercice au sol.</span>';
+    h += '<div class="col" style="gap:6px"><span class="label">Figure du début de séance</span><div class="modes4">' + FIG_CHOICES.map(([k, l]) => '<button type="button" class="pill sm ' + ((state.settings.fig || '') === k ? 'gold-btn' : 'glass') + '" data-act="fig-pick" data-k="' + k + '" data-type="' + t + '">' + l + '</button>').join('') + '</div></div>';
   }
   h += '<span class="small" style="color:var(--soft)">' + plural(list.length, 'exercice', 'exercices') + ' · ' + plural(nSets(list), 'série', 'séries') + ' · environ ' + minutes(list, t === 'test') + ' min</span>'
     + planList(list);
@@ -391,4 +415,5 @@ export function sheetProg(type) {
 Object.assign(ACTIONS, {
   prog: (el) => { if (!el.dataset.type) ui.progMode = null; sheetProg(el.dataset.type); },
   'prog-mode': (el) => { ui.progMode = el.dataset.mode; sheetProg(el.dataset.type); },
+  'fig-pick': (el) => { state.settings.fig = el.dataset.k; save(); sheetProg(el.dataset.type); },
 });

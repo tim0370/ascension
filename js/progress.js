@@ -11,6 +11,7 @@ import { bodyCard } from './corps.js';
 import { goalsCard } from './objectifs.js';
 import { measuresCard } from './mesures.js';
 import { careerTotals } from './bilan.js';
+import { analyseCard } from './analyse.js';
 
 let photos = null; // chargées une fois, puis gardées en mémoire
 
@@ -154,6 +155,7 @@ export function viewProgress() {
   h += hevyCard();
   const sh = (t, c) => '<div class="sechead"><span class="h2 row" style="gap:10px"><i class="secdot ' + c + '"></i>' + t + '</span></div>';
   h += rankCard(info);
+  h += analyseCard();
   // Objectifs : le grand objectif de 12 semaines puis les tiens.
   h += goalsCard(capCard());
   h += sh('Ton corps', 't-blue') + bodyCard();
@@ -204,11 +206,29 @@ function photoHint() {
 }
 
 // ---------- Poids ----------
+// Date estimée pour l'objectif de poids, d'après la pente des 30 derniers jours.
+function weightEta(log, goal) {
+  const now = log[0].kg, diff = goal - now;
+  if (Math.abs(diff) < 0.3) return 'Objectif atteint : tu y es.';
+  const L = log.filter((x) => x.d > Date.now() - 30 * 864e5);
+  if (L.length < 2) return 'Encore ' + fr(Math.abs(diff), 1) + ' kg. Pèse-toi au moins 2 fois sur un mois pour avoir une date estimée.';
+  const days = (L[0].d - L[L.length - 1].d) / 864e5, rate = days > 0 ? (L[0].kg - L[L.length - 1].kg) / days : 0;
+  if (!rate || Math.sign(rate) !== Math.sign(diff)) return 'Encore ' + fr(Math.abs(diff), 1) + ' kg. Ces 30 derniers jours, ton poids ne va pas dans ce sens : ' + (diff > 0 ? 'mange un peu plus (un vrai goûter en plus suffit souvent).' : 'surveille les quantités.');
+  const at = Date.now() + diff / rate * 864e5;
+  return 'Encore ' + fr(Math.abs(diff), 1) + ' kg. À ton rythme (' + (rate > 0 ? '+' : '') + fr(rate * 7, 2) + ' kg par semaine), tu y seras vers le ' + new Date(at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + '.';
+}
 function sheetBody() {
   const log = bodyLog();
   let h = '<div class="col"><span class="label">' + plural(log.length, 'pesée', 'pesées') + '</span><h1 class="h1">Poids</h1></div>'
     + '<div class="row"><label class="field grow" style="height:52px"><input id="body-kg" inputmode="decimal" placeholder="0" aria-label="Poids en kilos"><span class="unit">kg</span></label><button type="button" class="pill gold-btn" data-act="add-weight">Enregistrer</button></div>';
-  if (log.length >= 2) h += '<div class="exo"><span class="label">Évolution</span>' + chartSvg(log.slice(0, 40).reverse().map((x) => x.kg), ' kg') + '</div>';
+  if (log.length >= 2) {
+    // Moyenne sur 7 jours : chaque point = moyenne des pesées des 7 jours précédents (le poids varie d'un jour à l'autre).
+    const asc = log.slice(0, 60).reverse();
+    const avg = asc.map((x) => { const L = asc.filter((y) => y.d <= x.d && y.d > x.d - 7 * 864e5); return Math.round(L.reduce((n, y) => n + y.kg, 0) / L.length * 10) / 10; });
+    h += '<div class="exo"><span class="label">Évolution · moyenne sur 7 jours</span>' + chartSvg(avg.slice(-40), ' kg') + '<span class="small mut">Moyenne des 7 derniers jours : ' + fr(avg[avg.length - 1], 1) + ' kg. Elle lisse les variations d’un jour à l’autre (eau, repas).</span></div>';
+  }
+  const goal = state.settings.wGoal || 0;
+  h += '<div class="exo"><span class="label violet">Objectif de poids</span><div class="row"><label class="field grow" style="height:48px"><input id="w-goal" inputmode="decimal" placeholder="70" value="' + (goal ? fr(goal, 1) : '') + '" aria-label="Poids visé en kilos"><span class="unit">kg</span></label><button type="button" class="pill glass" data-act="w-goal">Enregistrer</button></div>' + (goal && log.length ? '<span class="small mut">' + weightEta(log, goal) + '</span>' : '<span class="small mut">Indique le poids que tu vises : l’app calcule quand tu l’atteindras à ton rythme actuel.</span>') + '</div>';
   if (log.length) h += '<div class="list">' + log.slice(0, 30).map((x) => '<div class="item"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + fr(x.kg, 1) + ' kg</span><span class="small mut">' + dateFr(x.d, true) + '</span></div><button type="button" class="iconbtn" data-act="del-weight" data-d="' + x.d + '" aria-label="Supprimer cette pesée">' + ICON.x + '</button></div>').join('') + '</div>';
   else h += '<span class="mut">Pèse-toi toujours au même moment, par exemple le matin, pour que la courbe ait du sens.</span>';
   sheet(h + closeBtn);
@@ -221,6 +241,7 @@ async function sheetPhotos() {
     + '<button type="button" class="pill gold-btn wide" data-act="add-photo">Ajouter ou importer des photos</button>'
     + '<span class="small mut">Tu peux en choisir plusieurs d’un coup, par exemple tes anciennes photos de Hevy enregistrées dans ta galerie. Chaque photo garde sa date d’origine, que tu peux corriger en la touchant.</span>';
   if (photos.length) {
+    if (photos.length >= 2) { const a = photos[photos.length - 1], b = photos[0]; h += '<div class="col" style="gap:8px"><span class="label violet">Avant / après</span><div class="beforeafter"><img src="' + b.url + '" alt="Après"><div class="ba-top" style="width:50%"><img src="' + a.url + '" alt="Avant"></div><span class="ba-l">' + dateFr(a.d, true) + '</span><span class="ba-r">' + dateFr(b.d, true) + '</span></div><input type="range" min="0" max="100" value="50" class="ba-range" aria-label="Glisser pour comparer" id="ba-range"><span class="small mut">Glisse pour comparer ta première et ta dernière photo.</span></div>'; }
     h += '<div class="thumbs">' + photos.map((p) => '<button type="button" data-act="photo" data-id="' + p.id + '" aria-label="Photo du ' + dateFr(p.d, true) + '"><img src="' + p.url + '" alt=""><span>' + dateFr(p.d, true) + '</span></button>').join('') + '</div>'
       + '<button type="button" class="pill glass wide" data-act="export-photos">Exporter toutes mes photos</button>';
   }
@@ -271,6 +292,7 @@ Object.assign(ACTIONS, {
   quality: (el) => sheetQuality(el.dataset.id),
   tree: (el) => sheetTree(el.dataset.id),
   body: () => sheetBody(),
+  'w-goal': () => { const v = toNum(($('w-goal') || {}).value || ''); state.settings.wGoal = v > 30 && v < 200 ? v : 0; save(); sheetBody(); toast(state.settings.wGoal ? 'Objectif enregistré' : 'Objectif retiré'); },
   'add-weight': () => {
     const kg = toNum($('body-kg').value);
     if (kg < 20 || kg > 300) { toast('Indique ton poids en kilos'); return; }

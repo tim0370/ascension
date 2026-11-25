@@ -6,6 +6,7 @@ import { EXOS, ROUTINES, ALIAS, AKA } from './data.js';
 const KEY = 'ascension.v1';
 
 export const state = load();
+globalThis.__ascState = state; // lu par buzz() (ui.js) et sound.js sans import circulaire
 // migrate() est lancé tout en bas du fichier, une fois toutes les fonctions et tables prêtes.
 
 // Hevy en français : « Pompes », « Dips », « Course à pied »… On retrouve l'exercice du catalogue par son nom affiché.
@@ -125,7 +126,14 @@ function load() {
 }
 
 export function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* stockage plein ou bloqué */ }
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {
+    // Stockage plein ou bloqué : on le dit clairement (au plus une fois par minute), sinon des séances seraient perdues sans le savoir.
+    if (Date.now() - (save.warned || 0) > 60000) {
+      save.warned = Date.now();
+      const t = typeof document !== 'undefined' && document.getElementById('toast');
+      if (t) t.innerHTML = '<div class="toast glass">Enregistrement impossible : le téléphone manque de place. Libère de l’espace, puis sauvegarde tes données dans un fichier (Réglages).</div>';
+    }
+  }
 }
 
 // Séances venues de Hevy (marquées, ou déjà importées avant la v34)
@@ -203,7 +211,7 @@ export function sorted() { return [...state.workouts].sort((a, b) => b.start - a
 export function runs() {
   const out = [];
   for (const w of sorted()) for (const e of w.exercises) if (e.name === 'Running') {
-    for (const s of e.sets) if (s.d > 0) out.push({ id: w.id, date: w.start, d: s.d, t: s.t || 0 });
+    for (const s of e.sets) if (s.d > 0) out.push({ id: w.id, date: w.start, d: s.d, t: s.t || 0, splits: w.splits, path: w.path });
   }
   return out;
 }
@@ -224,6 +232,8 @@ export function totalXp() {
   n += (state.goals || []).filter((g) => g.done).length * 150; // objectifs atteints (objectifs.js)
   n += (state.p30end || []).length * 400; // programmes de 30 jours finis (prog30.js)
   n += Object.keys(state.camp || {}).reduce((k, id) => k + (id.endsWith('-b') ? 250 : 50), 0); // campagne (campagne.js)
+  n += Object.keys(state.mch || {}).length * 200; // défis du mois réussis (defis.js)
+  n += (state.duels || []).filter((d) => d.won).length * 100; // duels gagnés (defis.js)
   return n;
 }
 
@@ -475,7 +485,7 @@ export function importHevy(text) {
 }
 
 // ---------- Sauvegarde complète ----------
-export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines, prefs: state.prefs, body: state.body, rankSeen: state.rankSeen, feats: state.feats, goals: state.goals, prog: state.prog, rankV: state.rankV, measures: state.measures, checkins: state.checkins, pains: state.pains, food: state.food, camp: state.camp, p30: state.p30, p30end: state.p30end }); }
+export function exportJson() { return JSON.stringify({ app: 'ascension', version: 1, exported: Date.now(), workouts: state.workouts, settings: state.settings, quests: state.quests, routines: state.routines, prefs: state.prefs, body: state.body, rankSeen: state.rankSeen, feats: state.feats, goals: state.goals, prog: state.prog, rankV: state.rankV, measures: state.measures, checkins: state.checkins, pains: state.pains, food: state.food, camp: state.camp, p30: state.p30, p30end: state.p30end, mch: state.mch, duels: state.duels, trash: state.trash }); }
 export function importJson(text) {
   const data = JSON.parse(text);
   if (!data || data.app !== 'ascension' || !Array.isArray(data.workouts)) throw new Error("Ce fichier n'est pas une sauvegarde de l'app.");
@@ -497,13 +507,16 @@ export function importJson(text) {
   if (data.p30 && !state.p30) state.p30 = data.p30;
   if (Array.isArray(data.p30end) && !(state.p30end || []).length) state.p30end = data.p30end;
   if (data.camp && typeof data.camp === 'object') state.camp = Object.assign({}, data.camp, state.camp);
+  if (data.mch && typeof data.mch === 'object') state.mch = Object.assign({}, data.mch, state.mch);
+  if (Array.isArray(data.duels)) { const have = new Set((state.duels || []).map((d) => d.at)); state.duels = (state.duels || []).concat(data.duels.filter((d) => !have.has(d.at))); }
   if (Array.isArray(data.measures)) { const k = new Set((state.measures || []).map((m) => m.d + m.k)); state.measures = (state.measures || []).concat(data.measures.filter((m) => !k.has(m.d + m.k))); }
   save();
   return { added };
 }
 
 // ---------- Objectif de la semaine ----------
-export function weekGoal() { return state.settings.weekGoal || 4; }
+// En vacances (settings.vac = date de fin) : 3 séances suffisent pour garder la flamme.
+export function weekGoal() { const g = state.settings.weekGoal || 4; return (state.settings.vac || 0) > Date.now() ? Math.min(3, g) : g; }
 export function weekQuest() {
   const now = new Date();
   const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)).getTime();

@@ -103,6 +103,7 @@ export function sheetSeason() {
   h += '<span class="label">Vitrine</span>';
   h += s.medals.length ? '<section class="glass card vitrine">' + s.medals.map((m) => '<div class="col center" style="gap:4px">' + medalSvg(m.medal, 44) + '<span class="small" style="font-weight:600;text-align:center">' + esc(nameOf(m.key)) + '</span><span class="small dim">palier ' + m.tier + '</span></div>').join('') + '</section>'
     : '<span class="small mut">Ta première médaille arrive au palier 10. Elle restera ici, avec celles des mois suivants.</span>';
+  h += '<button type="button" class="pill glass wide" data-act="season-img">' + ICON.copy + 'Image de ma saison à partager</button>';
   sheet(h + '<button type="button" class="pill gold-btn wide" data-act="close">Fermer</button>', 1, 'full');
   setTimeout(() => { const c = document.querySelector('#strack .cur') || document.querySelector('#strack .got:last-of-type'); if (c) c.scrollIntoView({ inline: 'center', block: 'nearest' }); }, 50);
 }
@@ -125,3 +126,12 @@ export function celebrateSeason() {
 }
 
 // L'action « season » est ajoutée dans app.js (ce fichier est lu par quetes.js, avant ui.js).
+
+
+// Chiffres de l'image de la saison à partager (l'image est faite par shareImage de defis.js, action dans app.js).
+export function seasonImage() {
+  const s = season(), k = s.key, [y, m] = k.split('-').map(Number), m0 = new Date(y, m - 1, 1).getTime();
+  const W = state.workouts.filter((w) => w.start >= m0 && !w.quick);
+  const recs = W.reduce((n, w) => n + (w.prs || 0), 0);
+  return ['Saison ' + de(k, true), 'Palier ' + s.tier, [[String(s.xp), 'XP ce mois-ci'], [String(W.length), W.length > 1 ? 'séances' : 'séance'], [String(recs), recs > 1 ? 'records' : 'record'], [s.tier >= 30 ? 'Or' : s.tier >= 20 ? 'Argent' : s.tier >= 10 ? 'Bronze' : '–', 'médaille']], 'ascension-saison-' + k + '.png'];
+}

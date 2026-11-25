@@ -26,6 +26,16 @@ export function pushToday() {
   return n;
 }
 
+// Série de jours : jours d'affilée avec au moins 30 pompes (séances comprises). Aujourd'hui ne casse rien tant qu'il n'est pas fini.
+export function pushStreak() {
+  const by = {};
+  for (const w of state.workouts) { const k = day0(w.start); for (const e of w.exercises) if (isPush(e.name)) for (const s of e.sets) if (s.done !== false) by[k] = (by[k] || 0) + (s.r || 0); }
+  let d = day0(Date.now()), n = 0;
+  if ((by[d] || 0) < QUICK_MIN) d = day0(d - DAY / 2);
+  while ((by[d] || 0) >= QUICK_MIN) { n += 1; d = day0(d - DAY / 2); }
+  return n;
+}
+
 const targetOf = (n) => (n < 100 ? 100 : n < 200 ? 200 : Math.ceil((n + 1) / 100) * 100);
 
 function add(n, el) {
@@ -59,7 +69,7 @@ function refresh() {
 export function quickCard() {
   const n = pushToday(), goal = targetOf(n);
   const pct = Math.min(100, Math.round((n / goal) * 100));
-  return '<section class="glass card col tint t-orange" id="quickcard" style="gap:12px"><div class="row between tap" role="button" tabindex="0" data-act="quick"><div class="col" style="gap:2px"><span class="label violet">Pompes du jour</span>'
+  return '<section class="glass card col tint t-orange" id="quickcard" style="gap:12px"><div class="row between tap" role="button" tabindex="0" data-act="quick"><div class="col" style="gap:2px"><span class="label violet">Pompes du jour' + (pushStreak() >= 2 ? ' · ' + pushStreak() + ' jours d’affilée' : '') + '</span>'
     + '<span class="h2"><span class="num">' + n + '</span><span class="mut" style="font-weight:500"> / ' + goal + '</span></span></div>'
     + '<div class="qring" style="--p:' + pct + '"><span>' + pct + '%</span></div></div>'
     + '<div class="row" style="gap:8px">' + [5, 10, 15, 20].map((k) => '<button type="button" class="pill sm glass grow" data-act="quick-add" data-n="' + k + '">+' + k + '</button>').join('')
@@ -73,7 +83,8 @@ function sheetQuick() {
   let h = '<div id="quicksheet" class="col" style="gap:4px"><span class="label violet">Hors séance</span><h1 class="h1">Pompes du jour</h1>'
     + '<span class="small mut">Note une série dès que tu la fais, où que tu sois. Le bon plan pour viser 100 dans la journée : 10 séries de 10.</span></div>'
     + '<section class="glass card col center" style="gap:8px;padding:22px 16px"><span class="num" style="font-size:64px;line-height:1">' + n + '</span><span class="small mut">pompes aujourd’hui, séances comprises · but ' + goal + '</span>'
-    + '<div class="bar" style="width:100%"><div style="width:' + Math.min(100, Math.round((n / goal) * 100)) + '%"></div></div></section>'
+    + '<div class="bar" style="width:100%"><div style="width:' + Math.min(100, Math.round((n / goal) * 100)) + '%"></div></div>'
+    + '<span class="small ' + (pushStreak() >= 2 ? 'gold-text' : 'mut') + '">' + (pushStreak() >= 1 ? 'Série : ' + plural(pushStreak(), 'jour', 'jours') + ' d’affilée avec au moins ' + QUICK_MIN + ' pompes' : 'Fais ' + QUICK_MIN + ' pompes par jour pour lancer une série de jours') + '</span></section>'
     + '<div class="row"><label class="field grow" style="height:56px"><input id="quick-n" inputmode="numeric" placeholder="Combien ?" aria-label="Nombre de pompes"><span class="unit">pompes</span></label>'
     + '<button type="button" class="pill gold-btn" data-act="quick-custom" style="height:56px">Ajouter</button></div>'
     + '<div class="row" style="gap:8px">' + [5, 10, 15, 20, 25].map((k) => '<button type="button" class="pill sm glass grow" data-act="quick-add" data-n="' + k + '">+' + k + '</button>').join('') + '</div>';

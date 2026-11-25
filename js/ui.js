@@ -10,7 +10,7 @@ export const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
 export const toNum = (v) => parseFloat(String(v).replace(',', '.')) || 0;
 
 // Numéro de version affiché dans les réglages. À augmenter avec VERSION dans sw.js et NEWS dans data.js.
-export const VERSION = 51;
+export const VERSION = 52;
 
 // État de l'interface (pas enregistré). hFilter = filtre de l'historique. edit = brouillon en cours ; pick = à quoi sert le choix d'exercice.
 export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null, hQuery: '' };
@@ -104,6 +104,23 @@ export function toast(msg, gold) {
   clearTimeout(toast.t);
   toast.t = setTimeout(() => { $('toast').innerHTML = ''; }, 2600);
 }
+// Message avec « Annuler » : la dernière action (une suppression) peut être défaite pendant 6 secondes.
+export function toastUndo(msg, undo) {
+  ui.undo = undo;
+  $('toast').innerHTML = '<div class="toast glass undo"><span>' + esc(msg) + '</span><button type="button" class="undobtn" data-act="undo">Annuler</button></div>';
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => { $('toast').innerHTML = ''; ui.undo = null; }, 6000);
+}
+
+// Petite vibration (Android seulement : Safari sur iPhone ne permet pas aux sites de faire vibrer).
+// Rien avant le premier toucher (le navigateur le refuse), et coupable dans les réglages.
+export function buzz(p) {
+  try {
+    if (!navigator.vibrate || (navigator.userActivation && !navigator.userActivation.hasBeenActive)) return;
+    if (globalThis.__ascState && globalThis.__ascState.settings && globalThis.__ascState.settings.haptics === false) return;
+    navigator.vibrate(p);
+  } catch (e) { /* pas de vibreur */ }
+}
 
 // Fenêtre qui monte du bas. layer 2 = par-dessus une autre fenêtre. cls 'full' = plein écran.
 // Si une fenêtre est déjà ouverte, on change son contenu sans rejouer l'animation.
@@ -146,6 +163,7 @@ export function levelUp(level, sub) {
 
 // Petite explosion de points dorés, pour un record, un niveau ou un rang gagné.
 export function burst() {
+  buzz([30, 50, 30]);
   const box = document.createElement('div');
   box.className = 'burst';
   for (let i = 0; i < 18; i++) {

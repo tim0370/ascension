@@ -107,7 +107,7 @@ function playWebAudio() {
 // Joue le bip. Renvoie une promesse qui dit comment il a été joué (pour le bouton de test).
 export function beep(force) {
   if (!force && state.settings.sound === false) return Promise.resolve('coupé');
-  try { if (navigator.vibrate) navigator.vibrate([120, 80, 120]); } catch (e) { /* pas de vibreur */ }
+  try { if (navigator.vibrate && !(navigator.userActivation && !navigator.userActivation.hasBeenActive) && !(globalThis.__ascState && globalThis.__ascState.settings.haptics === false)) navigator.vibrate([120, 80, 120]); } catch (e) { /* pas de vibreur */ }
   if (discreet()) return Promise.resolve(playWebAudio() ? 'discret' : 'aucun');
   try {
     const p = getPlayer();

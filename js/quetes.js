@@ -143,7 +143,8 @@ function simulate(goal) {
   let n = 0, sh = 0, best = 0, saved = 0;
   if (keys.length) {
     for (let m = keys[0]; m < cur; m = addDays(m, 7)) {
-      if ((c[m] || 0) >= goal) { n += 1; if (n % SHIELD_EVERY === 0) sh = Math.min(SHIELD_MAX, sh + 1); }
+      const g = (state.settings.vacs || []).some(([a, b]) => a < addDays(m, 7) && b > m) ? Math.min(3, goal) : goal;
+      if ((c[m] || 0) >= g) { n += 1; if (n % SHIELD_EVERY === 0) sh = Math.min(SHIELD_MAX, sh + 1); }
       else if (n > 0 && sh > 0) { sh -= 1; saved += 1; }
       else { n = 0; saved = 0; }
       best = Math.max(best, n);
@@ -154,18 +155,19 @@ function simulate(goal) {
 export function streak() {
   const goal = state.settings.weekGoal || 4;
   const r = simulate(goal);
+  const goal2 = (state.settings.vac || 0) > Date.now() ? Math.min(3, goal) : goal;
   const t0 = day0(Date.now());
   const todayDone = state.workouts.some((w) => w.start >= t0 && !w.boss);
-  const weekDone = r.cur >= goal;
+  const weekDone = r.cur >= goal2;
   const left = 7 - ((new Date().getDay() + 6) % 7) - (todayDone ? 1 : 0); // jours encore possibles cette semaine
-  const need = Math.max(0, goal - r.cur);
+  const need = Math.max(0, goal2 - r.cur);
   let n = r.n + (weekDone ? 1 : 0);
   let sh = r.sh;
   if (weekDone && n % SHIELD_EVERY === 0 && r.n % SHIELD_EVERY !== 0) sh = Math.min(SHIELD_MAX, sh + 1);
   const lost = !weekDone && need > left; // impossible de finir la semaine
   const using = lost && n > 0 && sh > 0 ? 1 : 0;
   const danger = !weekDone && n > 0 && need > 0 && need >= left - 1;
-  return { n, weekDone, todayDone, danger, lost, need, left, cur: r.cur, goal, best: Math.max(n, r.best), shields: sh, using, saved: r.saved, next: SHIELD_EVERY - (n % SHIELD_EVERY) };
+  return { n, weekDone, todayDone, danger, lost, need, left, cur: r.cur, goal: goal2, best: Math.max(n, r.best), shields: sh, using, saved: r.saved, next: SHIELD_EVERY - (n % SHIELD_EVERY) };
 }
 function bestStreak() { return simulate(state.settings.weekGoal || 4).best; }
 

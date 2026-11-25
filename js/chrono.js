@@ -1,7 +1,7 @@
 // Chrono d'entraînement : Tabata, EMOM (une série au début de chaque minute), AMRAP (le plus de tours possible),
 // ou intervalles sur mesure. Bip et voix aux changements, écran gardé allumé.
 import { state, save } from './store.js';
-import { $, esc, plural, ui, ACTIONS, ICON, sheet, closeSheet, toast, burst } from './ui.js';
+import { $, esc, buzz, plural, ui, ACTIONS, ICON, sheet, closeSheet, toast, burst } from './ui.js';
 import { beep } from './sound.js';
 
 const MODES = {
@@ -146,7 +146,7 @@ Object.assign(ACTIONS, {
   },
   'ch-go': () => start(),
   'ch-again': () => start(),
-  'ch-lap': () => { if (!run || run.pauseAt) return; run.laps += 1; try { navigator.vibrate && navigator.vibrate(30); } catch (e) { /* rien */ } say(String(run.laps)); update(); },
+  'ch-lap': () => { if (!run || run.pauseAt) return; run.laps += 1; buzz(30); say(String(run.laps)); update(); },
   'ch-pause': () => {
     if (!run) return;
     if (run.pauseAt) { run.paused += Date.now() - run.pauseAt; run.pauseAt = 0; } else run.pauseAt = Date.now();

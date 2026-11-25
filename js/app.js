@@ -5,15 +5,16 @@ import {
   fr, dur, clock, pace, dateFr, setText, workoutText, importHevy, exportJson, importJson,
   weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines, isHevy, unknownExos, renameExo, guessExo,
 } from './store.js';
-import { NEWS, EXOS } from './data.js';
+import { NEWS, EXOS, AKA } from './data.js';
 import { rankInfo, heat, bodyLog, addWeight } from './stats.js';
 import { beep, wakeAudio, initSound, soundError } from './sound.js';
-import { hint, $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst } from './ui.js';
+import { hint, $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, toastUndo, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst } from './ui.js';
 import { routinesCard, viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
 import { progCard, progOn, isBeginner, todayList } from './programme.js';
 import { formeCard, painCard } from './forme.js';
 import { weekCard, lundiBanner } from './semaine.js';
 import { campNow, checkCamp } from './campagne.js';
+import { monthChCard, paliersCard, duelCard, checkDuels, checkMonth, shareImage } from './defis.js';
 import { dojoView } from './dojo.js';
 import { p30Card, status as p30Status } from './prog30.js';
 import { capCard, ensureCap, bigGoal } from './cap.js';
@@ -27,11 +28,11 @@ import './chrono.js';
 import './retour.js';
 import { coachCard } from './coach.js';
 import './parcours.js';
-import { seasonCard, celebrateSeason, sheetSeason } from './saison.js';
+import { seasonCard, celebrateSeason, sheetSeason, seasonImage } from './saison.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync, KINDS as NKINDS } from './notif.js';
 import { viewProgress, hevyCard, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
-import { routeSvg } from './course.js';
+import { routeSvg, runRecords, routesAll, fmtTime } from './course.js';
 
 const DAY = 864e5;
 const local = ['localhost', '127.0.0.1'].includes(location.hostname); // tests sur le PC
@@ -56,12 +57,27 @@ function flamePill(st) {
   return '<button type="button" class="flame' + (st.n ? '' : ' off') + (st.danger ? ' danger' : '') + '" data-act="flame" aria-label="Flamme de ' + st.n + ' semaine' + (st.n > 1 ? 's' : '') + (st.shields ? ', ' + st.shields + ' bouclier' + (st.shields > 1 ? 's' : '') : '') + '">' + ICON.flame + st.n + '<small class="fl-u">sem.</small>' + (st.shields ? '<span class="fshield">' + ICON.shield + (st.shields > 1 ? '<b>' + st.shields + '</b>' : '') + '</span>' : '') + '</button>';
 }
 
+// Selon l'heure : le soir, on fait le point sur la journée au lieu de pousser une grosse séance.
+function momentCard(done) {
+  const hr = new Date().getHours();
+  if (hr < 21 || !state.workouts.length) return '';
+  const t0 = midnight(), W = state.workouts.filter((w) => w.start >= t0);
+  const sets = W.reduce((n, w) => n + w.exercises.reduce((k, e) => k + e.sets.filter((x) => x.done !== false).length, 0), 0);
+  if (done || sets) return '<section class="glass card col tint t-blue" style="gap:6px"><span class="label violet">Ce soir</span><span style="font-weight:700">Journée faite : ' + plural(sets, 'série', 'séries') + '</span><span class="small mut">Le muscle se construit maintenant : un vrai repas, de l’eau, et au lit avant 23 h si tu peux.</span></section>';
+  return '<section class="glass card col tint t-blue" style="gap:10px"><span class="label violet">Ce soir</span><span style="font-weight:700">Trop tard pour une grosse séance</span><span class="small mut">Après 21 h, une séance dure gêne le sommeil. Fais la version 10 minutes, ou repose-toi et fais-la demain.</span><button type="button" class="pill glass" data-act="prog">Voir la version 10 minutes</button></section>';
+}
+
+function weekBlock(wq) {
+  return progOn() ? weekCard() : '<section class="glass card col tap tint t-blue" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span><span class="row small mut" style="gap:4px">' + (wq.done ? 'Objectif atteint' : wq.cur + ' sur ' + wq.goal + ' séances') + ICON.chev + '</span></div><div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>';
+}
+
 function viewHome() {
   const has = state.workouts.length > 0;
   const quests = has ? dailyQuests() : []; // avant le calcul d'XP : une quête réussie rapporte tout de suite
   const fx = feats(); // hauts faits (et ceux qui viennent d'être réussis)
   celebrateGoals(checkGoals()); // objectifs atteints
   checkCamp(); // étapes de la campagne
+  try { checkMonth(); checkDuels(); } catch (e) { /* rien */ } // défi du mois, duels (defis.js)
   const wq = has ? weekQuest() : null;
   const xp = totalXp();
   const lv = levelInfo(xp);
@@ -95,15 +111,20 @@ function viewHome() {
     h += painCard();
     const fc = has && progOn() && show('forme');
     h += progOn() ? progCard(true, !!doneToday, fc) : routinesCard();
-    if (fc) h += formeCard(todayList());
-    if (has && show('coach') && progOn()) h += coachCard();
+    h += momentCard(!!doneToday);
+    for (const k of homeOrder()) {
+      if (k === 'forme' && fc) h += formeCard(todayList());
+      else if (k === 'coach' && has && show('coach') && progOn()) h += coachCard();
+      else if (k === 'week' && has && show('week')) h += weekBlock(wq);
+      else if (k === 'p30' && has && show('p30') && p30Status()) h += p30Card();
+    }
   }
 
   if (has) h += monthBanner() + lundiBanner();
   if (!has || state.workouts.length < 40) h += hevyCard();
   // Rappels utiles (sauvegarde, photo) : juste sous le programme, car ils demandent une action.
   const DAYMS = 864e5;
-  if (state.workouts.length >= 5 && Date.now() - (state.lastExport || state.installed || 0) > 14 * DAYMS && Date.now() > (state.settings.backupSnooze || 0)) {
+  if (state.workouts.length >= 5 && Date.now() - (state.lastExport || state.installed || 0) > 7 * DAYMS && Date.now() > (state.settings.backupSnooze || 0)) {
     h += '<section class="glass card col backupcard tint t-blue" style="gap:10px"><div class="row" style="gap:12px;align-items:center"><span class="ico">' + ICON.save + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Sauvegarde tes progrès</span><span class="small mut">' + (state.lastExport ? 'Dernière sauvegarde il y a ' + Math.floor((Date.now() - state.lastExport) / DAYMS) + ' jours.' : 'Tu n’as jamais sauvegardé.') + ' Tes ' + state.workouts.length + ' séances ne sont que dans ce téléphone. Un fichier dans Fichiers ou iCloud, et rien ne se perd.</span></div></div>'
       + '<div class="row"><button type="button" class="pill glass" data-act="backup-later">Plus tard</button><button type="button" class="pill gold-btn grow" data-act="export">Sauvegarder</button></div></section>';
   }
@@ -111,8 +132,7 @@ function viewHome() {
     h += '<section class="glass card row tap tint t-pink" role="button" tabindex="0" data-act="photos"><span class="ico">' + ICON.cam + '</span><div class="col grow"><span class="h2">C’est le moment de ta photo</span><span class="small mut">La dernière a plus de deux semaines.</span></div>' + ICON.chev + '</section>';
   }
   // Sous la séance du jour : ta semaine, ton programme de 30 jours. Tout le reste (quêtes, boss, campagne…) est dans Défis.
-  if (has && show('week')) h += (progOn() ? weekCard() : '<section class="glass card col tap tint t-blue" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span><span class="row small mut" style="gap:4px">' + (wq.done ? 'Objectif atteint' : wq.cur + ' sur ' + wq.goal + ' séances') + ICON.chev + '</span></div><div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>');
-  if (has && show('p30') && p30Status()) h += p30Card();
+  if (state.active && has && show('week')) h += weekBlock(wq);
   void quests; void fx; void info;
 
   // Rappel de sauvegarde : toutes les deux semaines, tant que rien n'a été exporté.
@@ -123,6 +143,7 @@ function viewHome() {
 // ---------- Défis : tout ce qui se joue, rangé par rythme ----------
 function viewDefis() {
   const has = state.workouts.length > 0;
+  try { checkMonth(); checkDuels(); } catch (e) { /* rien */ }
   const quests = has ? dailyQuests() : [];
   const fx = feats();
   let h = '<div class="col" style="gap:4px"><h1 class="h1">Défis</h1><span class="small mut">Tout ce qui rapporte de l’XP en plus de tes séances, rangé du plus court au plus long.</span></div>';
@@ -131,13 +152,14 @@ function viewDefis() {
     h += head('Quêtes du jour', 't-teal', '<span class="small mut">' + n + ' sur ' + quests.length + ' réussie' + (n > 1 ? 's' : '') + '</span>')
       + '<section class="glass card tap tint t-teal" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + quests.map(questRow).join('') + '</section>';
   }
-  if (has) h += head('Défi de la semaine', 't-red') + bossCard();
-  h += head('Ce mois-ci', 't-gold') + p30Card() + (has ? testCard() + seasonCard() : '');
+  if (has) h += head('Défi de la semaine', 't-red') + bossCard() + duelCard();
+  h += head('Ce mois-ci', 't-gold') + (has ? monthChCard() : '') + p30Card() + (has ? testCard() + seasonCard() : '');
   if (has) celebrateSeason();
   h += head('Campagne', 't-violet', '<button type="button" class="small mut row" style="gap:4px" data-act="camp-all">Les 6 chapitres' + ICON.chev + '</button>') + campNow();
   h += head('Figures', 't-pink') + dojoView();
   const got = fx.list.filter((f) => f.done).length;
   h += head('Hauts faits', 't-gold') + '<section class="glass card row tap tint t-gold" role="button" tabindex="0" data-act="feats" style="gap:14px"><span class="medal" style="background:linear-gradient(160deg,#F3DFA8,#B8913F);color:#24190A;border:none">' + ICON.medal + '</span><div class="col grow" style="gap:2px"><span class="h2">' + got + ' sur ' + fx.list.length + '</span><span class="small mut">Des exploits durs, gagnés une seule fois. Certains donnent une couleur d’emblème.</span></div>' + ICON.chev + '</section>';
+  if (has) h += paliersCard();
   return h;
 }
 
@@ -224,9 +246,13 @@ function sheetGuide() {
 // ---------- Personnaliser l'accueil ----------
 const HOME_CARDS = [['forme', 'Ta forme du jour'], ['coach', 'Coach'], ['week', 'Ta semaine'], ['p30', 'Programme de 30 jours']];
 function show(k) { return !(state.settings.hide || {})[k]; }
+// Ordre des cartes sous la séance du jour (réglable, flèches dans « Personnaliser »).
+function homeOrder() { const o = (state.settings.homeOrder || []).filter((k) => HOME_CARDS.some(([x]) => x === k)); return o.concat(HOME_CARDS.map(([k]) => k).filter((k) => !o.includes(k))); }
 function sheetHomeEdit() {
-  const h = '<div class="col" style="gap:4px"><span class="label violet">Accueil</span><h1 class="h1">Personnaliser</h1><span class="small mut">Choisis les cartes affichées sur l’accueil. La séance du programme reste toujours en haut. Tout reste accessible ailleurs.</span></div>'
-    + '<section class="glass card" style="padding:4px 16px">' + HOME_CARDS.map(([k, l]) => '<button type="button" class="row between" data-act="home-toggle" data-k="' + k + '" style="width:100%;padding:14px 0;border:0;border-bottom:1px solid var(--line);background:none;color:inherit;font:inherit"><span style="font-weight:600">' + l + '</span><span class="switch' + (show(k) ? ' on' : '') + '"><i></i></span></button>').join('') + '</section>';
+  const O = homeOrder(), lab = Object.fromEntries(HOME_CARDS);
+  const h = '<div class="col" style="gap:4px"><span class="label violet">Accueil</span><h1 class="h1">Personnaliser</h1><span class="small mut">Choisis les cartes affichées sur l’accueil et leur ordre avec les flèches. La séance du programme reste toujours en haut. Tout reste accessible ailleurs.</span></div>'
+    + '<section class="glass card" style="padding:4px 16px">' + O.map((k, i) => '<div class="row" style="gap:6px;border-bottom:1px solid var(--line)"><button type="button" class="row between grow" data-act="home-toggle" data-k="' + k + '" style="padding:14px 0;border:0;background:none;color:inherit;font:inherit;min-width:0"><span style="font-weight:600;text-align:left">' + lab[k] + '</span><span class="switch' + (show(k) ? ' on' : '') + '"><i></i></span></button>'
+      + '<button type="button" class="iconbtn" data-act="home-move" data-k="' + k + '" data-d="-1" aria-label="Monter"' + (i ? '' : ' disabled') + '>' + ICON.up + '</button><button type="button" class="iconbtn" data-act="home-move" data-k="' + k + '" data-d="1" aria-label="Descendre"' + (i < O.length - 1 ? '' : ' disabled') + '>' + ICON.down + '</button></div>').join('') + '</section>';
   sheet(h + closeBtn);
 }
 
@@ -409,7 +435,7 @@ function sheetRun() {
   let h = '<div class="col"><span class="label">' + plural(rs.length, 'course', 'courses') + '</span><h1 class="h1">Course à pied</h1></div>';
   h += '<button type="button" class="pill gold-btn wide big" data-act="gps">' + ICON.run + 'Courir avec le GPS</button>'
     + '<span class="small mut" style="text-align:center;margin-top:-6px">Chrono, distance, un lièvre à battre et une voix à chaque kilomètre.</span>';
-  h += '<div class="exo"><span class="label violet">Ou noter une course déjà faite</span>'
+  h += '<div class="exo"><span class="label violet">Ou noter une course déjà faite (tapis, sans GPS)</span>'
     + '<div class="row"><label class="field grow" style="height:52px"><input id="run-d" inputmode="decimal" placeholder="0" aria-label="Distance en kilomètres"><span class="unit">km</span></label>'
     + '<label class="field grow" style="height:52px"><input id="run-m" inputmode="numeric" placeholder="0" aria-label="Minutes"><span class="unit">min</span></label>'
     + '<label class="field grow" style="height:52px"><input id="run-s" inputmode="numeric" placeholder="0" aria-label="Secondes"><span class="unit">s</span></label></div>'
@@ -421,6 +447,11 @@ function sheetRun() {
     const fastest = timed.length ? timed.reduce((a, b) => (b.t / b.d < a.t / a.d ? b : a)) : null;
     h += '<div class="row" style="align-items:stretch"><button type="button" class="exo grow" style="text-align:left" data-act="detail" data-id="' + esc(longest.id) + '"><span class="label">Plus longue</span><span class="h2 gold-text">' + fr(longest.d) + ' km</span><span class="small mut">' + dateFr(longest.date, true) + '</span></button>'
       + (fastest ? '<button type="button" class="exo grow" style="text-align:left" data-act="detail" data-id="' + esc(fastest.id) + '"><span class="label">Meilleure allure</span><span class="h2 gold-text">' + pace(fastest.d, fastest.t) + '</span><span class="small mut">' + fr(fastest.d) + ' km · ' + dateFr(fastest.date, true) + '</span></button>' : '') + '</div>';
+    const RR = runRecords();
+    h += '<div class="exo"><span class="label">Tes records</span><div class="stats3"><div><span class="num gold-text" style="font-size:20px">' + fmtTime(RR.km1) + '</span><span class="small mut">1 km</span></div><div><span class="num gold-text" style="font-size:20px">' + fmtTime(RR.km5) + '</span><span class="small mut">5 km</span></div><div><span class="num gold-text" style="font-size:20px">' + fmtTime(RR.km10) + '</span><span class="small mut">10 km</span></div></div>'
+      + (RR.p10 ? '<span class="small mut">Prévision d’après ta meilleure course : 5 km en ' + fmtTime(RR.p5) + ', 10 km en ' + fmtTime(RR.p10) + ', semi-marathon en ' + fmtTime(RR.p21) + '.</span>' : '') + '</div>';
+    const ra = routesAll();
+    if (ra) h += '<div class="exo"><span class="label">Tous tes parcours, ramenés au même départ</span>' + ra + '</div>';
     if (rs.length >= 2) h += '<div class="exo"><span class="label">Distance de tes dernières courses</span>' + chartSvg(rs.slice(0, 16).reverse().map((x) => x.d), ' km') + '</div>';
     h += '<span class="label">Dernières courses</span><div class="list">' + rs.slice(0, 15).map((x) => '<button type="button" class="item" data-act="detail" data-id="' + esc(x.id) + '"><span class="ico gold">' + ICON.run + '</span><div class="col grow" style="gap:2px"><span style="font-weight:600">' + fr(x.d) + ' km</span><span class="small mut">' + dur(x.t) + ' · ' + pace(x.d, x.t) + '</span></div><span class="small mut">' + dateFr(x.date) + '</span></button>').join('') + '</div>';
   }
@@ -444,6 +475,10 @@ function sheetSettings() {
     srow('set-sub', 'calendar', 'Objectif par semaine', plural(weekGoal(), 'séance', 'séances'), ' data-k="goal"'),
     srow('set-sub', 'timer', 'Repos par défaut', clock(rest), ' data-k="rest"'),
     srow('home-edit', 'home', 'Cartes de l’accueil'),
+    stog('toggle-textbig', 'book', 'Texte plus grand', !!state.settings.textBig, 'Tous les textes un peu plus gros'),
+    stog('toggle-light', 'star', 'Mode clair', !!state.settings.light, 'Fond clair, pratique en plein soleil'),
+    ...(navigator.vibrate ? [stog('toggle-haptics', 'bell', 'Vibrations', state.settings.haptics !== false, 'Une petite vibration à chaque série validée et à chaque record')] : []),
+    stog('toggle-zen', 'dumbbell', 'Séance épurée', !!state.settings.zen, 'Cache l’XP et le fantôme pendant la séance : juste tes séries'),
   ]);
   h += sgroup('Son et voix', [
     stog('toggle-sound', 'sound', 'Bip de fin de repos', state.settings.sound !== false),
@@ -463,8 +498,10 @@ function sheetSettings() {
   h += sgroup('Données', [
     srow('export', 'save', 'Sauvegarder mes données'),
     srow('pick-backup', 'save', 'Restaurer une sauvegarde'),
+    srow('transfer', 'up', 'Changer de téléphone'),
+    srow('export-csv', 'stack', 'Exporter en tableau', 'Excel'),
     srow('pick-hevy', 'stack', 'Importer mon historique Hevy', state.workouts.some(isHevy) ? state.workouts.filter(isHevy).length + ' séances' : undefined),
-  ].concat(unk ? [srow('unknown', 'target', 'Exercices non reconnus', String(unk))] : []),
+  ].concat(liveTrash().length ? [srow('trash', 'x', 'Corbeille', String(liveTrash().length))] : []).concat(unk ? [srow('unknown', 'target', 'Exercices non reconnus', String(unk))] : []),
     'Tes données restent sur ce téléphone. Sauvegarde-les de temps en temps dans Fichiers pour ne rien perdre.' + (state.workouts.some(isHevy) ? '' : ' Pour Hevy : dans Hevy, Profil, Réglages, Exporter les données, puis choisis workouts.csv ici.'));
   h += sgroup('À propos', [
     srow('guide', 'book', 'Guide de l’app'),
@@ -522,6 +559,50 @@ function pickFile(accept, onText) {
   input.click();
 }
 
+// ---------- Corbeille (30 jours) ----------
+function liveTrash() {
+  const L = (state.trash || []).filter((x) => x && x.w && Date.now() - x.at < 30 * 864e5);
+  if (L.length !== (state.trash || []).length) { state.trash = L; save(); }
+  return L;
+}
+function restoreTrash(id) {
+  const t = liveTrash().find((x) => x.w.id === id); if (!t) return;
+  state.trash = state.trash.filter((x) => x !== t);
+  if (!state.workouts.some((w) => w.id === id)) state.workouts.push(t.w);
+  save(); render(); toast('Séance « ' + t.w.title + ' » remise dans ton historique');
+}
+function sheetTrash() {
+  const L = liveTrash().slice().reverse();
+  let h = '<div class="col" style="gap:4px"><span class="label violet">Données</span><h1 class="h1">Corbeille</h1><span class="small mut">Les séances supprimées restent ici 30 jours. Elles ne comptent plus nulle part tant qu’elles y sont.</span></div>';
+  h += L.length ? '<div class="list">' + L.map((x) => '<div class="item"><div class="col grow" style="gap:2px;min-width:0"><span style="font-weight:600">' + esc(x.w.title) + '</span><span class="small mut">' + dateFr(x.w.start, true) + ' · supprimée le ' + dateFr(x.at, true) + '</span></div><button type="button" class="pill sm glass" data-act="trash-back" data-id="' + esc(x.w.id) + '">Remettre</button></div>').join('') + '</div><button type="button" class="pill glass wide" data-act="trash-empty" style="color:var(--mut)">Vider la corbeille</button>'
+    : '<section class="glass card"><span class="mut">La corbeille est vide.</span></section>';
+  sheet(h + '<button type="button" class="pill gold-btn wide" data-act="close2">Fermer</button>', 2);
+}
+
+// ---------- Export en tableau (CSV, pour Excel ou Numbers) ----------
+function exportCsv() {
+  const q = (v) => { const t = String(v == null ? '' : v); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const rows = [['Date', 'Heure', 'Séance', 'Exercice', 'Série', 'Répétitions', 'Lest (kg)', 'Secondes', 'Km', 'Record'].join(';')];
+  for (const w of sorted().slice().reverse()) {
+    const d = new Date(w.start), day = d.toLocaleDateString('fr-FR'), hr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    for (const e of w.exercises) e.sets.forEach((x, i) => { if (x.done === false) return; rows.push([day, hr, q(w.title), q(exoName(e.name)), i + 1, x.r || '', x.w ? String(x.w).replace('.', ',') : '', x.t || '', x.d ? String(x.d).replace('.', ',') : '', x.pr ? 'oui' : ''].join(';')); });
+  }
+  const name = 'ascension-series-' + new Date().toISOString().slice(0, 10) + '.csv';
+  const file = new File(['\ufeff' + rows.join('\r\n')], name, { type: 'text/csv' });
+  (async () => {
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  })();
+}
+
+// ---------- Changer de téléphone ----------
+function sheetTransfer() {
+  const steps = ['Sur ce téléphone : Réglages, « Sauvegarder mes données ». Enregistre le fichier dans Fichiers (iCloud Drive) ou envoie-le-toi.', 'Sur le nouveau téléphone : ouvre ' + location.host + location.pathname + ' dans Safari, puis Partager, « Sur l’écran d’accueil ».', 'Ouvre l’app depuis la nouvelle icône, puis Réglages, « Restaurer une sauvegarde », et choisis le fichier.', 'Vérifie que ton historique est là avant de te séparer de l’ancien téléphone.'];
+  sheet('<div class="col" style="gap:4px"><span class="label violet">Données</span><h1 class="h1">Changer de téléphone</h1><span class="small mut">Tes données sont dans ce téléphone, pas sur internet : on les passe par un fichier. Rien n’est effacé, la restauration ajoute.</span></div>'
+    + '<section class="glass card col" style="gap:12px">' + steps.map((t, i) => '<div class="row" style="gap:12px;align-items:flex-start"><span class="num violet" style="font-size:22px;width:20px">' + (i + 1) + '</span><span class="small" style="line-height:1.5">' + esc(t) + '</span></div>').join('') + '</section>'
+    + '<button type="button" class="pill gold-btn wide" data-act="export">Sauvegarder maintenant</button><button type="button" class="pill glass wide" data-act="close2">Fermer</button>', 2);
+}
+
 async function exportBackup() {
   const name = 'ascension-sauvegarde-' + new Date().toISOString().slice(0, 10) + '.json';
   const file = new File([exportJson()], name, { type: 'application/json' });
@@ -556,7 +637,20 @@ Object.assign(ACTIONS, {
   run: () => sheetRun(),
   copy: (el) => { const w = state.workouts.find((x) => x.id === el.dataset.id); if (w) copyText(workoutText(w)); },
   detail: (el) => sheetDetail(el.dataset.id),
-  delete: (el) => { if (confirm('Supprimer définitivement cette séance ?')) { state.workouts = state.workouts.filter((x) => x.id !== el.dataset.id); save(); closeSheet(); render(); } },
+  // Une séance supprimée va 30 jours à la corbeille (Réglages, Données), avec « Annuler » tout de suite.
+  delete: (el) => {
+    const w = state.workouts.find((x) => x.id === el.dataset.id); if (!w) return;
+    state.workouts = state.workouts.filter((x) => x !== w);
+    state.trash = (state.trash || []).concat([{ w, at: Date.now() }]);
+    save(); closeSheet(); render();
+    toastUndo('Séance mise à la corbeille', () => restoreTrash(w.id));
+  },
+  undo: () => { const f = ui.undo; ui.undo = null; $('toast').innerHTML = ''; if (f) f(); },
+  trash: () => sheetTrash(),
+  'trash-back': (el) => { restoreTrash(el.dataset.id); sheetTrash(); },
+  'trash-empty': () => { if (!confirm('Vider la corbeille ? Ces séances seront perdues pour de bon.')) return; state.trash = []; save(); sheetTrash(); },
+  'export-csv': () => exportCsv(),
+  transfer: () => sheetTransfer(),
   more: () => { ui.historyLimit += 40; render(); },
   'set-rest': (el) => { state.settings.rest = +el.dataset.s; save(); sheetSettings(); },
   'set-sub': (el) => sheetSub(el.dataset.k),
@@ -565,7 +659,12 @@ Object.assign(ACTIONS, {
   'toggle-sound': () => { state.settings.sound = state.settings.sound === false; save(); sheetSettings(); },
   'home-edit': () => sheetHomeEdit(),
   guide: () => sheetGuide(),
+  'home-move': (el) => { const O = homeOrder(), i = O.indexOf(el.dataset.k), j = i + Number(el.dataset.d); if (j < 0 || j >= O.length) return; [O[i], O[j]] = [O[j], O[i]]; state.settings.homeOrder = O; save(); render(); sheetHomeEdit(); },
   'home-toggle': (el) => { const k = el.dataset.k; state.settings.hide = Object.assign({}, state.settings.hide, { [k]: show(k) }); save(); render(); sheetHomeEdit(); },
+  'toggle-textbig': () => { state.settings.textBig = !state.settings.textBig; save(); render(); sheetSettings(); },
+  'toggle-light': () => { state.settings.light = !state.settings.light; save(); render(); sheetSettings(); },
+  'toggle-haptics': () => { state.settings.haptics = state.settings.haptics === false; save(); sheetSettings(); },
+  'toggle-zen': () => { state.settings.zen = !state.settings.zen; save(); render(); sheetSettings(); },
   'toggle-voice': () => { state.settings.voiceCoach = !state.settings.voiceCoach; save(); if (state.settings.voiceCoach) { try { const u = new SpeechSynthesisUtterance('Voix du coach activée. Je t’annonce chaque série à la fin du repos.'); u.lang = 'fr-FR'; speechSynthesis.speak(u); } catch (e) { /* pas de voix */ } } sheetSettings(); },
   'toggle-silent': () => { state.settings.soundSilent = state.settings.soundSilent === false; save(); wakeAudio(); sheetSettings(); },
   'test-sound': () => {
@@ -577,6 +676,7 @@ Object.assign(ACTIONS, {
   },
   news: () => sheetNews(),
   season: () => sheetSeason(),
+  'season-img': () => shareImage(...seasonImage()),
   update: async () => {
     if (!('serviceWorker' in navigator) || local) { toast('Mise à jour indisponible ici'); return; }
     toast('Recherche d’une mise à jour…');
@@ -715,10 +815,40 @@ const MENU = [
     ['act', 'guide', 'book', 'Guide', 'Comment marche chaque partie de l’app'],
   ]],
 ];
+// Recherche dans toute l'app : écrans et fenêtres, exercices (avec leurs autres noms), séances passées.
+const MORE_SEARCH = [
+  ['act', 'analyse', 'chart', 'Analyse', 'Ce mois contre le mois dernier, meilleures séances, records'],
+  ['act', 'week', 'calendar', 'Ta semaine', 'Plan de la semaine, jours fixes, vacances'],
+  ['act', 'coach', 'bolt', 'Coach', 'Conseils et questions'],
+  ['act', 'checkin', 'notif', 'Bilan du matin', 'Sommeil, courbatures, énergie, pouls'],
+  ['act', 'quick', 'plus', 'Pompes du jour', 'Des séries hors séance'],
+  ['act', 'boss', 'swords', 'Ton ombre', 'Le défi de la semaine'],
+  ['act', 'mch', 'trophy', 'Défi du mois', 'Un gros total à atteindre'],
+  ['act', 'paliers', 'medal', 'Paliers', 'Médailles de tes grands records'],
+  ['act', 'duels', 'swords', 'Duels', 'Défier quelqu’un avec un code'],
+  ['act', 'season', 'star', 'Saison', 'Les 30 paliers du mois'],
+  ['act', 'mtest', 'target', 'Test du mois', 'Où tu te situes pour ton âge'],
+  ['act', 'goal-new', 'target', 'Nouvel objectif', 'Un but chiffré avec sa date estimée'],
+  ['act', 'measures', 'scale', 'Mensurations', 'Tour de bras, de taille…'],
+  ['act', 'export', 'save', 'Sauvegarder', 'Un fichier avec toutes tes données'],
+];
+function searchAll(q) {
+  const n = norm(q || '').trim();
+  if (n.length < 2) return '<span class="small mut">Écris au moins 2 lettres : un écran, un exercice, une séance.</span>';
+  const row = (attr, ic, t, d) => '<button type="button" class="mrow" ' + attr + '><span class="mico">' + (ICON[ic] || '') + '</span><span class="col grow" style="gap:1px;min-width:0"><span class="mt">' + t + '</span><span class="small mut">' + d + '</span></span>' + ICON.chev + '</button>';
+  const pages = MENU.flatMap(([, r]) => r).concat(MORE_SEARCH).filter(([, , , t, d]) => norm(t + ' ' + d).includes(n)).slice(0, 6)
+    .map(([k, v, ic, t, d]) => row((k === 'tab' ? 'data-tab' : 'data-act') + '="' + v + '"', ic, t, d));
+  const ex = Object.keys(EXOS).filter((k) => norm(exoName(k) + ' ' + k + ' ' + (AKA[k] || []).join(' ')).includes(n)).slice(0, 8)
+    .map((k) => row('data-act="exo" data-name="' + esc(k) + '"', 'dumbbell', esc(exoName(k)), 'Fiche, historique et record'));
+  const ws = sorted().filter((w) => norm(w.title + ' ' + dateFr(w.start, true) + ' ' + w.exercises.map((e) => exoName(e.name)).join(' ')).includes(n)).slice(0, 8)
+    .map((w) => row('data-act="detail" data-id="' + esc(w.id) + '"', 'clock', esc(w.title), dateFr(w.start, true)));
+  const grp = (t, L) => (L.length ? '<div class="mgroup"><span class="label">' + t + '</span><div class="mlist">' + L.join('') + '</div></div>' : '');
+  return (grp('Dans l’app', pages) + grp('Exercices', ex) + grp('Séances', ws)) || '<span class="small mut">Rien trouvé pour « ' + esc(q) + ' ».</span>';
+}
 function sheetMenu() {
-  sheet('<span class="h1">Menu</span>' + MENU.map(([g, rows]) => '<div class="mgroup"><span class="label">' + g + '</span><div class="mlist">'
+  sheet('<span class="h1">Menu</span><label class="field gsearch"><input id="gsearch" type="search" placeholder="Rechercher dans l’app" aria-label="Rechercher dans l’app" autocomplete="off"></label><div id="gs-res" class="col" style="gap:14px;display:none"></div><div id="gs-menu" class="col" style="gap:18px">' + MENU.map(([g, rows]) => '<div class="mgroup"><span class="label">' + g + '</span><div class="mlist">'
     + rows.map(([k, v, ic, t, d]) => '<button type="button" class="mrow' + (k === 'tab' && ui.tab === v ? ' on' : '') + '" ' + (k === 'tab' ? 'data-tab' : 'data-act') + '="' + v + '"><span class="mico">' + (ICON[ic] || '') + '</span><span class="col grow" style="gap:1px;min-width:0"><span class="mt">' + t + '</span><span class="small mut">' + d + '</span></span>' + ICON.chev + '</button>').join('')
-    + '</div></div>').join(''), 1, 'menu');
+    + '</div></div>').join('') + '</div>', 1, 'menu');
 }
 Object.assign(ACTIONS, { menu: () => sheetMenu() });
 
@@ -736,7 +866,15 @@ export function render() {
       + '<span class="small dim" style="font-family:ui-monospace,monospace;word-break:break-word">' + esc(String(e && e.message || e)) + ' ' + esc(String(e && e.stack || '').split(String.fromCharCode(10)).slice(0, 3).join(' | ')) + '</span>'
       + '<button type="button" class="pill gold-btn wide" onclick="__repair()">Réparer l’app</button></section>';
   }
+  // Séance en cours et autre écran : un bouton en bas pour y revenir.
+  const resume = state.active && ui.tab !== 'workout' && ui.tab !== 'home';
+  if (resume) { const a = state.active, done = a.exercises.reduce((n, e) => n + e.sets.filter((x) => x.done).length, 0), tot = a.exercises.reduce((n, e) => n + e.sets.length, 0); html += '<button type="button" class="resumebar" data-tab="workout"><span class="col grow" style="gap:0;text-align:left;min-width:0"><span>Reprendre ma séance</span><span class="small">' + esc(a.label) + ' · ' + done + ' sur ' + tot + ' séries</span></span>' + ICON.chev + '</button>'; }
+  document.body.classList.toggle('has-resume', !!resume);
   $('app').innerHTML = html;
+  document.body.classList.toggle('zen', !!state.settings.zen);
+  document.documentElement.classList.toggle('light', !!state.settings.light);
+  document.documentElement.classList.toggle('textbig', !!state.settings.textBig);
+  { const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = state.settings.light ? '#F3F2F7' : '#0E0E12'; }
   document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === ui.tab));
   // Un rang gagné se fête sur l'accueil, quand aucune autre fenêtre n'est ouverte.
   if (ui.tab === 'home' && state.workouts.length && !$('sheet').firstElementChild) checkRankUp(rankInfo());
@@ -764,6 +902,8 @@ document.addEventListener('keydown', (ev) => {
 });
 document.addEventListener('input', (ev) => {
   // Recherche dans l'historique : on ne redessine que la liste, pour garder le clavier ouvert.
+  if (ev.target.id === 'ba-range') { const t = document.querySelector('.ba-top'); if (t) t.style.width = ev.target.value + '%'; return; }
+  if (ev.target.id === 'gsearch') { const q = ev.target.value, r = $('gs-res'), m = $('gs-menu'); r.style.display = q ? '' : 'none'; m.style.display = q ? 'none' : ''; r.innerHTML = q ? searchAll(q) : ''; return; }
   if (ev.target.id === 'h-search') { ui.hQuery = ev.target.value; ui.historyLimit = 40; $('h-list').innerHTML = historyList(); return; }
   onInput(ev.target);
 });

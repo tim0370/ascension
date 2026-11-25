@@ -44,6 +44,34 @@ function bestPace() {
   return t.length ? Math.round(Math.min(...t.map((r) => r.t / r.d))) : 360;
 }
 
+// Allure conseillée : moyenne des 3 dernières courses d'au moins 2 km, 5 s plus vite.
+export function aimPace() {
+  const t = runs().filter((r) => r.d >= 2 && r.t > 0).slice(0, 3);
+  return t.length ? Math.round(t.reduce((n, r) => n + r.t / r.d, 0) / t.length) - 5 : 0;
+}
+// Records et prévisions (formule de Riegel : T2 = T1 × (D2 / D1)^1,06).
+export function runRecords() {
+  const R = runs().filter((r) => r.d > 0 && r.t > 0);
+  const km1 = Math.min(Infinity, ...R.flatMap((r) => (r.splits && r.splits.length ? r.splits : r.d >= 1 && r.d < 1.3 ? [r.t / r.d] : [])));
+  const at = (D) => { const L = R.filter((r) => r.d >= D); return L.length ? Math.min(...L.map((r) => r.t / r.d * D)) : null; };
+  const base = R.filter((r) => r.d >= 3).sort((a, b) => a.t / a.d - b.t / b.d)[0];
+  const pred = (D) => (base ? base.t * Math.pow(D / base.d, 1.06) : null);
+  return { km1: isFinite(km1) ? km1 : null, km5: at(5), km10: at(10), p5: pred(5), p10: pred(10), p21: pred(21.1) };
+}
+export const fmtTime = (s) => (s ? mmss(s) : '–');
+// Tous les tracés GPS superposés, chacun ramené à son point de départ.
+export function routesAll() {
+  const L = runs().filter((r) => r.path && r.path.length > 1).slice(0, 12);
+  if (L.length < 2) return '';
+  const lat0 = L[0].path[0][0] * Math.PI / 180, k = Math.cos(lat0);
+  const P = L.map((r) => { const [a0, o0] = r.path[0]; return r.path.map(([la, lo]) => [(lo - o0) * k, -(la - a0)]); });
+  const all = P.flat(), xs = all.map((p) => p[0]), ys = all.map((p) => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const W = 320, H = 220, pad = 14, sc = Math.min((W - 2 * pad) / Math.max(1e-9, maxX - minX), (H - 2 * pad) / Math.max(1e-9, maxY - minY));
+  const ox = (W - (maxX - minX) * sc) / 2, oy = (H - (maxY - minY) * sc) / 2;
+  return '<svg class="route" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Tous tes tracés">' + P.map((pts, i) => '<polyline points="' + pts.map(([x, y]) => (ox + (x - minX) * sc).toFixed(1) + ',' + (oy + (y - minY) * sc).toFixed(1)).join(' ') + '" fill="none" stroke="#8468E8" stroke-opacity="' + (i === 0 ? 1 : 0.35) + '" stroke-width="' + (i === 0 ? 3 : 2) + '" stroke-linecap="round" stroke-linejoin="round"/>').join('') + '</svg>';
+}
+
 // ---------- Réglages avant de partir ----------
 export function sheetGps() {
   if (live && live.started) { drawLive(); return; }
@@ -56,14 +84,19 @@ export function sheetGps() {
   const voice = s.runVoice !== false;
   let h = '<div class="col"><span class="label violet">Course en direct</span><h1 class="h1">Prêt à courir</h1><span class="small mut">Le GPS mesure ta course. Garde l’app ouverte, l’écran reste allumé.</span></div>';
   h += '<section class="glass card col" style="gap:12px"><div class="row between"><span class="h2">Le lièvre</span><span class="tag gold">' + paceTxt(hare) + ' /km</span></div>'
-    + '<span class="small mut">Il court à allure constante. Reste devant lui.' + (runs().length ? ' Ta meilleure allure : ' + paceTxt(bp) + ' /km.' : '') + '</span>'
+    + '<span class="small mut">Il court à allure constante. Reste devant lui.' + (runs().length ? ' Ta meilleure allure : ' + paceTxt(bp) + ' /km.' : '') + (aimPace() ? ' Allure conseillée aujourd’hui : ' + paceTxt(aimPace()) + ' /km (tes 3 dernières courses, 5 s plus vite).' : '') + '</span>'
     + '<div class="row" style="gap:10px"><button type="button" class="stepbtn sm" data-act="hare" data-d="5" aria-label="Plus lent">' + ICON.minus + '</button>'
     + '<div class="col grow center"><span class="num" style="font-size:34px">' + paceTxt(hare) + '</span><span class="small mut">par kilomètre</span></div>'
     + '<button type="button" class="stepbtn sm" data-act="hare" data-d="-5" aria-label="Plus rapide">' + ICON.plus + '</button></div>'
-    + '<div class="row" style="gap:8px;flex-wrap:wrap">' + [[bp + 45, 'Tranquille'], [bp, 'Mon allure'], [bp - 5, 'Plus vite']].map(([v, l]) => '<button type="button" class="pill sm ' + (v === hare ? 'gold-btn' : 'glass') + ' grow" data-act="hare-set" data-v="' + v + '">' + l + '</button>').join('') + '</div></section>';
+    + '<div class="row" style="gap:8px;flex-wrap:wrap">' + [[bp + 45, 'Tranquille'], [aimPace() || bp, 'Conseillée'], [bp - 5, 'Record']].map(([v, l]) => '<button type="button" class="pill sm ' + (v === hare ? 'gold-btn' : 'glass') + ' grow" data-act="hare-set" data-v="' + v + '">' + l + '</button>').join('') + '</div></section>';
   h += '<section class="glass card col" style="gap:10px"><span class="h2">Distance visée</span><div class="row" style="gap:8px">'
     + [[0, 'Libre'], [3, '3 km'], [5, '5 km'], [10, '10 km']].map(([v, l]) => '<button type="button" class="pill sm ' + (v === goal ? 'gold-btn' : 'glass') + ' grow" data-act="run-goal" data-v="' + v + '">' + l + '</button>').join('') + '</div>'
     + (goal ? '<span class="small mut">Temps visé avec le lièvre : ' + mmss(goal * hare) + '</span>' : '') + '</section>';
+  const iv = ui.runIv !== undefined ? ui.runIv : (s.runIv || 0);
+  ui.runIv = iv;
+  h += '<section class="glass card col" style="gap:10px"><span class="h2">Fractionné</span><div class="row" style="gap:8px">'
+    + [[0, 'Non'], [30, '30 s / 30 s'], [60, '1 min / 1 min'], [120, '2 / 2 min']].map(([v, l]) => '<button type="button" class="pill sm ' + (v === iv ? 'gold-btn' : 'glass') + ' grow" data-act="run-iv" data-v="' + v + '">' + l + '</button>').join('') + '</div>'
+    + (iv ? '<span class="small mut">Après 5 minutes d’échauffement, la voix alterne « Vite » et « Récupère » toutes les ' + (iv < 60 ? iv + ' secondes' : iv / 60 + ' minute' + (iv > 60 ? 's' : '')) + '. C’est ce qui fait gagner le plus de vitesse.</span>' : '') + '</section>';
   h += '<button type="button" class="pill glass wide' + (voice ? ' on' : '') + '" data-act="run-voice">' + (voice ? 'Voix : oui, à chaque kilomètre' : 'Voix : non') + '</button>';
   h += '<button type="button" class="pill gold-btn wide big" data-act="run-start">Partir</button>'
     + '<span class="small mut" style="text-align:center">Le GPS met parfois quelques secondes à trouver ta position. Écran verrouillé ou app fermée : l’iPhone arrête le GPS.</span>';
@@ -73,8 +106,8 @@ export function sheetGps() {
 // ---------- Pendant la course ----------
 function start() {
   if (!navigator.geolocation) { toast('Ce téléphone ne donne pas le GPS à l’app'); return; }
-  live = { started: Date.now(), paused: 0, pauseAt: 0, d: 0, last: null, win: [], splits: [], path: [], hare: ui.hare, goal: ui.runGoal || 0, voice: state.settings.runVoice !== false, acc: null, ahead: null, aheadAt: 0, done: false };
-  state.settings.harePace = ui.hare; state.settings.runGoal = ui.runGoal; save();
+  live = { started: Date.now(), paused: 0, pauseAt: 0, d: 0, last: null, win: [], splits: [], path: [], hare: ui.hare, goal: ui.runGoal || 0, iv: ui.runIv || 0, ivPh: -1, voice: state.settings.runVoice !== false, acc: null, ahead: null, aheadAt: 0, done: false };
+  state.settings.harePace = ui.hare; state.settings.runGoal = ui.runGoal; state.settings.runIv = ui.runIv || 0; save();
   // La voix doit être lancée pendant le toucher pour être autorisée sur iPhone.
   say('C’est parti. Le lièvre court à ' + spokenTime(live.hare) + ' au kilomètre.');
   keepScreen();
@@ -140,6 +173,14 @@ function tickLive() {
     live.aheadAt = Date.now();
   }
   if (live.d > 150) live.ahead = ahead;
+  // Fractionné : 5 minutes d'échauffement, puis vite / récupère.
+  if (live.iv && !live.pauseAt) {
+    const WU = 300;
+    if (t >= WU) {
+      const ph = Math.floor((t - WU) / live.iv);
+      if (ph !== live.ivPh) { live.ivPh = ph; say(ph % 2 === 0 ? 'Vite ! ' + (live.iv < 60 ? live.iv + ' secondes.' : (live.iv / 60) + ' minute' + (live.iv > 60 ? 's.' : '.')) : 'Récupère. Trottine.'); }
+    } else if (live.ivPh === -1 && t >= WU - 10) { live.ivPh = -2; say('Fin de l’échauffement dans 10 secondes.'); }
+  }
   updateLive();
 }
 
@@ -223,6 +264,7 @@ Object.assign(ACTIONS, {
   hare: (el) => { ui.hare = Math.max(150, Math.min(900, (ui.hare || bestPace()) + Number(el.dataset.d))); sheetGps(); },
   'hare-set': (el) => { ui.hare = Number(el.dataset.v); sheetGps(); },
   'run-goal': (el) => { ui.runGoal = Number(el.dataset.v); sheetGps(); },
+  'run-iv': (el) => { ui.runIv = Number(el.dataset.v); sheetGps(); },
   'run-voice': () => { state.settings.runVoice = state.settings.runVoice === false; save(); sheetGps(); },
   'run-start': () => start(),
   'run-pause': () => {

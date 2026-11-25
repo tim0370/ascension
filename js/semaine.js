@@ -36,6 +36,9 @@ export function weekPlan() {
   const sun = future.find((d) => d.i === 6);
   if (sun && !runDone) { sun.kind = 'course'; sun.label = vit ? 'Course rapide' : 'Course'; sun.sub = vit ? 'Ta vitesse est ta qualité la plus basse : vise ton allure record' : 'Endurance et vitesse'; if (left) left -= 1; }
   let cand = future.filter((d) => !d.kind);
+  // Jours fixes choisis : on les remplit d'abord ; les autres jours seulement s'il en manque.
+  const fixed = state.settings.days || [];
+  if (fixed.length) { const f = cand.filter((d) => fixed.includes(d.i)); if (f.length >= left) cand = f; else cand = f.concat(cand.filter((d) => !fixed.includes(d.i))).slice(0, Math.max(left, f.length)); cand.sort((x, y) => x.i - y.i); }
   if (cand.length > left && cand[0] && cand[0].today && forme().score < 45) cand = cand.slice(1); // forme basse : repos aujourd'hui si on a de la marge
   const pick = [];
   if (left >= cand.length) pick.push(...cand);
@@ -67,7 +70,10 @@ function sheetPlan() {
     else if (d.kind === 'course') h += '<button type="button" class="item" data-act="gps"><span class="kdot course"></span><div class="col grow" style="gap:2px;min-width:0">' + head + '<span class="small mut">' + esc(d.label) + ' · ' + esc(d.sub) + '</span></div>' + ICON.chev + '</button>';
     else h += '<div class="item"><span class="kdot"></span><div class="col grow" style="gap:2px">' + head + '<span class="small mut">' + (d.past ? 'Repos' : 'Repos prévu') + '</span></div></div>';
   }
-  h += '</div><section class="glass card why"><span class="label violet">Pourquoi ' + P.goal + ' par semaine</span>'
+  const fx = state.settings.days || [];
+  h += '</div><div class="col" style="gap:8px"><span class="label">Tes jours d’entraînement</span><div class="dayfix">' + NOMS.map((n, i) => '<button type="button" class="pill sm ' + (fx.includes(i) ? 'gold-btn' : 'glass') + '" data-act="day-fix" data-i="' + i + '" aria-label="' + n + '">' + LETTRES[i] + '</button>').join('') + '</div><span class="small mut">' + (fx.length ? 'Les séances sont placées sur ces jours en priorité.' : 'Choisis tes jours fixes : sinon, l’app répartit les séances toute seule.') + '</span></div>'
+    + '<button type="button" class="item" data-act="vac"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + ((state.settings.vac || 0) > Date.now() ? 'Mode vacances jusqu’au ' + new Date(state.settings.vac).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : 'Mode vacances') + '</span><span class="small mut">' + ((state.settings.vac || 0) > Date.now() ? 'Touche pour l’arrêter.' : '2 semaines : 3 séances courtes par semaine suffisent, ta flamme est gardée.') + '</span></div>' + ICON.chev + '</button>';
+  h += '<section class="glass card why"><span class="label violet">Pourquoi ' + P.goal + ' par semaine</span>'
     + '<span class="whyl">' + (P.goal === 5 ? '4 séances de muscu et ta course du dimanche : c’est le rythme que tu as choisi. Chaque muscle est travaillé 2 fois par semaine, avec au moins un jour de récupération entre deux séances qui le sollicitent.' : P.goal + ' séances : c’est l’objectif réglé dans les Réglages. Il se change quand tu veux.') + '</span>'
     + '<span class="whyl">Atteindre l’objectif fait grandir ta flamme d’une semaine. Toutes les 4 semaines réussies, tu gagnes un bouclier qui sauve une semaine ratée.</span>'
     + '<span class="whyl">Les pompes du jour, les programmes de 30 jours et ton ombre ne comptent pas : seules les vraies séances et la course comptent.</span></section>'
@@ -137,6 +143,8 @@ function sheetLundi(mArg) {
 
 Object.assign(ACTIONS, {
   plan: () => sheetPlan(),
+  'day-fix': (el) => { const i = +el.dataset.i, L = (state.settings.days || []).slice(); const k = L.indexOf(i); if (k >= 0) L.splice(k, 1); else L.push(i); state.settings.days = L.sort(); save(); sheetPlan(); },
+  vac: () => { const on = (state.settings.vac || 0) > Date.now(); const V = state.settings.vacs = state.settings.vacs || []; if (on) { if (V.length) V[V.length - 1][1] = Date.now(); state.settings.vac = 0; } else { state.settings.vac = Date.now() + 14 * DAY; V.push([Date.now(), state.settings.vac]); } save(); sheetPlan(); import('./app.js').then((a) => a.render()); },
   lundi: () => sheetLundi(0),
   'lundi-at': (el) => sheetLundi(+el.dataset.m),
 });

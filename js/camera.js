@@ -3,7 +3,7 @@
 // Quand tu descends, ta poitrine cache la lumière : l'image s'assombrit. Quand tu remontes, elle s'éclaircit.
 // Une répétition = une descente puis une remontée nette.
 import { state, save, exoName } from './store.js';
-import { $, esc, ACTIONS, ICON, sheet, closeSheet, toast } from './ui.js';
+import { $, esc, buzz, ACTIONS, ICON, sheet, closeSheet, toast } from './ui.js';
 import { render } from './app.js';
 
 // Compteur possible : pompes, dips, squats et burpees (tous comptés par la lumière qui baisse quand le corps s'approche).
@@ -103,7 +103,7 @@ function loop() {
   if (me.state === 'up' && pos < 0.3) { me.state = 'down'; if (st) st.textContent = 'Remonte'; }
   else if (me.state === 'down' && pos > 0.7 && now - me.last > 450) {
     me.state = 'up'; me.last = now; me.n++;
-    try { navigator.vibrate && navigator.vibrate(25); } catch (e) { /* pas de vibreur */ }
+    buzz(25);
     speak(String(me.n));
     show();
     if (st) st.textContent = 'Descends';

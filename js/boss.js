@@ -58,7 +58,8 @@ function hpOf(b, before) {
 // Le boss de cette semaine, ses PV, et si tu l'as déjà battu.
 export function weekBoss() {
   const m = monday(Date.now());
-  const b = BOSSES[Math.floor(m / (7 * DAY)) % BOSSES.length];
+  const pk = state.settings.bossPick;
+  const b = (pk && pk.m === m && BOSSES.find((x) => x.id === pk.id)) || BOSSES[Math.floor(m / (7 * DAY)) % BOSSES.length];
   const tries = state.workouts.filter((w) => w.boss && w.boss.id === b.id && w.start >= m);
   const won = tries.find((w) => w.boss.win);
   const { hp, level } = hpOf(b, won ? won.start : Date.now() + 1);
@@ -102,6 +103,8 @@ function drawBoss() {
     + '<span class="small mut">À battre : ' + b.hp + (b.tries ? ' · ' + plural(b.tries, 'essai', 'essais') + ' cette semaine, meilleur : ' + b.best : '') + '</span></div>';
   h += '<section class="glass card col" style="gap:8px"><span class="h2">' + esc(b.desc) + '</span><span class="small mut">Ton ombre, c’est toi : ta meilleure tentative sur ce défi. Pour la battre, fais au moins ' + b.hp + ' (' + esc(exoName(b.exo)) + (b.w ? ' avec ' + b.w + ' kg' : '') + '). Chaque victoire la rend plus forte la fois suivante. +' + BOSS_XP + ' XP.</span></section>';
   if (f.phase === 'ready') {
+    const anyTry = state.workouts.some((w) => w.boss && w.start >= b.ends - 7 * DAY);
+    if (!anyTry) h += '<div class="col" style="gap:8px"><span class="label">Choisir le défi de la semaine</span><div class="row" style="flex-wrap:wrap;gap:8px">' + BOSSES.map((x) => '<button type="button" class="pill sm ' + (x.id === b.id ? 'gold-btn' : 'glass') + '" data-act="boss-pick" data-id="' + x.id + '">' + esc(x.name) + '</button>').join('') + '</div><span class="small dim">Possible tant que tu n’as rien tenté cette semaine.</span></div>';
     if (b.won) h += '<span class="small mut" style="text-align:center">Tu peux le refaire pour t’entraîner, mais la victoire de la semaine est déjà comptée.</span>';
     h += '<button type="button" class="pill gold-btn wide big" data-act="boss-go">' + (b.secs ? 'Commencer (' + (b.secs >= 120 ? b.secs / 60 + ' min' : b.secs + ' s') + ')' : 'Commencer') + '</button>';
   } else if (f.phase === 'count' || f.phase === 'go') {
@@ -163,6 +166,7 @@ function hit() {
 
 Object.assign(ACTIONS, {
   boss: () => sheetBoss(),
+  'boss-pick': (el) => { state.settings.bossPick = { m: monday(Date.now()), id: el.dataset.id }; save(); sheetBoss(); },
   'boss-go': () => { wakeAudio(); fight.phase = 'count'; fight.start = Date.now(); fight.t0 = Date.now() + 3000; drawBoss(); loop(); },
   'boss-stop': () => { clearTimeout(fight.timer); fight.phase = 'score'; drawBoss(); },
   'boss-step': (el) => { const i = $('boss-score'); if (i) i.value = Math.max(0, (parseInt(i.value, 10) || 0) + Number(el.dataset.d)); },

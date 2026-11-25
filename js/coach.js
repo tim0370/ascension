@@ -9,7 +9,7 @@ import { forme, charge, lightAdvice, lightWeek, activePains, PAINS, predictions,
 import { tally } from './bilan.js';
 import { understand, closest, resetCtx, clean } from './cerveau.js';
 import { weekPlan } from './semaine.js';
-import { bodyStats, ZONES } from './corps.js';
+import { bodyStats, ZONES, musclesOf } from './corps.js';
 import { rankInfo, balance, bodyLog } from './stats.js';
 import { streak } from './quetes.js';
 
@@ -106,6 +106,27 @@ export function insights() {
   const slow = tr.filter((t) => t.slow).sort((a, b) => b.n - a.n)[0];
   if (slow) out.push({ tone: 'info', title: 'Ça ralentit sur ' + exoName(slow.name), text: '2 séances sans faire mieux que ' + showSet(slow.name, slow.ref.best).replace(/\.$/, '') + '. Si la prochaine est pareille, tu vas stagner. Change un détail dès maintenant : ' + stuckTip(slow)[0].charAt(0).toLowerCase() + stuckTip(slow)[0].slice(1), act: 'stuck' });
 
+  // Bilan du dimanche (et lundi matin) : la semaine en 3 phrases.
+  const dow = new Date().getDay();
+  if ((dow === 0 && new Date().getHours() >= 16) || (dow === 1 && new Date().getHours() < 12)) { const wr = weekRecap(dow === 1); if (wr) out.unshift({ tone: 'info', title: 'Bilan de ta semaine', text: wr, act: 'week' }); }
+  // Surcharge : trop de séries sur un même muscle en 7 jours.
+  const vol = {}; for (const w of ws) { if (now - w.start > 7 * DAY) break; for (const e of w.exercises) { if (e.name === 'Running') continue; const m = musclesOf(e.name), n = e.sets.filter((x) => x.done !== false).length; for (const z of Object.keys(m)) vol[z] = (vol[z] || 0) + n * m[z]; } }
+  const over = Object.keys(vol).filter((z) => ZONES[z] && vol[z] > (ZONES[z].big ? 26 : 20)).sort((a, b) => vol[b] - vol[a])[0];
+  if (over) out.push({ tone: 'warn', title: 'Beaucoup pour tes ' + ZONES[over].name.toLowerCase(), text: Math.round(vol[over]) + ' séries en 7 jours, au-delà de ce qui fait progresser (environ 20). Laisse-les récupérer 2 jours : la séance du jour en tient compte.', act: 'light' });
+  // Les notes que tu laisses sur un exercice : une douleur notée est prise au sérieux.
+  const noted = ws.filter((w) => now - w.start < 14 * DAY).flatMap((w) => w.exercises.filter((e) => e.note && /mal|douleur|sensible|g[eê]ne|tire|craque|bless/i.test(e.note)).map((e) => ({ name: e.name, note: e.note })))[0];
+  if (noted && !P.length) out.push({ tone: 'warn', title: 'Ta note sur ' + exoName(noted.name), text: 'Tu avais écrit « ' + noted.note + ' ». Vas-y doucement sur cet exercice, et si ça fait mal, signale la douleur : je l’enlèverai de tes séances pendant 7 jours.', act: 'pain' });
+  // Toujours en dernier : l'exercice fait fatigué progresse moins.
+  const lastPos = {}; ws.slice(0, 8).forEach((w) => { const L = w.exercises.filter((e) => e.name !== 'Running'); if (L.length > 2) { const n = L[L.length - 1].name; lastPos[n] = (lastPos[n] || 0) + 1; } });
+  const always = Object.keys(lastPos).find((n) => lastPos[n] >= 4 && !/Hollow|Plank|Rock|Wall Sit|Burpee|Russian/i.test(n));
+  if (always) out.push({ tone: 'info', title: exoName(always) + ' toujours en dernier', text: lastPos[always] + ' fois sur tes 8 dernières séances, tu le fais fatigué. Mets-le en premier une fois (bouton ⋯, « Monter dans la séance ») : tu verras ce que tu vaux vraiment dessus.' });
+  // Régularité rare : on le dit.
+  if (st.n >= 4 && st.n % 4 === 0 && !st.lost) out.push({ tone: 'good', title: plural(st.n, 'semaine', 'semaines') + ' sans en rater une', text: pick(['C’est ça qui fait la différence sur un an, bien plus que n’importe quelle séance.', 'Très peu de gens tiennent ce rythme. Continue exactement comme ça.', 'La régularité bat le talent : tu en as la preuve.']) });
+  // L'heure compte : tôt ou tard, on adapte.
+  const hr = new Date().getHours();
+  if (!doneToday && hr >= 20) out.push({ tone: 'info', title: 'Séance tard', text: 'Après 20 h : échauffement complet, et pas de sauts au maximum en fin de séance, pour t’endormir plus facilement.' });
+  else if (!doneToday && hr < 9) out.push({ tone: 'info', title: 'Séance tôt', text: 'Le matin, le corps est raide : 2 minutes d’échauffement en plus, et tes premières séries un peu en dessous de l’objectif.' });
+
   // Ce qui te réussit
   const R = reussites();
   if (R.length && !/^Il me faut|^Pas de grosse/.test(R[0])) out.push({ tone: 'info', title: 'Ce qui te réussit', text: pick(R), act: 'success' });
@@ -137,6 +158,24 @@ export function insights() {
   const ri = rankInfo();
   if (ri.next) { const q = weakQuality(); out.push({ tone: 'info', title: 'Vers le rang ' + ri.next.letter, text: 'Tu es à ' + Math.round(ri.ratio * 100) + ' % du chemin. Ton point faible : ' + q.name.toLowerCase() + ' (' + q.letter + '). Ta séance point faible de la semaine le cible.', act: 'weak' }); }
   return out;
+}
+
+// Bilan de la semaine (en cours ou passée) en trois phrases : régularité, meilleur progrès, une chose à améliorer.
+export function weekRecap(last) {
+  const m0 = (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - (last ? 7 : 0)); return d.getTime(); })();
+  const W = real().filter((w) => w.start >= m0 && w.start < m0 + 7 * DAY);
+  if (!W.length) return '';
+  const goal = weekGoal(), n = W.length;
+  const t = [(n >= goal ? 'Semaine validée : ' : 'Semaine à ' + n + ' sur ' + goal + ' : ') + plural(n, 'séance', 'séances') + ', ' + plural(W.reduce((k, w) => k + w.exercises.reduce((j, e) => j + e.sets.length, 0), 0), 'série', 'séries') + '.'];
+  const tr = exoTrends().filter((x) => x.last.date >= m0 && x.n >= 2).map((x) => { const p = x.recent[1]; return { x, g: p ? (amount(x.last.best) - amount(p.best)) / Math.max(1, amount(p.best)) : 0 }; }).sort((a, b) => b.g - a.g);
+  if (tr.length && tr[0].g > 0) t.push('Ton meilleur progrès : ' + exoName(tr[0].x.name) + ' (' + showSet(tr[0].x.name, tr[0].x.last.best).replace(/\.$/, '') + ').');
+  const b = balance();
+  const stuck = exoTrends().find((x) => x.stuck || x.slow);
+  if (stuck) t.push('À améliorer : ' + exoName(stuck.name) + ' ne bouge plus. ' + stuckTip(stuck)[0]);
+  else if (b.push > 20 && b.pull * 3 < b.push) t.push('À améliorer : le dos. Ne saute pas les rowings.');
+  else if (n < goal) t.push('À améliorer : la régularité. Place tes séances sur des jours fixes (fenêtre « Ta semaine »).');
+  else t.push('À améliorer : rien d’urgent. Vise un record la semaine prochaine.');
+  return t.join(' ');
 }
 
 // La phrase du jour sur l'accueil (la forme a déjà sa carte au-dessus)

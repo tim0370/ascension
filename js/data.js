@@ -905,6 +905,19 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 52, items: [
+    'Séance : supersérie (deux exercices enchaînés sans repos), série dégressive, série jusqu’à l’échec, tempo guidé, boutons « Plus facile / Plus dur », et « Pourquoi cet exercice ? » dans le menu ⋯',
+    'Repos : il s’allonge si c’était très dur et se raccourcit si c’était facile ; touche-le pour l’afficher en grand, avec l’exercice suivant',
+    'Programme : séance de 10 minutes, séance sans matériel, figure au choix, jours d’entraînement fixes, mode vacances, reprise en douceur après une pause',
+    'Course : fractionné guidé à la voix, records 1, 5 et 10 km, temps prévus, allure conseillée, tous tes tracés sur une carte',
+    'Progrès : nouvelle fenêtre Analyse (ce mois contre le mois dernier, meilleures séances, calendrier des records, séries par muscle, il y a un an), force estimée, comparaison avec les garçons de ton âge, objectif de poids avec date, photos avant/après',
+    'Coach : bilan de la semaine le dimanche soir, alerte quand un muscle travaille trop, exercice toujours fait en dernier, régularité, conseils selon l’heure, et il lit tes notes d’exercice',
+    'Défis : défi du mois (+200 XP), paliers à gagner pour toujours, duels par code avec un ami ou ta sœur, choix du défi de ton ombre, image de ta saison, série de jours des pompes du jour',
+    'Accueil : bouton « Reprendre ma séance » sur tous les écrans, carte du soir, cartes dans l’ordre de ton choix',
+    'Menu : recherche dans toute l’app (écrans, exercices, séances)',
+    'Réglages : mode clair, texte plus grand, séance épurée, vibrations (Android)',
+    'Données : corbeille de 30 jours et « Annuler » après une suppression, export en tableau (Excel), aide pour changer de téléphone, rappel de sauvegarde chaque semaine',
+  ] },
   { v: 51, items: [
     'Coach : en fin de séance, il compare chaque exercice à il y a un mois (« Depuis le 24 octobre : Pompes 14 → 19 rép. »)',
     'Coach : il te prévient AVANT de stagner. Après 2 séances sans progrès sur un exercice, il te dit quoi changer tout de suite',

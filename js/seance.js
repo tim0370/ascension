@@ -7,13 +7,15 @@ import { predictions, whenTxt, checkin, dayKey } from './forme.js';
 import { p30Done } from './prog30.js';
 import { monthAgo } from './coach.js';
 import { camOk } from './camera.js';
+import { TESTS, percentile } from './test.js';
 import { dailyQuests, feats } from './quetes.js';
 import { beep, wakeAudio } from './sound.js';
+import { bodyLog } from './stats.js';
 import {
   state, save, exoName, lastSets, kindOf, sorted, xpOf, totalXp, levelInfo, countPrs, isRecord,
   fr, dur, clock, dateFr, setText, exoHistory, routines, measureOf, lestOf, restOf, setPref,
 } from './store.js';
-import { hint, $, esc, norm, clean, plural, toNum, ui, ACTIONS, ICON, checkDark, toast, sheet, closeSheet, closeSheet2, closeBtn, burst, setsSummary, chartSvg, xpFly, levelUp as levelUp_ } from './ui.js';
+import { hint, buzz, $, esc, norm, clean, plural, toNum, ui, ACTIONS, ICON, checkDark, toast, sheet, closeSheet, closeSheet2, closeBtn, burst, setsSummary, chartSvg, xpFly, levelUp as levelUp_ } from './ui.js';
 import { render, sheetDetail } from './app.js';
 
 const curExo = () => state.active && state.active.exercises[state.active.idx];
@@ -27,7 +29,7 @@ function duel(s, g) {
   const a = v(s), b = v(g);
   return a > b + 0.01 ? 1 : a < b - 0.01 ? -1 : 0;
 }
-const chipLabel = (name, s) => (measureOf(name) === 'time' ? (s.t || 0) + ' s' : String(s.r || 0));
+const chipLabel = (name, s) => (measureOf(name) === 'time' ? (s.t || 0) + ' s' : String(s.r || 0)) + (s.fail ? '<i class="failmark" aria-label="jusqu’à l’échec"></i>' : '') + (s.drop ? '<i class="dropmark" aria-label="dégressive"></i>' : '');
 const top = () => window.scrollTo(0, 0);
 
 // ---------- Routines ----------
@@ -103,7 +105,7 @@ function buildExo(name, sets, title) {
   else if (feel === 'd') coach = 'Tu avais trouvé ça très dur : refais pareil, mais plus propre.';
   if (!time && lestOf(name) && topR >= 12 && feel !== 'd') coach = 'Tu passes 12 répétitions : ajoute 2,5 kg de lest et repars autour de 8.';
   return {
-    name, coach,
+    name, coach, lastFeel: feel || '',
     sets: sets.map((s, i) => { const p = (prev && (prev[i] || prev[prev.length - 1])) || s; return { r: time ? 0 : (p.r || s.r || 0), w: p.w || s.w || 0, t: time ? (p.t || s.t || 0) : 0, done: false }; }),
     goals: sets.map((s, i) => { const p = prev && (prev[i] || prev[prev.length - 1]); if (!p) return null; if (time) return p.t ? { t: p.t + 5 * plus } : null; return p.r ? { r: p.r + plus } : null; }),
     prev: prev ? prev.map(setText).join(', ') : '',
@@ -137,7 +139,7 @@ export function startWorkout(id, opts) {
 // Démarre une séance préparée par le programme guidé (programme.js).
 export function startPlan(p) {
   const a = { title: p.title, label: p.label, routineId: null, start: Date.now(), view: 'list', idx: 0, setIdx: 0, rest: null, prog: p.prog,
-    exercises: p.exercises.map((e) => buildExo(e.name, e.sets, p.title)) };
+    exercises: p.exercises.map((e) => Object.assign(buildExo(e.name, e.sets, p.title), e.bloc ? { bloc: e.bloc } : {}, e.alt ? { alt: e.alt } : {})) };
   // Re-test : au poids du corps, et sans objectif affiché (c'est ton max du jour).
   if (p.test) { a.test = true; for (const e of a.exercises) { for (const x of e.sets) x.w = 0; e.goals = e.goals.map(() => null); } }
   if (p.express) a.express = true;
@@ -214,7 +216,7 @@ function viewList(a) {
     h += '<button type="button" class="ins" data-act="picker" data-at="' + i + '" aria-label="Ajouter un exercice ici">' + ICON.plus + '</button>';
     h += '<section class="glass card col tap excard' + (i === cur ? ' cur' : '') + (d ? ' done' : '') + '" role="button" tabindex="0" data-act="goto" data-i="' + i + '" style="gap:12px">'
       + '<div class="row"><span class="badge' + (d ? ' done' : '') + '">' + (d ? checkDark : (i + 1)) + '</span>'
-      + '<div class="col grow" style="gap:2px"><span style="font-weight:600;font-size:16px">' + esc(exoName(e.name)) + '</span><span class="small mut">' + plural(e.sets.length, 'série', 'séries') + (w ? ' · ' + fr(w, 1) + ' kg' : '') + '</span></div>'
+      + '<div class="col grow" style="gap:2px"><span style="font-weight:600;font-size:16px">' + esc(exoName(e.name)) + '</span><span class="small mut">' + plural(e.sets.length, 'série', 'séries') + (w ? ' · ' + fr(w, 1) + ' kg' : '') + (e.ss ? ' · <span class="violet">supersérie avec le suivant</span>' : '') + '</span></div>'
       + '<button type="button" class="iconbtn" data-act="ex-menu" data-i="' + i + '" aria-label="Options de l’exercice">' + ICON.more + '</button></div>'
       + '<div class="chips">' + e.sets.map((s, k) => '<span class="chip' + (s.done ? ' done' : (k === todo && i === cur ? ' sel' : '')) + (s.pr ? ' pr' : '') + '">' + chipLabel(e.name, s) + '</span>').join('') + '</div></section>';
   });
@@ -241,7 +243,8 @@ function viewFocus(a) {
   h += '<div class="row" style="align-items:flex-start;gap:12px"><div class="col grow" style="gap:4px"><span class="label violet">Exercice ' + (a.idx + 1) + ' sur ' + n + '</span><h1 class="h1" style="font-size:30px">' + esc(exoName(ex.name)) + '</h1>'
     + '<span class="small mut">' + (ex.prev ? 'La dernière fois : ' + esc(ex.prev) : 'Première fois sur cet exercice') + '</span>'
     + (ex.coach ? '<span class="coach">' + ICON.bolt + esc(ex.coach) + '</span>' : '')
-    + (ex.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(ex.note) + '</span>' : '') + '</div>'
+    + (ex.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(ex.note) + '</span>' : '')
+    + (() => { const F = FICHES[ex.name] || {}; const L = [['facile', 'Plus facile'], ['dur', 'Plus dur']].filter(([k]) => F[k] && EXOS[F[k]]); return L.length && !ex.sets.some((x) => x.done) ? '<div class="row wrap" style="gap:6px;margin-top:4px">' + L.map(([k, l]) => '<button type="button" class="pill sm glass" data-act="ex-swap" data-name="' + esc(F[k]) + '">' + l + ' : ' + esc(exoName(F[k])) + '</button>').join('') + '</div>' : ''; })() + '</div>'
     + '<button type="button" class="figbtn" data-act="exo" data-name="' + esc(ex.name) + '" aria-label="Voir comment faire">' + figure(ex.name) + '</button></div>';
   h += '<div class="chips">' + ex.sets.map((x, k) => '<button type="button" class="chip' + (x.done ? ' done' : '') + (k === a.setIdx ? ' sel' : '') + (x.pr ? ' pr' : '') + '" data-act="sel-set" data-i="' + k + '" aria-label="Série ' + (k + 1) + '">' + chipLabel(ex.name, x) + '</button>').join('') + '</div>';
   if (s) {
@@ -266,6 +269,9 @@ function viewFocus(a) {
     if (time && !s.done) {
       h += '<button type="button" class="pill glass wide' + (a.chrono ? ' on' : '') + '" data-act="chrono">' + (a.chrono ? 'Arrêter le chrono' : 'Lancer le chrono') + '</button>';
     }
+    if (!time && !s.done) h += '<button type="button" class="pill glass wide' + (a.tempo ? ' on' : '') + '" data-act="tempo">' + (a.tempo ? 'Arrêter le tempo (' + (s.r || 0) + ' rép.)' : 'Tempo guidé : 3 s en bas, 1 s pause, 1 s en haut') + '</button>';
+    if (!s.done) h += '<button type="button" class="pill sm glass' + (s.fail ? ' on' : '') + '" data-act="fail" style="align-self:center">' + (s.fail ? 'Série jusqu’à l’échec · annuler' : 'Série jusqu’à l’échec') + '</button>';
+    if (!s.done && (s.w || 0) > 0 && !time) h += '<button type="button" class="pill sm glass" data-act="drop" style="align-self:center">Valider, puis série dégressive sans lest</button>';
     if (!time && !s.done && camOk(ex.name)) {
       h += '<button type="button" class="pill glass wide" data-act="cam">' + ICON.camera + 'Compter avec la caméra</button>';
     }
@@ -283,6 +289,30 @@ function viewFocus(a) {
   return h + '<div style="height:90px"></div>';
 }
 
+// « Pourquoi cet exercice ? » : son rôle dans la séance, les muscles, et où tu en es dessus.
+const BLOC_WHY = {
+  'Habileté': 'C’est la figure de la séance : on la place en premier, quand tu es frais, parce que l’équilibre et la technique se travaillent mal fatigué.',
+  Force: 'C’est un exercice de force : peu de répétitions, bien contrôlées. C’est lui qui fait monter ta note de force et ton rang.',
+  'Explosivité': 'C’est un exercice d’explosivité : chaque répétition le plus vite possible. On le fait tôt, avant que les muscles fatiguent.',
+  Muscle: 'C’est un exercice pour le muscle : des séries plus longues, près de l’échec, pour faire grossir les muscles visés.',
+  Gainage: 'C’est le gainage de fin de séance : il protège le dos et tient le corps droit dans tous les autres exercices.',
+  Endurance: 'C’est la partie endurance : tenir longtemps, souffle compris. Elle fait monter ta note d’endurance.',
+  Objectif: 'Il est là pour ton grand objectif de 12 semaines : une petite dose à chaque séance, c’est ce qui fait avancer le plus vite.',
+};
+function sheetWhy(i) {
+  const a = state.active, ex = a && a.exercises[i];
+  if (!ex) return;
+  const bloc = ex.bloc || '';
+  const f = FICHES[ex.name], t = [];
+  t.push(BLOC_WHY[bloc] || (a.prog ? 'Il complète la séance pour que tout le corps travaille de façon équilibrée.' : 'Tu l’as mis dans cette séance : il compte pour tes records, ton rang et l’équilibre de ton corps.'));
+  if (f && f.muscles) t.push('Muscles travaillés : ' + f.muscles.toLowerCase() + '.');
+  if (ex.alt) t.push('Il remplace « ' + exoName(ex.alt) + ' » pour aujourd’hui.');
+  const H = sorted().filter((w) => w.exercises.some((e) => e.name === ex.name));
+  t.push(H.length ? 'Tu l’as fait ' + plural(H.length, 'fois', 'fois') + ', la dernière le ' + new Date(H[0].start).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + '.' : 'C’est la première fois que tu le fais : vise propre plutôt que beaucoup.');
+  if (f && f.facile) t.push('Trop dur aujourd’hui ? Passe à « ' + exoName(f.facile) + ' » avec le bouton « Plus facile ».');
+  sheet('<div class="col"><span class="label">' + (bloc ? esc(bloc) : 'Exercice') + '</span><h1 class="h1">Pourquoi ' + esc(exoName(ex.name)) + ' ?</h1></div><div class="glass card col" style="gap:10px">' + t.map((x) => '<p class="small" style="margin:0;line-height:1.5">' + esc(x) + '</p>').join('') + '</div><button type="button" class="pill gold-btn wide" data-act="close2">Compris</button>', 2);
+}
+
 // Options d'un exercice pendant la séance : fiche, déplacer, remplacer, type, lest, repos, retirer.
 function sheetExMenu(i) {
   const a = state.active;
@@ -292,7 +322,9 @@ function sheetExMenu(i) {
   const item = (act, label) => '<button type="button" class="item" data-act="' + act + '" data-i="' + i + '"><span class="grow" style="font-weight:500">' + label + '</span>' + ICON.chev + '</button>';
   sheet('<div class="col"><span class="label">Exercice ' + (i + 1) + ' sur ' + n + '</span><h1 class="h1">' + esc(exoName(ex.name)) + '</h1></div><div class="list">'
     + '<button type="button" class="item" data-act="exo" data-name="' + esc(ex.name) + '"><span class="grow" style="font-weight:500">' + (FICHES[ex.name] ? 'Comment le faire, mon historique et mon record' : 'Mon historique et mon record') + '</span>' + ICON.chev + '</button>'
+    + item('ex-why', 'Pourquoi cet exercice ?')
     + (i > 0 ? item('ex-up', 'Monter dans la séance') : '') + (i < n - 1 ? item('ex-down', 'Descendre dans la séance') : '')
+    + (i < n - 1 ? item('ex-ss', ex.ss ? 'Ne plus enchaîner avec le suivant' : 'Supersérie : enchaîner avec « ' + esc(exoName(a.exercises[i + 1].name)) + ' » sans repos') : '')
     + item('ex-replace', 'Remplacer par un autre exercice')
     + item('ex-measure', time ? 'Compter en répétitions' : 'Compter en secondes')
     + item('ex-lest', lest ? 'Enlever le lest' : 'Ajouter un lest')
@@ -337,6 +369,15 @@ export function sheetExo(name) {
     const values = list.slice(0, 24).reverse().map((x) => Math.max(...x.sets.map((s) => s.r || s.t || 0)));
     h += '<div class="exo"><span class="label">Meilleure série de chaque séance</span>' + chartSvg(values, time ? ' s' : ' rép.') + '</div>';
   }
+  // Force estimée sur une répétition (formule d'Epley, poids du corps compris) : seulement si du lest a été utilisé.
+  if (!time && list.length >= 2 && list.some((x) => x.sets.some((q) => q.w > 0))) {
+    const bwk = (bodyLog()[0] || {}).kg || 65;
+    const e1 = list.slice(0, 24).reverse().map((x) => Math.round(Math.max(...x.sets.map((q) => (bwk + (q.w || 0)) * (1 + (q.r || 0) / 30))) - bwk));
+    h += '<div class="exo"><span class="label">Force estimée sur 1 répétition</span>' + chartSvg(e1, ' kg') + '<span class="small mut">Le lest que tu pourrais porter pour une seule répétition, calculé d’après tes séries (lest et répétitions). Ça monte = tu deviens plus fort, même si tu changes de nombre de répétitions.</span></div>';
+  }
+  // Comparé aux garçons de 16 à 19 ans (pompes et dips d'affilée, sans lest).
+  const TT = TESTS.find((x) => x.exo === name && !x.timer);
+  if (TT && most) { const bestR = Math.max(0, ...list.flatMap((x) => x.sets.filter((q) => !q.w).map((q) => q.r || 0))); if (bestR) h += '<div class="exo"><span class="label violet">Par rapport aux garçons de ton âge</span><span style="font-weight:600">Ton record sans lest (' + bestR + ') : mieux que ' + percentile(TT, bestR) + ' % des garçons de 16 à 19 ans</span><span class="small mut">' + (TT.approx ? 'Repère approximatif : il n’existe pas de norme officielle pour cet exercice.' : 'D’après les normes de condition physique pour les 15-19 ans.') + '</span></div>'; }
   if (most) {
     h += '<div class="row" style="align-items:stretch"><div class="exo grow"><span class="label">' + (time ? 'Le plus long' : 'Le plus de répétitions') + '</span><span class="num gold-text" style="font-size:22px">' + esc(setText(most.set)) + '</span><span class="small mut">' + dateFr(most.date, true) + '</span></div>'
       + (heavy ? '<div class="exo grow"><span class="label">Le plus lourd</span><span class="num gold-text" style="font-size:22px">' + esc(setText(heavy.set)) + '</span><span class="small mut">' + dateFr(heavy.date, true) + '</span></div>' : '') + '</div>';
@@ -722,7 +763,10 @@ function sheetSummary(w, label, xpBefore, qNew, fNew) {
 function startRest() {
   wakeAudio();
   const ex = curExo();
-  const total = state.active.test ? 180 : (ex ? ex.rest || restOf(ex.name) : (state.settings.rest || 90));
+  let total = state.active.test ? 180 : (ex ? ex.rest || restOf(ex.name) : (state.settings.rest || 90));
+  // Repos ajusté : +30 s si l'exercice était très dur, -15 s s'il était facile (sauf repos imposé).
+  const fl = ex && (ex.feel || ex.lastFeel);
+  if (ex && !ex.rest && !state.active.test) total = Math.max(30, total + (fl === 'd' ? 30 : fl === 'f' ? -15 : 0));
   state.active.rest = { end: Date.now() + total * 1000, total, rang: false };
 }
 
@@ -748,7 +792,24 @@ export function tick() {
       if (goal && goal.t && s.t >= goal.t && !a.chrono.rang) { a.chrono.rang = true; if (s.t - goal.t < 3) beep(); toast('Objectif atteint, tiens encore si tu peux'); }
     }
   }
+  // Tempo guidé : un petit bip chaque seconde, une répétition toutes les 5 secondes.
+  if (a && a.tempo) {
+    const s = curSet();
+    if (!s || s.done) delete a.tempo;
+    else {
+      const el = Math.floor((Date.now() - a.tempo.t0) / 1000);
+      if (el !== a.tempo.last) { a.tempo.last = el; tickSound(el % 5 === 0 ? 880 : el % 5 === 3 ? 660 : 440); }
+      const r = Math.floor(el / 5);
+      if (r !== s.r) { s.r = r; const big = document.querySelector('.bignum'); if (big && document.activeElement !== big) big.value = r; }
+    }
+  }
   renderRest();
+}
+
+let tctx = null;
+function tickSound(f) {
+  if (state.settings.sound === false) return;
+  try { tctx = tctx || new (window.AudioContext || window.webkitAudioContext)(); const o = tctx.createOscillator(), g = tctx.createGain(); o.frequency.value = f; g.gain.value = 0.15; o.connect(g); g.connect(tctx.destination); const t = tctx.currentTime; g.gain.exponentialRampToValueAtTime(0.001, t + 0.08); o.start(t); o.stop(t + 0.09); } catch (e) { /* pas de son */ }
 }
 
 function warmNext() {
@@ -772,14 +833,22 @@ export function renderRest() {
   const offset = (169.6 * (1 - ratio)).toFixed(1);
   // Si le bandeau est déjà affiché dans le bon état, on ne met à jour que le chrono (sinon les boutons rateraient des appuis).
   const box = $('rest').firstElementChild;
-  if (box && box.dataset.over === String(over)) {
+  const nx = curExo(), nextTxt = nx ? exoName(nx.name) + ' · série ' + ((a.setIdx || 0) + 1) + ' sur ' + nx.sets.length : '';
+  if (box && box.dataset.over === String(over) && box.dataset.big === String(!!ui.restBig)) {
     if (!over) { $('rest-time').textContent = clock(left); $('rest-ring').setAttribute('stroke-dashoffset', offset); box.classList.toggle('soon', left <= 5); }
     return;
   }
-  $('rest').innerHTML = '<div class="rest glass row' + (over ? ' end' : '') + '" data-over="' + over + '" style="gap:14px">'
+  if (ui.restBig) {
+    $('rest').innerHTML = '<div class="restbig' + (over ? ' end' : '') + '" data-over="' + over + '" data-big="true"><span class="label violet">' + (over ? 'Repos terminé' : 'Repos') + '</span>'
+      + '<svg style="display:none"><circle id="rest-ring"/></svg><span class="num" id="rest-time">' + (over ? 'C’est reparti' : clock(left)) + '</span>'
+      + (nextTxt ? '<span class="rb-next">Ensuite : ' + esc(nextTxt) + '</span>' : '')
+      + '<div class="row" style="gap:10px">' + (over ? '' : '<button type="button" class="pill glass" data-act="rest-more">+ 15 s</button>') + '<button type="button" class="pill glass" data-act="rest-skip">' + (over ? 'OK' : 'Passer') + '</button><button type="button" class="pill glass" data-act="rest-big">Réduire</button></div></div>';
+    return;
+  }
+  $('rest').innerHTML = '<div class="rest glass row' + (over ? ' end' : '') + '" data-over="' + over + '" data-big="false" style="gap:14px">'
     + '<svg role="img" aria-label="Repos" width="52" height="52" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="none" stroke="rgba(255,255,255,0.10)" stroke-width="4"/>'
     + '<circle id="rest-ring" cx="32" cy="32" r="27" fill="none" stroke="' + (over ? '#D8BD82' : '#8468E8') + '" stroke-width="4" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="' + offset + '" transform="rotate(-90 32 32)"/></svg>'
-    + '<div class="col grow" style="gap:0"><span class="label violet">' + (over ? 'Repos terminé' : 'Repos') + '</span><span class="num" id="rest-time" style="font-size:28px;line-height:1.1">' + (over ? 'C’est reparti' : clock(left)) + '</span></div>'
+    + '<div class="col grow tap" data-act="rest-big" role="button" aria-label="Afficher le repos en grand" style="gap:0;min-width:0"><span class="label violet">' + (over ? 'Repos terminé' : 'Repos · toucher pour agrandir') + '</span><span class="num" id="rest-time" style="font-size:28px;line-height:1.1">' + (over ? 'C’est reparti' : clock(left)) + '</span>' + (nextTxt && !over ? '<span class="small mut" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ensuite : ' + esc(nextTxt) + '</span>' : '') + '</div>'
     + (over ? '' : '<button type="button" class="pill sm glass" data-act="rest-more">+ 15 s</button>')
     + '<button type="button" class="pill sm glass" data-act="rest-skip">' + (over ? 'OK' : 'Passer') + '</button></div>';
 }
@@ -840,7 +909,7 @@ Object.assign(ACTIONS, {
     ui.lastValidate = Date.now();
     const a = state.active, ex = curExo(), s = curSet();
     const time = measureOf(ex.name) === 'time';
-    delete a.chrono;
+    delete a.chrono; delete a.tempo;
     if (!(time ? s.t : s.r)) { toast(time ? 'Indique la durée' : 'Indique les répétitions'); return; }
     s.done = true;
     const amt = (x) => x.r || x.t || 0;
@@ -853,7 +922,10 @@ Object.assign(ACTIONS, {
     startRest();
     const next = ex.sets.findIndex((x) => !x.done);
     if (next < 0 && !ex.feel) a.feelAsk = a.exercises.indexOf(ex);
-    if (next >= 0) {
+    const ssN = a.exercises[a.idx + 1], ssP = a.exercises[a.idx - 1];
+    if (ex.ss && ssN && !exDone(ssN)) { a.rest = null; a.idx += 1; a.setIdx = firstTodo(ssN); ui.enter = true; toast('Supersérie : enchaîne sans repos'); top(); }
+    else if (ssP && ssP.ss && !exDone(ssP)) { a.idx -= 1; a.setIdx = firstTodo(ssP); ui.enter = true; toast('Repos, puis on recommence la supersérie'); top(); }
+    else if (next >= 0) {
       a.setIdx = next;
       if (beat) toast('Objectif atteint');
     } else {
@@ -868,7 +940,7 @@ Object.assign(ACTIONS, {
     const doneIdx = ex.sets.indexOf(s), exIdx = a.exercises.indexOf(ex);
     save(); render(); renderRest();
     // Récompense visible : la puce de la série rebondit et « +10 XP » s'envole.
-    try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) { /* pas de vibreur */ }
+    buzz(18);
     const chip = a.view === 'focus' && a.idx === exIdx ? document.querySelectorAll('.chips .chip')[doneIdx] : document.querySelector('[data-act="goto"][data-i="' + exIdx + '"] .chip.done:last-of-type');
     const at = chip || document.querySelector('.chips') || document.getElementById('app');
     if (chip) chip.classList.add('pop');
@@ -885,6 +957,13 @@ Object.assign(ACTIONS, {
   'add-set': () => { const ex = curExo(); const last = ex.sets[ex.sets.length - 1] || {}; ex.sets.push({ r: last.r || 0, w: last.w || 0, t: last.t || 0, done: false }); if (ex.goals) ex.goals.push(null); state.active.setIdx = ex.sets.length - 1; save(); render(); },
   'del-set': () => { const a = state.active, ex = curExo(); ex.sets.splice(a.setIdx, 1); if (ex.goals) ex.goals.splice(a.setIdx, 1); a.setIdx = Math.max(0, Math.min(a.setIdx, ex.sets.length - 1)); save(); render(); },
   'ex-menu': (el) => sheetExMenu(+el.dataset.i),
+  'ex-ss': (el) => { const ex = state.active.exercises[+el.dataset.i]; ex.ss = !ex.ss; save(); render(); closeSheet(); toast(ex.ss ? 'Supersérie : les deux exercices s’enchaînent, repos après le second' : 'Supersérie retirée'); },
+  'ex-swap': (el) => { const a = state.active, ex = curExo(); a.exercises[a.idx] = buildExo(el.dataset.name, ex.sets.map((x) => ({ r: x.r, w: x.w, t: x.t })), a.title); a.setIdx = 0; save(); render(); toast('Remplacé par ' + exoName(el.dataset.name)); },
+  tempo: () => { const a = state.active; wakeAudio(); if (a.tempo) delete a.tempo; else { curSet().r = 0; a.tempo = { t0: Date.now() }; a.rest = null; } save(); render(); renderRest(); },
+  fail: () => { const s = curSet(); s.fail = !s.fail; save(); render(); },
+  drop: () => { const a = state.active, i = a.idx, k = a.setIdx, ex = curExo(); ui.lastValidate = 0; ACTIONS.validate(); if (!ex.sets[k].done) return; ex.sets.splice(k + 1, 0, { r: 0, w: 0, t: 0, done: false, drop: true }); if (ex.goals) ex.goals.splice(k + 1, 0, null); a.idx = i; a.setIdx = k + 1; a.view = 'focus'; a.rest = null; delete a.feelAsk; save(); render(); renderRest(); toast('Sans lest, enchaîne tout de suite'); },
+  'rest-big': () => { ui.restBig = !ui.restBig; renderRest(); },
+  'ex-why': (el) => sheetWhy(+el.dataset.i),
   'ex-up': (el) => moveExo(+el.dataset.i, -1),
   'ex-down': (el) => moveExo(+el.dataset.i, 1),
   'ex-replace': (el) => { ui.pick = { mode: 'replace', i: +el.dataset.i }; ui.pickerQuery = ''; ui.pickerFam = ''; sheetPicker(); },
