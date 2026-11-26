@@ -229,7 +229,7 @@ function viewList(a) {
   let h = '<div class="row between"><div class="col" style="gap:2px"><span class="small mut">Séance en cours</span><h1 class="h1">' + esc(a.label) + '</h1></div>'
     + '<span class="num" id="elapsed" style="font-size:22px;color:var(--soft)">' + clock((Date.now() - a.start) / 1000) + '</span></div>';
   h += feelCard(a);
-  h += hint('seance', 'Touche un exercice pour l’ouvrir en grand. Le bouton ⋯ à droite d’un exercice permet de le retirer, le remplacer ou changer son repos. Le + entre deux exercices en ajoute un.');
+  h += hint('seance', 'Touche un exercice pour l’ouvrir en grand. Appuie longtemps dessus puis glisse pour changer sa place. Le bouton ⋯ à droite d’un exercice permet de le retirer, le remplacer ou changer son repos. Le + entre deux exercices en ajoute un.');
   h += '<section class="glass card hud col" style="gap:10px"><div class="row between"><span class="h2">' + done + ' sur ' + plural(total, 'série', 'séries') + '</span><span class="gold-text num" style="font-size:17px">+' + (done * 10) + ' XP</span></div>'
     + '<div class="bar gold"><div style="width:' + (total ? Math.round((done / total) * 100) : 0) + '%"></div></div>'
     + (a.tip ? '<span class="small" style="color:var(--violet-soft)">' + esc(a.tip) + '</span>' : '') + '</section>';
@@ -367,6 +367,64 @@ function sheetExMenu(i) {
     + '<div class="col" style="gap:8px"><span class="label">Repos après chaque série</span><div class="row" style="flex-wrap:wrap;gap:8px">'
     + [45, 60, 90, 120, 150, 180, 240].map((s) => '<button type="button" class="pill sm ' + (s === rest ? 'gold-btn' : 'glass') + '" data-act="ex-rest" data-i="' + i + '" data-s="' + s + '">' + clock(s) + '</button>').join('') + '</div></div>' + closeBtn);
 }
+
+// Déplacer un exercice d'une place à n'importe quelle autre (glisser dans la liste).
+function moveTo(i, j) {
+  const a = state.active;
+  if (!a || i === j || j < 0 || j >= a.exercises.length) return;
+  const cur = a.exercises[a.idx];
+  const [ex] = a.exercises.splice(i, 1);
+  a.exercises.splice(j, 0, ex);
+  a.idx = Math.max(0, a.exercises.indexOf(cur));
+  save(); render();
+}
+// Appui long sur un exercice de la liste, puis glisser : comme sur Hevy.
+// L'appui doit durer 0,35 s sans bouger, sinon c'est un défilement normal de la page.
+(() => {
+  let press = null, drag = null, block = false;
+  const cards = () => [...document.querySelectorAll('.excard')];
+  const end = (ok) => {
+    clearTimeout(press && press.timer); press = null;
+    if (!drag) return;
+    const { el, from, to } = drag;
+    cards().forEach((c) => { c.style.transform = ''; c.classList.remove('drag', 'shift'); });
+    document.body.classList.remove('dragging');
+    drag = null;
+    block = true; setTimeout(() => { block = false; }, 350);
+    if (ok && to !== from) { moveTo(from, to); buzz && buzz(15); } else if (el) el.style.transform = '';
+  };
+  document.addEventListener('pointerdown', (ev) => {
+    const el = ev.target.closest && ev.target.closest('.excard');
+    if (!el || ev.target.closest('[data-act="ex-menu"]') || !state.active) return;
+    const L = cards(), from = L.indexOf(el);
+    press = { x: ev.clientX, y: ev.clientY, timer: setTimeout(() => {
+      const rects = L.map((c) => c.getBoundingClientRect());
+      drag = { el, from, to: from, y0: press.y, rects };
+      el.classList.add('drag'); document.body.classList.add('dragging');
+      buzz && buzz(20);
+    }, 350) };
+  });
+  document.addEventListener('pointermove', (ev) => {
+    if (press && !drag && Math.hypot(ev.clientX - press.x, ev.clientY - press.y) > 8) { clearTimeout(press.timer); press = null; return; }
+    if (!drag) return;
+    const dy = ev.clientY - drag.y0, R = drag.rects, f = drag.from;
+    drag.el.style.transform = 'translateY(' + dy + 'px) scale(1.02)';
+    // Nouvelle place : la carte dont le milieu est dépassé.
+    const mid = R[f].top + R[f].height / 2 + dy;
+    let to = f;
+    for (let k = 0; k < R.length; k++) { const m = R[k].top + R[k].height / 2; if (k > f && mid > m) to = k; if (k < f && mid < m && to === f) to = k; }
+    drag.to = to;
+    const step = R[f].height + (R.length > 1 ? R[1].top - R[0].bottom : 12);
+    cards().forEach((c, k) => { if (k === f) return; const sh = (k > f && k <= to) ? -step : (k < f && k >= to) ? step : 0; c.style.transform = sh ? 'translateY(' + sh + 'px)' : ''; c.classList.toggle('shift', !!sh); });
+  });
+  document.addEventListener('pointerup', () => end(true));
+  document.addEventListener('pointercancel', () => end(!!drag));
+  // Pendant le glisser, la page ne défile pas (iPhone : il faut bloquer le geste du doigt).
+  document.addEventListener('touchmove', (ev) => { if (drag) ev.preventDefault(); }, { passive: false });
+  // Le toucher qui termine un glisser n'ouvre pas l'exercice.
+  window.addEventListener('click', (ev) => { if (block) { ev.stopPropagation(); ev.preventDefault(); block = false; } }, true);
+  document.addEventListener('contextmenu', (ev) => { if (ev.target.closest && ev.target.closest('.excard')) ev.preventDefault(); });
+})();
 
 function moveExo(i, d) {
   const a = state.active, j = i + d;

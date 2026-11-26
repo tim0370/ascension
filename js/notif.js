@@ -71,8 +71,12 @@ export function planItems(withRest) {
           if (dn > 30) break;
           const pl = p30Day(s.p, dn);
           if (pl.rest) continue;
-          const at = atHour(t0 + k * DAY + 3 * 3600e3, Math.max(8, h - 1));
+          const at = atHour(t0 + k * DAY + 3 * 3600e3, h);
           if (at <= now) continue;
+          const what = pl.test ? 'jour ' + dn + ' du défi, le test au maximum' : 'jour ' + dn + ' du défi (' + pl.sets.map((x) => (s.p.t ? x.t + ' s' : x.r)).join('-') + ')';
+          // Le même jour qu'un rappel de séance : un seul message qui dit les deux, sinon l'un cache l'autre.
+          const same = items.find((x) => x.tag === 'day' && Math.abs(x.at - at) < 12 * 3600e3 && midnight(x.at) === midnight(at));
+          if (same) { same.title += ' + défi'; same.body = same.body.replace(/\.( Ta flamme.*)?$/, '') + ', et le ' + what + '.' + ((same.body.match(/ Ta flamme.*$/) || [''])[0]); continue; }
           items.push({ at, title: s.p.name + ' · jour ' + dn, body: pl.test ? 'Jour de test : une seule série, au maximum.' : pl.text, tag: 'p30' });
         }
       }
@@ -153,6 +157,21 @@ export async function disablePush() {
   try { const reg = await swReady(); const sub = await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch (e) { /* rien */ }
 }
 export function resync() { lastSent = ''; syncPlan(false); }
+
+// Fin du repos : le rappel part dès le début du repos, pendant que l'app est encore à l'écran
+// (quand on change d'app, l'iPhone coupe souvent l'envoi). Si tu restes dans l'app, il est annulé
+// 4 secondes avant la fin : c'est le bip qui prend le relais.
+let restKey = '';
+function restWatch() {
+  if (!pushOn() || !state.settings.pushId || !kindOn('rest')) return;
+  const a = state.active, r = a && a.rest;
+  const want = r && !r.rang && document.visibilityState === 'visible' && r.end - Date.now() > 4000 ? String(r.end) : '';
+  if (want === restKey) return;
+  restKey = want;
+  syncPlan(!!want);
+}
+setInterval(restWatch, 1000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') restKey = '-'; });
 
 Object.assign(ACTIONS, {
   'notif-test': async () => {

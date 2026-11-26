@@ -905,6 +905,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 56, items: [
+    'Séance : appuie longtemps sur un exercice puis glisse-le pour changer sa place, comme sur Hevy.',
+    'Notification de fin de repos plus fiable : elle part dès le début du repos, même si tu changes d’app ou verrouilles l’écran.',
+    'Le défi de 30 jours est rappelé dans la même notification que ta séance du jour, avec les séries à faire.',
+  ] },
   { v: 55, items: [
     'Coach : il ne croit plus que tu stagnes quand tu montes d’étape (plus de lest ou descente plus lente). Il compare seulement des séances faites au même lest.',
     'Coach : il répond aux questions de technique (talon surélevé au pistol, épaules aux dips, poignets aux pompes, respiration, lest…) et explique ton défi de 30 jours.',

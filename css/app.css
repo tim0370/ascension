@@ -1133,3 +1133,9 @@ body.in-session .topnav [data-tab="workout"] { display: none; }
 body.in-session #app > .row.between:first-child { padding-right: 58px; }
 @media (max-width: 360px) { .rest svg { display: none; } .rest .pill.rx { width: 42px; } }
 .pill > svg, .iconbtn > svg { flex: none; }
+
+/* v56 : glisser un exercice pour changer sa place (appui long) */
+.excard { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.excard.shift { transition: transform 0.18s ease; }
+.excard.drag { position: relative; z-index: 5; transition: none; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55); border-color: var(--violet); }
+body.dragging .ins { visibility: hidden; }
