@@ -13,7 +13,7 @@ import { beep, wakeAudio } from './sound.js';
 import { bodyLog } from './stats.js';
 import {
   state, save, exoName, lastSets, kindOf, sorted, xpOf, totalXp, levelInfo, countPrs, isRecord,
-  fr, dur, clock, dateFr, setText, exoHistory, routines, measureOf, lestOf, restOf, setPref,
+  fr, dur, clock, dateFr, setText, exoHistory, routines, measureOf, lestOf, restOf, setPref, prefOf,
 } from './store.js';
 import { hint, buzz, $, esc, norm, clean, plural, toNum, ui, ACTIONS, ICON, checkDark, toast, sheet, closeSheet, closeSheet2, closeBtn, burst, setsSummary, chartSvg, xpFly, levelUp as levelUp_ } from './ui.js';
 import { render, sheetDetail } from './app.js';
@@ -141,7 +141,7 @@ export function startWorkout(id, opts) {
 function stepify(ex, pe) {
   const time = measureOf(ex.name) === 'time', f = time ? 't' : 'r', W = (pe.sets[0] && pe.sets[0].w) || 0;
   Object.assign(ex, { step: pe.step, lo: pe.lo, hi: pe.hi, max: !!pe.max, how: pe.how || '', ready: !!pe.ready, stall: !!pe.stall });
-  if (pe.rest && !(state.prefs[ex.name] || {}).rest) ex.rest = pe.rest;
+  if (pe.rest && !prefOf(ex.name).rest) ex.rest = pe.rest;
   const g = ex.ghost, prevW = g ? Math.max(0, ...g.map((x) => x.w || 0)) : 0;
   const at = (state.settings.stepAt || {})[pe.step] || 0;
   const lastW = sorted().find((w) => w.exercises.some((e) => e.name === ex.name));

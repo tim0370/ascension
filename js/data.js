@@ -905,6 +905,9 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 57, items: [
+    'Correction : sur un téléphone où aucun réglage d’exercice n’avait encore été fait, « Commencer » ne lançait pas la séance A ou B.',
+  ] },
   { v: 56, items: [
     'Séance : appuie longtemps sur un exercice puis glisse-le pour changer sa place, comme sur Hevy.',
     'Notification de fin de repos plus fiable : elle part dès le début du repos, même si tu changes d’app ou verrouilles l’écran.',
