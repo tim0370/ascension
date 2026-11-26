@@ -1127,3 +1127,9 @@ html.textbig .chip { font-size: 15px; }
 .rest .col.grow { min-width: 0; flex: 1 1 0; }
 .rest .col.grow .label { white-space: nowrap; }
 @media (max-width: 400px) { .rest .col.grow .small { display: none; } }
+
+/* v54 : en séance, seul le menu reste en haut à droite, et la ligne du haut lui laisse sa place */
+body.in-session .topnav [data-tab="workout"] { display: none; }
+body.in-session #app > .row.between:first-child { padding-right: 58px; }
+@media (max-width: 360px) { .rest svg { display: none; } .rest .pill.rx { width: 42px; } }
+.pill > svg, .iconbtn > svg { flex: none; }

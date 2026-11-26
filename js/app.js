@@ -205,7 +205,7 @@ const GUIDE = [
     ['forme', 'Charge et ce qui te réussit', 'Ta charge des 8 dernières semaines, la semaine légère conseillée quand il faut, et ce qui te fait mieux performer (heure, repos, sommeil).'],
     ['pain', 'Signaler une douleur', 'Épaules, poignets, genoux… pendant 7 jours, tes séances évitent les exercices qui la sollicitent.'],
     ['coach', 'Coach', 'Écris-lui ta question comme à un ami (« jsuis crevé », « mon record aux dips », « j’ai mal au genou », « j’ai 20 min »). Il lit tes séances, ton bilan du matin et ta balance, dans ton téléphone, sans internet. Point du jour en haut, mot du coach en fin de séance.'],
-    ['cap', 'Grand objectif', 'Un but de 12 semaines choisi d’après ton point faible, avec la prise de masse en parallèle. Le programme fait revenir son exercice plus souvent, et la date d’arrivée est estimée.'],
+    ['cap', 'Grand objectif', 'Un but de 12 semaines choisi d’après ton point faible. Ses progrès se calculent depuis tes séances, et la date d’arrivée est estimée.'],
     ['mtest', 'Test du mois', '6 épreuves une fois par mois (pompes, dips, burpees, saut, chaise, course), comparées aux garçons de 16 à 19 ans.'],
     ['', 'Pendant la séance', 'Objectif par série, fantôme de la dernière fois, compteur de pompes à la caméra, et « facile, bien, très dur » pour régler la séance suivante.'],
     ['', 'Voix du coach', 'Dans les réglages, partie Son : elle annonce chaque série à la fin du repos.'],
@@ -387,7 +387,7 @@ function historyList() {
     const m = monthOf(w);
     if (m !== month) { month = m; const r = recap[m]; h += '<div class="row between month"><span class="label">' + esc(m) + '</span><span class="small mut">' + plural(r.n, 'séance', 'séances') + (r.sets ? ' · ' + r.sets + ' séries' : '') + (r.km ? ' · ' + fr(r.km, 1) + ' km' : '') + '</span></div>'; }
     const run = isRun(w) && w.exercises.length === 1;
-    h += '<button type="button" class="item" data-act="detail" data-id="' + esc(w.id) + '"><span class="ico' + (run ? ' gold' : '') + '">' + (run ? ICON.run : ICON.bell) + '</span><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(titleOf(w)) + (w.prs ? ' <span class="gold-text small">· ' + plural(w.prs, 'record', 'records') + '</span>' : '') + '</span><span class="small mut">' + esc(summary(w)) + '</span></div>'
+    h += '<button type="button" class="item" data-act="detail" data-id="' + esc(w.id) + '"><span class="ico' + (run ? ' gold' : '') + '">' + (run ? ICON.run : ICON.bell) + '</span><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(titleOf(w)) + (w.prs ? ' <span class="gold-text small">· ' + plural(w.prs, 'record', 'records') + '</span>' : '') + '</span><span class="small mut">' + esc(summary(w)).replace(/(\d) (min|h|km|s)\b/g, '$1 $2').replace(/(min|h) (\d)/g, '$1 $2') + '</span></div>'
       + (w.grade ? '<span class="gradechip g' + w.grade + '">' + w.grade + '</span>' : '') + '<span class="small mut" style="white-space:nowrap">' + new Date(w.start).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }) + '</span></button>';
   }
   h += '</section>';
@@ -806,7 +806,7 @@ const MENU = [
     ['act', 'photos', 'cam', 'Photos de suivi', 'Ton physique, photo après photo'],
   ]],
   ['Défis', [
-    ['tab', 'defis', 'trophy', 'Défis', 'Quêtes du jour, ton ombre, saison, campagne, figures'],
+    ['tab', 'defis', 'trophy', 'Tous les défis', 'Quêtes du jour, ton ombre, défi du mois, campagne'],
     ['act', 'feats', 'medal', 'Hauts faits', 'Des exploits durs, gagnés une seule fois'],
   ]],
   ['Toi', [
@@ -870,6 +870,8 @@ export function render() {
   const resume = state.active && ui.tab !== 'workout' && ui.tab !== 'home';
   if (resume) { const a = state.active, done = a.exercises.reduce((n, e) => n + e.sets.filter((x) => x.done).length, 0), tot = a.exercises.reduce((n, e) => n + e.sets.length, 0); html += '<button type="button" class="resumebar" data-tab="workout"><span class="col grow" style="gap:0;text-align:left;min-width:0"><span>Reprendre ma séance</span><span class="small">' + esc(a.label) + ' · ' + done + ' sur ' + tot + ' séries</span></span>' + ICON.chev + '</button>'; }
   document.body.classList.toggle('has-resume', !!resume);
+  // Pendant une séance, le bouton Séance flottant ne sert à rien (on y est) et cachait les boutons du haut.
+  document.body.classList.toggle('in-session', !!state.active && ui.tab === 'workout');
   $('app').innerHTML = html;
   document.body.classList.toggle('zen', !!state.settings.zen);
   document.documentElement.classList.toggle('light', !!state.settings.light);

@@ -415,7 +415,7 @@ export function progDone(w) {
 // ---------- Affichage ----------
 const readyKeys = (list) => [...new Set(list.filter((e) => e.step && e.ready).map((e) => e.step))];
 function weekLabel() {
-  if (isAB()) { const n = Object.keys(STEPS).filter(stepReady).length; return n ? plural(n, 'exercice prêt', 'exercices prêts') + ' à passer à l’étape suivante' : 'Full Body A et B, en alternance'; }
+  if (isAB()) return 'Séance du jour';
   const wk = weekIdx();
   return 'Cycle ' + prog().cycle + ' · ' + (wk >= 3 ? 'semaine de re-test' : 'semaine ' + (wk + 1) + ' sur 4');
 }
@@ -507,7 +507,7 @@ export function progCard(main, doneToday, noForme) {
     + '<span class="small" style="color:var(--soft)">' + plural(list.length, 'exercice', 'exercices') + ' · environ ' + minutes(list, type === 'test') + ' min</span>'
     + (main ? '' : '<span class="small mut">' + esc(names) + '</span>')
     + (fresh ? '<span class="small gold-text">Nouveau : ' + esc(exoName(fresh.name)) + '</span>' : '')
-    + (readyKeys(list).length && !doneToday ? '<span class="small gold-text">Prêt à monter : ' + esc(readyKeys(list).map((k) => STEPS[k].label.toLowerCase()).join(', ')) + '</span>' : '')
+    + (readyKeys(list).length && !doneToday ? '<span class="small gold-text">' + plural(readyKeys(list).length, 'exercice prêt', 'exercices prêts') + ' à monter d’une étape</span>' : '')
     + (swaps ? '<span class="small" style="color:#FFB4BE">Adaptée à ta douleur</span>' : '')
     + tag + '</div>'
     + (main && list.length ? '<div class="ctaex">' + list.map((e) => '<span>' + esc(exoName(e.name)) + '</span>').join('') + '</div>' : '')

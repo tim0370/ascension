@@ -150,7 +150,7 @@ export function hevyCard() {
 
 export function viewProgress() {
   const info = rankInfo();
-  let h = '<div class="col" style="gap:2px"><span class="small mut">Rang ' + info.rank.letter + ' · ' + esc(info.rank.name) + '</span><h1 class="h1">Progression</h1></div>';
+  let h = '<div class="col" style="gap:2px"><span class="small mut">' + plural(state.workouts.filter((w) => !w.quick).length, 'séance', 'séances') + ' au total</span><h1 class="h1">Progression</h1></div>';
   h += hint('progres', 'Ton rang vient de tes 5 qualités (force, explosivité, vitesse, endurance, maîtrise), calculées d’après tes meilleures séries. Touche n’importe quelle carte pour voir le détail.');
   h += hevyCard();
   const sh = (t, c) => '<div class="sechead"><span class="h2 row" style="gap:10px"><i class="secdot ' + c + '"></i>' + t + '</span></div>';
@@ -189,13 +189,13 @@ export function viewProgress() {
 
   const log = bodyLog();
   // Sans balance ni mètre (aucune pesée depuis 2 mois) : les photos suffisent ; poids et mensurations restent dans les Réglages.
-  const scale = log.some((x) => Date.now() - x.d < 60 * 864e5);
+  const scale = log.length >= 2 && log.some((x) => Date.now() - x.d < 60 * 864e5);
   h += '<div class="sec"><span class="h2 row" style="gap:10px"><i class="secdot t-pink"></i>Corps</span></div>';
   if (scale) {
     h += '<section class="glass card row tap tint t-pink" role="button" tabindex="0" data-act="body"><div class="col grow"><span class="label">Poids</span>'
       + '<span class="h2">' + (log.length ? fr(log[0].kg, 1) + ' kg' : 'Pas encore noté') + '</span><span class="small mut">' + (log.length ? 'Noté ' + dateFr(log[0].d) + (log.length > 1 ? ' · ' + (log[0].kg - log[log.length - 1].kg >= 0 ? '+' : '') + fr(log[0].kg - log[log.length - 1].kg, 1) + ' kg depuis le début' : '') : 'Touche pour ajouter une pesée') + '</span></div>' + ICON.chev + '</section>';
-    h += measuresCard();
   }
+  if ((state.measures || []).length) h += measuresCard();
   h += '<section class="glass card col tap tint t-pink" role="button" tabindex="0" data-act="photos" style="gap:10px"><div class="row between"><div class="col"><span class="label">Photos</span><span class="h2" id="photo-count">' + (photos ? plural(photos.length, 'photo', 'photos') : 'Photos de suivi') + '</span></div>' + ICON.chev + '</div>'
     + '<span class="small mut">' + photoHint() + '</span></section>';
   if (!photos) listPhotos().then((p) => { photos = p; const el = $('photo-count'); if (el) el.textContent = plural(p.length, 'photo', 'photos'); }).catch(() => { photos = []; });

@@ -49,7 +49,8 @@ export function ensureCap() {
 
 function weightPart(g) {
   const L = bodyLog();
-  if (!g.big.w0 || !L.length) return null;
+  // Sans balance (moins de 2 pesées en 2 mois), on ne parle pas de poids.
+  if (!g.big.w0 || L.filter((x) => Date.now() - x.d < 60 * 864e5).length + (L.length > 1 ? 1 : 0) < 2) return null;
   const now = L[0].kg, d = g.big.wT - g.big.w0;
   return { now, r: Math.max(0, Math.min(1, (now - g.big.w0) / d)), target: g.big.wT };
 }
@@ -62,7 +63,7 @@ export function capCard() {
   return '<section class="glass card col tap tint t-gold capcard" role="button" tabindex="0" data-act="cap" style="gap:12px"><div class="row between" style="gap:10px"><span class="label" style="color:var(--gold)">Grand objectif · ' + (g.done ? 'atteint' : plural(left, 'semaine', 'semaines') + ' restantes') + '</span>' + ICON.chev + '</div>'
     + '<span class="h2">' + esc(goalLabel(g)) + '</span>'
     + '<div class="bar gold"><div style="width:' + Math.round(i.r * 100) + '%"></div></div>'
-    + '<span class="small mut">Record : ' + (i.best === null ? '–' : Math.round(i.best)) + ' sur ' + g.target + ' · ' + esc(eta) + '</span>'
+    + '<span class="small mut">' + (i.best === null ? 'Pas encore essayé · but : ' + g.target : 'Record : ' + Math.round(i.best) + ' sur ' + g.target + ' · ' + esc(eta)) + '</span>'
     + (wp ? '<div class="row between" style="gap:10px"><span class="small">Et sur la balance : ' + fr(wp.now, 1) + ' kg sur ' + fr(wp.target, 1) + '</span><span class="small mut">' + Math.round(wp.r * 100) + ' %</span></div>' : '') + '</section>';
 }
 const QN = { explo: 'Explosivité', force: 'Force', endu: 'Endurance', maitrise: 'Maîtrise du corps' };
@@ -73,7 +74,7 @@ function sheetCap() {
   const weeks = Math.round((Date.now() - g.big.start) / WEEK);
   let h = '<div class="col" style="gap:4px"><span class="label" style="color:var(--gold)">Grand objectif · semaine ' + Math.min(12, weeks + 1) + ' sur 12</span><h1 class="h1">' + esc(goalLabel(g)) + '</h1><span class="small" style="color:var(--soft)">' + esc(g.big.why || '') + '</span></div>'
     + '<section class="glass card col center" style="gap:6px;padding:20px 16px"><span class="num gold-text" style="font-size:50px;line-height:1">' + Math.round(i.r * 100) + ' %</span><div class="bar gold" style="width:100%"><div style="width:' + Math.round(i.r * 100) + '%"></div></div>'
-    + '<span class="small mut">Record : ' + (i.best === null ? '–' : Math.round(i.best)) + ' · But : ' + g.target + (g.w ? ' avec ' + g.w + ' kg' : '') + '</span>'
+    + '<span class="small mut">' + (i.best === null ? 'Pas encore essayé' : 'Record : ' + Math.round(i.best)) + ' · But : ' + g.target + (g.w ? ' avec ' + g.w + ' kg' : '') + '</span>'
     + '<span class="small" style="color:var(--soft)">' + (i.eta && i.eta.date ? 'À ce rythme : le ' + new Date(i.eta.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + (i.eta.date > g.big.end ? ', un peu après les 12 semaines : accroche-toi.' : ', dans les temps.') : i.eta && i.eta.stuck ? 'Pas de progrès ces dernières semaines : une répétition de plus à chaque séance.' : 'La date s’affiche après 3 semaines de séances.') + '</span></section>';
   if (wp) h += '<section class="glass card col" style="gap:8px"><span class="label">Prise de masse en parallèle</span><div class="row between"><span>' + fr(g.big.w0, 1) + ' kg → ' + fr(wp.target, 1) + ' kg</span><span class="small mut">' + fr(wp.now, 1) + ' kg aujourd’hui</span></div><div class="bar"><div style="width:' + Math.round(wp.r * 100) + '%"></div></div><span class="small mut">+4 kg en 12 semaines, c’est le rythme d’une prise de muscle propre. Pèse-toi une fois par semaine : si la balance ne bouge pas, mange un peu plus.</span></section>';
   h += '<section class="glass card col" style="gap:6px"><span class="label violet">Comment le programme s’adapte</span><span class="small" style="color:var(--soft)">' + esc(exoName(g.name)) + ' revient dans plus de séances (marqué « Objectif »), au début, quand tu es frais. ' + (isBeginner() ? 'Ta séance point faible le travaille aussi chaque semaine.' : 'Dans ton programme A/B, il avance avec tes étapes.') + '</span></section>'

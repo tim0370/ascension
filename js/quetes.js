@@ -20,7 +20,7 @@ const isRun = (w) => w.exercises.some((e) => e.name === 'Running');
 
 // Les chiffres d'une journée (ou de toutes les journées, pour les hauts faits).
 function dayStats(list) {
-  const s = { push: 0, dips: 0, pistol: 0, explo: 0, sets: 0, km: 0, prog: 0, progFast: 0, ghostSets: 0, ghostPerfect: 0, boss: 0, run: 0, lift: 0, prs: 0 };
+  const s = { push: 0, dips: 0, pistol: 0, explo: 0, rows: 0, sets: 0, km: 0, prog: 0, progFast: 0, ghostSets: 0, ghostPerfect: 0, boss: 0, run: 0, lift: 0, prs: 0 };
   for (const w of list) {
     s.prs += w.prs || 0;
     if (isRun(w)) s.run += 1;
@@ -33,6 +33,7 @@ function dayStats(list) {
       if (isDips(e.name)) s.dips += x.r || 0;
       if (isPistol(e.name)) s.pistol += x.r || 0;
       if (EXPLO.includes(e.name)) s.explo += x.r || 0;
+      if (/Row\b|Pull Apart/.test(e.name)) s.rows += x.r || 0;
     }
     if (lifted && !w.boss && !w.quick) s.lift += 1;
     if (w.prog && w.prog.type !== 'test') { s.prog += 1; if (w.end - w.start < 45 * 60000) s.progFast += 1; }
@@ -73,7 +74,8 @@ function recordToday(test, t0) {
 function pool(b, t0) {
   const nPush = clamp(round(Math.max(b.push * 3, 60), 10), 60, 300);
   const nDips = clamp(round(Math.max(b.dips * 3, 30), 5), 30, 150);
-  const nPistol = clamp(Math.max(b.pistol, 2) * 4, 10, 60);
+  // Pistols : 2 séries de ton record, sur les deux jambes (ce qu'une séance A ou B demande à peu près).
+  const nPistol = clamp(Math.max(b.pistol, 2) * 2, 10, 30);
   return {
     volume: [
       { id: 'v-pompes', label: nPush + ' pompes dans la journée', hint: 'Toutes les pompes comptent, séance ou pas.', xp: 60, key: 'push', goal: nPush, unit: 'pompes' },
@@ -87,7 +89,7 @@ function pool(b, t0) {
     ],
     seance: [
       { id: 's-fantome', label: 'Bats ton fantôme sur 8 séries', hint: 'Dans une séance du programme : fais mieux que la dernière fois, série par série.', xp: 70, key: 'ghostSets', goal: 8, unit: 'séries' },
-      { id: 's-explo', label: '30 répétitions explosives', hint: 'Pompes explosives, claquées ou dips explosifs.', xp: 60, key: 'explo', goal: 30, unit: 'rép.' },
+      { id: 's-dos', label: '80 répétitions de rowing', hint: 'Rowing haltère, élastique et écartés à l’élastique : ton dos fait le V.', xp: 60, key: 'rows', goal: 80, unit: 'rép.' },
       { id: 's-rapide', label: 'Séance du programme en moins de 45 min', hint: 'Repos tenus, pas de téléphone entre les séries.', xp: 60, key: 'progFast', goal: 1, unit: 'séance' },
     ],
     rare: [
@@ -226,7 +228,7 @@ export const FEATS = [
   { id: 'run10', group: 'Course', label: 'Courir 10 km d’une traite', desc: 'Courir 10 km d’une traite', key: 'run10', goal: 1, reward: { title: 'Endurant' } },
   { id: 'streak7', group: 'Régularité', label: 'Une flamme de 4 semaines', desc: 'Une flamme de 4 semaines', key: 'streak', goal: 4, reward: { title: 'Inarrêtable' } },
   { id: 'streak30', group: 'Régularité', label: 'Une flamme de 12 semaines', desc: 'Une flamme de 12 semaines', key: 'streak', goal: 12, reward: { skin: 'violet' } },
-  { id: 'cycle', group: 'Régularité', label: 'Finir un cycle complet du programme', desc: 'Finir un cycle complet du programme', key: 'cycles', goal: 1, reward: { title: 'Discipliné' } },
+  { id: 'cycle', group: 'Régularité', label: 'Faire un re-test complet du programme', desc: 'Faire un re-test complet du programme (fenêtre du programme, « Changer de séance »)', key: 'cycles', goal: 1, reward: { title: 'Discipliné' } },
   { id: 'boss3', group: 'Défis', label: 'Battre ton ombre 3 fois', desc: 'Battre ton ombre 3 fois', key: 'boss', goal: 3, reward: { title: 'Chasseur de boss' } },
   { id: 'boss10', group: 'Défis', label: 'Battre ton ombre 10 fois', desc: 'Battre ton ombre 10 fois', key: 'boss', goal: 10, reward: { title: 'Tueur de titans' } },
   { id: 'ghost10', group: 'Défis', label: 'Gagner 10 duels contre ton fantôme', desc: 'Gagner 10 duels contre ton fantôme', key: 'ghostWins', goal: 10, reward: { title: 'Plus fort qu’hier' } },

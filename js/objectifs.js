@@ -94,7 +94,7 @@ export function checkGoals() {
 
 function etaTxt(i) {
   if (i.g.done) return 'Atteint le ' + new Date(i.g.done).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-  if (i.best === null) return 'Pas encore de série qui compte';
+  if (i.best === null) return i.g.w ? 'Pas encore fait avec ' + i.g.w + ' kg' : 'Pas encore essayé';
   if (!i.eta) return 'Encore quelques semaines de données pour estimer la date';
   if (i.eta.stuck) return 'Pas de progrès ces dernières semaines : vise une répétition de plus à chaque séance';
   if (i.eta.far) return 'À ce rythme, plus d’un an : accroche-toi';
@@ -108,7 +108,7 @@ export function goalRow(g, compact) {
     + '<div class="bar ' + (g.done ? 'gold' : '') + '"><div style="width:' + Math.round(i.r * 100) + '%"></div></div>'
     + '<span class="small mut">' + (compact && !g.done
       ? 'Record : ' + valTxt(g, i.best) + (i.eta && i.eta.date ? ' · vers le ' + new Date(i.eta.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '')
-      : (g.done ? '' : 'Record : ' + valTxt(g, i.best) + ' · ') + esc(etaTxt(i))) + '</span></div>'
+      : (g.done || i.best === null ? '' : 'Record : ' + valTxt(g, i.best) + ' · ') + esc(etaTxt(i))) + '</span></div>'
     + '<span class="small ' + (g.done ? 'gold-text' : 'mut') + '" style="font-weight:600">' + Math.round(i.r * 100) + ' %</span></button>';
 }
 

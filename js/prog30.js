@@ -77,7 +77,7 @@ export function p30Card() {
   const { p, day } = s;
   if (s.finished) return '<section class="glass card col tap tint t-gold" role="button" tabindex="0" data-act="p30" style="gap:6px"><span class="label" style="color:var(--gold)">' + esc(p.name) + ' · terminé</span><span class="h2">Résultat : ' + unit(p, (state.p30.maxes || {})[30] || 0) + '</span><span class="small mut">Touche pour voir ton bilan et en commencer un autre.</span></section>';
   const plan = dayPlan(p, day);
-  return '<section class="glass card col tint t-gold" style="gap:10px"><div class="row between tap" role="button" tabindex="0" data-act="p30"><span class="label" style="color:var(--gold)">' + esc(p.name) + ' · jour ' + day + ' sur 30</span>' + ICON.chev + '</div>'
+  return '<section class="glass card col tint t-gold" style="gap:10px"><div class="row between tap" role="button" tabindex="0" data-act="p30"><span class="label" style="color:var(--gold)">30 jours · ' + esc(p.name.replace(/\s*:\s*/, ' ')) + ' · jour ' + day + '</span>' + ICON.chev + '</div>'
     + '<div class="bar gold"><div style="width:' + Math.round(((day - 1) / 30) * 100) + '%"></div></div>'
     + (s.doneToday ? '<span class="h2">Fait pour aujourd’hui</span><span class="small mut">Demain : ' + esc(isRest(day) ? 'repos' : dayPlan(p, day).test ? 'test' : 'jour ' + day) + '. ' + (s.v0 ? 'Départ ' + unit(p, s.v0) + ', but ' + unit(p, goalOf(p, s.v0)) + '.' : '') + '</span>'
       : plan.rest ? '<span class="h2">Jour de repos</span><span class="small mut">' + esc(plan.text) + ' La suite demain.</span>'

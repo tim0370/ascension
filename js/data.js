@@ -905,6 +905,12 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 54, items: [
+    'Finitions sur tous les écrans : carte de la séance du jour plus claire, objectifs écrits en toutes lettres (plus de « Record : – »), poids et mensurations cachés tant que tu ne les notes pas.',
+    'Quêtes du jour calées sur tes séances A et B : « 80 répétitions de rowing » remplace les répétitions explosives, et le nombre de pistols est atteignable.',
+    'Écran de séance : le bouton flottant ne cache plus le menu ⋯, et le repos tient sur les petits écrans.',
+    'Correction : certains noms d’exercices Hevy au pluriel n’étaient pas reconnus.',
+  ] },
   { v: 53, items: [
     'Programme complet : tes séances Full Body A et B, en alternance, au poids du corps (gilet autorisé partout) et avec les haltères pour le dos. 3 séries en général, 4 au maximum.',
     'Chaque exercice a une fourchette de répétitions (par exemple 8 à 12). Quand toutes tes séries touchent le haut, l’app te propose l’étape suivante : plus de lest, une variante plus dure ou une descente lente. Rien ne change sans ton accord.',

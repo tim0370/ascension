@@ -18,7 +18,7 @@ export function frenchName(name) {
   if (!FRMAP) {
     FRMAP = {}; LOOSE = {};
     const put = (key, v) => {
-      for (const k of [key, key.replace(/s/g, '')]) FRMAP[k] = FRMAP[k] || v;
+      for (const k of [key, key.replace(/s\b/g, '')]) FRMAP[k] = FRMAP[k] || v;
       const l = loose(key); if (l) LOOSE[l] = LOOSE[l] === undefined ? v : LOOSE[l] === v ? v : null; // null = ambigu
     };
     for (const k of Object.keys(SYN)) put(k, SYN[k]);
@@ -26,7 +26,7 @@ export function frenchName(name) {
     for (const k of Object.keys(EXOS)) { put(plain(EXOS[k].fr), k); put(plain(k), k); }
   }
   const p = plain(name);
-  const hit = FRMAP[p] || FRMAP[p.replace(/s/g, '')];
+  const hit = FRMAP[p] || FRMAP[p.replace(/s\b/g, '')];
   if (hit) return hit;
   // Second essai, plus large : sans le matériel entre parenthèses ni les petits mots (« Pompe en pique (poids du corps) »).
   const l = loose(name);
