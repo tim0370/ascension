@@ -14,13 +14,13 @@ const d0 = (t) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getT
 
 // t = tenue en secondes, sinon répétitions. gain = progrès visé en 30 jours (+50 % = 1,5).
 export const P30 = [
-  { id: 'pompes', name: 'Pompes : +50 %', exo: 'Push Up', gain: 1.5, rest: 60, sets: 5,
+  { id: 'pompes', name: 'Pompes : +50 %', exo: 'Push Up', gain: 1.5, rest: 60, sets: 5,
     why: 'Le classique pour gonfler ton maximum de pompes d’affilée. Beaucoup de séries pas trop dures, jamais jusqu’à l’échec, sauf les jours de test.', who: 'Pour monter ton endurance et ta lettre d’endurance.' },
-  { id: 'dips', name: 'Dips : +50 %', exo: 'Triceps Dip', gain: 1.5, rest: 90, sets: 5,
+  { id: 'dips', name: 'Dips : +50 %', exo: 'Triceps Dip', gain: 1.5, rest: 90, sets: 5,
     why: 'Même principe, aux dips sans lest : plus de répétitions propres, puis tu pourras charger plus lourd dans le programme.', who: 'Pour la force et l’endurance du haut du corps.' },
-  { id: 'equilibre', name: 'Équilibre : 60 secondes', exo: 'Handstand Hold', t: true, gain: 2, cap: 60, rest: 75, sets: 5,
+  { id: 'equilibre', name: 'Équilibre : 60 secondes', exo: 'Handstand Hold', t: true, gain: 2, cap: 60, rest: 75, sets: 5,
     why: 'Tous les jours un peu de temps à l’envers contre le mur. Les épaules se renforcent et l’équilibre devient naturel.', who: 'Pour la maîtrise du corps, et la porte d’entrée des figures.' },
-  { id: 'gainage', name: 'Gainage : +80 %', exo: 'Hollow Hold', t: true, gain: 1.8, rest: 45, sets: 4,
+  { id: 'gainage', name: 'Gainage : +80 %', exo: 'Hollow Hold', t: true, gain: 1.8, rest: 45, sets: 4,
     why: 'Le hollow body, la base de toutes les figures : un tronc solide rend tes pompes, tes dips et ta course meilleurs.', who: 'Pour un ventre solide et le dragon flag plus tard.' },
   { id: 'pistol', name: 'Premier pistol squat', exo: 'Assisted Pistol Squats', gain: 1.6, rest: 75, sets: 4, final: 'Pistol Squat',
     why: 'Des pistols assistés (une main sur la station de dips) de plus en plus nombreux, puis au jour 30 un essai sans aide.', who: 'Pour des jambes fortes, une jambe après l’autre.' },
@@ -43,10 +43,20 @@ export function dayPlan(p, d) {
   const M = Math.max(p.t ? 10 : 3, maxBefore(d));
   // Trois types de jour qui tournent : léger, moyen, dur. Et une petite hausse à l'intérieur de chaque bloc de 10 jours.
   const kind = d % 3, step = 1 + ((d % 10) / 10) * 0.12;
-  const base = kind === 1 ? [0.45, 0.5, 0.5, 0.45, 0.55] : kind === 2 ? [0.55, 0.6, 0.6, 0.55, 0.65] : [0.6, 0.7, 0.7, 0.6, 0.75];
+  // Répétitions : 35 à 60 % du max par série (2 à 2,6 fois ton max dans la journée), jamais jusqu'à l'échec.
+  // Tenues : un peu plus haut, une tenue courte fatigue moins.
+  const base = p.t
+    ? (kind === 1 ? [0.45, 0.5, 0.5, 0.45, 0.55] : kind === 2 ? [0.55, 0.6, 0.6, 0.55, 0.65] : [0.6, 0.7, 0.7, 0.6, 0.75])
+    : (kind === 1 ? [0.35, 0.4, 0.4, 0.35, 0.45] : kind === 2 ? [0.4, 0.45, 0.45, 0.4, 0.5] : [0.45, 0.55, 0.55, 0.45, 0.6]);
   const sets = base.slice(0, p.sets).map((k) => { const v = Math.max(p.t ? 5 : 1, Math.round(M * k * step / (p.t ? 5 : 1)) * (p.t ? 5 : 1)); return p.t ? { t: v } : { r: v }; });
   const total = sets.reduce((s, x) => s + (x.t || x.r), 0);
-  return { sets, kind, text: (kind === 1 ? 'Jour léger' : kind === 2 ? 'Jour moyen' : 'Jour dur') + ' : ' + sets.length + ' séries, ' + (p.t ? total + ' s au total' : total + ' répétitions au total') + ', ' + p.rest + ' s de repos.' };
+  const lo = Math.round(Math.min(...base.slice(0, p.sets)) * step * 100), hi = Math.round(Math.max(...base.slice(0, p.sets)) * step * 100);
+  const word = kind === 1 ? 'Jour léger' : kind === 2 ? 'Jour moyen' : 'Jour dur';
+  return { sets, kind, max: M, lo, hi, text: word + ' : ' + sets.length + ' séries, ' + (p.t ? total + ' s au total' : total + ' répétitions au total') + ', ' + p.rest + ' s de repos.',
+    why: 'Calculé sur ton dernier test (' + unit(p, M) + ') : chaque série fait ' + lo + ' à ' + hi + ' % de ce maximum. '
+      + (p.t ? 'Plusieurs tenues courtes et propres apprennent mieux à ton corps qu’une seule à fond.' : 'Tu fais beaucoup de répétitions dans la journée sans jamais aller à l’échec : ton corps s’habitue au volume, et c’est ce qui fait monter ton maximum.')
+      + ' Les jours léger, moyen et dur tournent pour que tu récupères, et les tests des jours 10 et 20 recalent les chiffres sur tes progrès. '
+      + 'Si la dernière série est vraiment impossible, fais ce que tu peux : ça ne casse rien.' };
 }
 
 // Où en est le programme : jour en cours, fait aujourd'hui ?
@@ -81,7 +91,7 @@ export function p30Card() {
     + '<div class="bar gold"><div style="width:' + Math.round(((day - 1) / 30) * 100) + '%"></div></div>'
     + (s.doneToday ? '<span class="h2">Fait pour aujourd’hui</span><span class="small mut">Demain : ' + esc(isRest(day) ? 'repos' : dayPlan(p, day).test ? 'test' : 'jour ' + day) + '. ' + (s.v0 ? 'Départ ' + unit(p, s.v0) + ', but ' + unit(p, goalOf(p, s.v0)) + '.' : '') + '</span>'
       : plan.rest ? '<span class="h2">Jour de repos</span><span class="small mut">' + esc(plan.text) + ' La suite demain.</span>'
-      : '<span class="h2">' + (plan.test ? (day === 1 ? 'Test de départ' : day === 30 ? 'Test final' : 'Re-test') : setsTxt(p, plan) + (p.t ? '' : ' ' + exoName(p.exo).toLowerCase())) + '</span><span class="small mut">' + esc(plan.text) + '</span><button type="button" class="pill gold-btn wide" data-act="p30-go">' + (plan.test ? 'Faire le test' : 'Faire le jour ' + day) + '</button>')
+      : '<span class="h2">' + (plan.test ? (day === 1 ? 'Test de départ' : day === 30 ? 'Test final' : 'Re-test') : setsTxt(p, plan) + (p.t ? '' : ' ' + exoName(p.exo).toLowerCase())) + '</span><span class="small mut">' + esc(plan.text) + (plan.why ? ' Basé sur ton max de ' + unit(p, plan.max) + '.' : '') + '</span>' + (plan.why ? '<button type="button" class="linkbtn small" data-act="p30">Pourquoi ces chiffres ?</button>' : '') + '<button type="button" class="pill gold-btn wide" data-act="p30-go">' + (plan.test ? 'Faire le test' : 'Faire le jour ' + day) + '</button>')
     + '</section>';
 }
 
@@ -107,7 +117,7 @@ function sheetP30() {
     h += '<div class="p30grid">' + Array.from({ length: 30 }, (_, i) => { const d = i + 1; const ok = d < s.day; return '<span class="p30d' + (ok ? ' ok' : '') + (d === s.day ? ' cur' : '') + (isRest(d) ? ' off' : '') + (isTest(d) ? ' test' : '') + '">' + (isTest(d) ? 'T' : d) + '</span>'; }).join('') + '</div>'
       + '<span class="small mut">T = test · les jours grisés sont des jours de repos.</span>';
     const plan = dayPlan(p, s.day);
-    if (!plan.rest && !s.doneToday) h += '<section class="glass card col" style="gap:6px"><span class="label violet">Aujourd’hui · jour ' + s.day + '</span><span style="font-weight:600">' + esc(plan.test ? plan.text : setsTxt(p, plan)) + '</span>' + (plan.test ? '' : '<span class="small mut">' + esc(plan.text) + '</span>') + '</section><button type="button" class="pill gold-btn wide" data-act="p30-go">' + (plan.test ? 'Faire le test' : 'Commencer') + '</button>';
+    if (!plan.rest && !s.doneToday) h += '<section class="glass card col" style="gap:6px"><span class="label violet">Aujourd’hui · jour ' + s.day + '</span><span style="font-weight:600">' + esc(plan.test ? plan.text : setsTxt(p, plan)) + '</span>' + (plan.test ? '' : '<span class="small mut">' + esc(plan.text) + '</span>') + '</section>' + (plan.why ? '<section class="glass card col" style="gap:6px"><span class="label">Pourquoi ces chiffres</span><span class="small" style="color:var(--soft)">' + esc(plan.why) + '</span></section>' : '') + '<button type="button" class="pill gold-btn wide" data-act="p30-go">' + (plan.test ? 'Faire le test' : 'Commencer') + '</button>';
     h += '<button type="button" class="pill sm glass wide" data-act="p30-stop" style="color:var(--mut)">Arrêter ce programme</button>';
   }
   h += '<button type="button" class="pill sm glass wide" data-act="close">Fermer</button>';

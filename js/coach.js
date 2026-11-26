@@ -12,6 +12,7 @@ import { weekPlan } from './semaine.js';
 import { bodyStats, ZONES, musclesOf } from './corps.js';
 import { rankInfo, balance, bodyLog } from './stats.js';
 import { streak } from './quetes.js';
+import { status as p30status, dayPlan as p30plan, goalOf } from './prog30.js';
 
 const DAY = 864e5;
 const day0 = (t) => { const d = new Date(t); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
@@ -32,14 +33,23 @@ function exoTrends() {
     }
   }
   const out = [];
+  // Date du dernier changement d'étape de chaque exercice du programme A/B (plus lourd ou plus lent).
+  const at = state.settings.stepAt || {}, since = {};
+  for (const k of Object.keys(STEPS)) { const n = curStep(k).n; if (at[k]) since[n] = Math.max(since[n] || 0, at[k]); }
   for (const name of Object.keys(by)) {
-    const L = by[name]; // du plus récent au plus ancien
-    if (now - L[0].date > 21 * DAY) continue; // plus fait depuis 3 semaines : abandonné
+    const all = by[name]; // du plus récent au plus ancien
+    if (now - all[0].date > 21 * DAY) continue; // plus fait depuis 3 semaines : abandonné
+    // On ne compare que ce qui se compare : même lest et même étape que la dernière séance.
+    // Sinon, passer de 15 kg × 12 à 20 kg × 6 passerait pour une baisse alors que c'est un progrès.
+    const w0 = all[0].best.w || 0;
+    let L = all;
+    const cut = all.findIndex((x) => (x.best.w || 0) !== w0 || x.date < (since[name] || 0));
+    if (cut > 0) L = all.slice(0, cut);
     const recent = L.slice(0, 3), before = L.slice(3);
     const rBest = Math.max(...recent.map((x) => amount(x.best)));
     const bBest = before.length ? Math.max(...before.map((x) => amount(x.best))) : 0;
-    const first = L[L.length - 1];
-    const gain = amount(first.best) ? (rBest - amount(first.best)) / amount(first.best) : 0;
+    const first = all[all.length - 1];
+    const gain = amount(first.best) ? (Math.max(...all.slice(0, 3).map((x) => amount(x.best))) - amount(first.best)) / amount(first.best) : 0;
     const stuck = L.length >= 5 && rBest <= bBest;
     const slow = !stuck && L.length >= 3 && now - L[0].date < 10 * DAY && amount(L[0].best) <= amount(L[2].best) && amount(L[1].best) <= amount(L[2].best);
     out.push({ name, n: L.length, last: L[0], recent, rBest, bBest, stuck, slow, ref: L[2], gain, first, hard: recent.filter((x) => x.feel === 'd').length });
@@ -100,10 +110,12 @@ export function insights() {
   if (pr.length && f.mode !== 'record') out.push({ tone: 'good', title: 'Prochain record', text: predLine(pr[0]) + ', si tu gardes ce rythme.', act: 'record' });
   const best = tr.filter((t) => t.n >= 3 && t.gain >= 0.1 && !t.stuck).sort((a, b) => b.gain - a.gain)[0];
   if (best) out.push({ tone: 'good', title: 'Ton plus gros progrès', text: exoName(best.name) + ' : de ' + showSet(best.name, best.first.best) + ' à ' + showSet(best.name, best.recent.find((x) => amount(x.best) === best.rBest).best) + ' en ' + plural(Math.max(1, Math.round((best.last.date - best.first.date) / (7 * DAY))), 'semaine', 'semaines') + ' (+' + Math.round(best.gain * 100) + ' %).' });
-  const stuck = tr.filter((t) => t.stuck).sort((a, b) => b.n - a.n);
+  // Programme A/B : les exercices à étapes ont leur propre suivi (« Bloqué sur… », plus bas), avec la bonne méthode.
+  const ownStep = (n) => !isBeginner() && Object.keys(STEPS).some((k) => STEPS[k].steps.some((x) => x.n === n));
+  const stuck = tr.filter((t) => t.stuck && !ownStep(t.name)).sort((a, b) => b.n - a.n);
   if (stuck.length) out.push({ tone: 'warn', title: 'Tu stagnes sur ' + exoName(stuck[0].name), text: 'Pas mieux que ' + showSet(stuck[0].name, stuck[0].last.best) + ' sur tes 3 dernières séances. ' + stuckTip(stuck[0])[0], act: 'stuck' });
 
-  const slow = tr.filter((t) => t.slow).sort((a, b) => b.n - a.n)[0];
+  const slow = tr.filter((t) => t.slow && !ownStep(t.name)).sort((a, b) => b.n - a.n)[0];
   if (slow) out.push({ tone: 'info', title: 'Ça ralentit sur ' + exoName(slow.name), text: '2 séances sans faire mieux que ' + showSet(slow.name, slow.ref.best).replace(/\.$/, '') + '. Si la prochaine est pareille, tu vas stagner. Change un détail dès maintenant : ' + stuckTip(slow)[0].charAt(0).toLowerCase() + stuckTip(slow)[0].slice(1), act: 'stuck' });
 
   // Bilan du dimanche (et lundi matin) : la semaine en 3 phrases.
@@ -327,7 +339,7 @@ function answer(id, arg) {
   }
   if (id === 'muscle') {
     const bw = (state.body && state.body.length) ? state.body.slice().sort((a, b) => b.d - a.d)[0].kg : null;
-    return { text: ['Pour prendre du muscle au poids du corps, trois règles :', '1. Entre 8 et 15 répétitions par série, en t’arrêtant 1 ou 2 répétitions avant l’échec. Au-delà de 15, mets le gilet lesté ou passe à l’exercice plus dur : le programme le fait déjà.', '2. Entre 10 et 20 séries par muscle et par semaine. La carte du corps (onglet Progrès, mode Semaine) te montre où tu en es.', '3. Manger assez : ' + (bw ? 'environ ' + Math.round(bw * 1.6) + ' g de protéines par jour pour ' + fr(bw, 1) + ' kg' : '1,6 g de protéines par kilo') + ', et un peu plus de calories que tu n’en dépenses.', 'Compte 2 à 3 mois pour voir la différence dans le miroir : les photos de suivi te le prouveront.'], btns: [btn('photos', 'Photos de suivi', '', true)] };
+    return { text: ['Pour prendre du muscle au poids du corps, trois règles :', '1. Entre 8 et 15 répétitions par série, en t’arrêtant 1 ou 2 répétitions avant l’échec. Au-delà de 15, mets le gilet lesté ou passe à l’exercice plus dur : le programme le fait déjà.', '2. Entre 10 et 20 séries par muscle et par semaine. La carte du corps (onglet Progrès, mode Semaine) te montre où tu en es.', '3. Manger assez : ' + (bw ? 'environ ' + Math.round(bw * 1.8) + ' g de protéines par jour pour ' + fr(bw, 1) + ' kg' : '1,8 g de protéines par kilo') + ', et un peu plus de calories que tu n’en dépenses.', 'Compte 2 à 3 mois pour voir la différence dans le miroir : les photos de suivi te le prouveront.'], btns: [btn('photos', 'Photos de suivi', '', true)] };
   }
   if (id === 'run') {
     const R = runs();
@@ -357,7 +369,7 @@ function answer(id, arg) {
     const c = charge();
     if (lightWeek()) return { text: ['Tu es déjà en semaine légère : une série de moins partout jusqu’à dimanche.', 'Lundi, tout revient à la normale, et tu devrais te sentir plus fort.'] };
     if (adv) return { text: [adv, 'Une semaine légère, ce n’est pas une semaine perdue : c’est là que le corps rattrape le travail des semaines dures.'], btns: [btn('light-on', 'Passer en semaine légère', '', true)] };
-    return { text: ['Non, tout va bien.' + (c.ratio !== null ? ' Ta charge des 7 derniers jours (' + c.acute + ' points) est proche de ta moyenne (' + c.chronic + ').' : ''), 'Je te préviendrai si elle grimpe trop vite ou si tes bilans du matin baissent plusieurs jours de suite. Et la 4e semaine de chaque cycle (le re-test) sert déjà à souffler.'] };
+    return { text: ['Non, tout va bien.' + (c.ratio !== null ? ' Ta charge des 7 derniers jours (' + c.acute + ' points) est proche de ta moyenne (' + c.chronic + ').' : ''), 'Je te préviendrai si elle grimpe trop vite ou si tes bilans du matin baissent plusieurs jours de suite.' + (isBeginner() ? ' Et la 4e semaine de chaque cycle (le re-test) sert déjà à souffler.' : '')] };
   }
   if (id === 'pain') {
     if (!arg) return { text: ['Où as-tu mal ?'] };
@@ -408,7 +420,7 @@ function answer(id, arg) {
     return { text: ['Avec ' + mn + ' minutes : « ' + label(r2) + ' » en version ' + (mode === 'court' ? 'courte' : mode === 'gros' ? 'grosse séance' : 'normale') + ', environ ' + minutes(L, false) + ' minutes, ' + plural(L.length, 'exercice', 'exercices') + '.', mode === 'court' ? 'Deux séries par exercice, les plus importants en premier : tu gardes l’essentiel.' : mode === 'gros' ? 'Une série de plus sur les deux premiers exercices et deux exercices en bonus.' : 'La séance complète, échauffement compris.'], btns: [startBtn(r2, mode || 'normal', 'Commencer', true)] };
   }
   if (id === 'rest') {
-    return { text: ['Le muscle se construit pendant le repos, pas pendant la séance. Un muscle travaillé dur a besoin de 48 heures.', 'C’est pour ça que ton programme alterne : pompes, jambes, dips, complet. Tu peux t’entraîner plusieurs jours de suite sans retravailler les mêmes muscles.', 'Deux fois par jour : inutile à ton niveau. Mieux vaut une vraie séance et bien manger.', 'Un jour de repos actif : marche, vélo, étirements, ou le retour au calme guidé.'], btns: [btn('cooldown', 'Étirements', '', true), btn('coach-tab', 'Ma récupération', ' data-tab="progress"')] };
+    return { text: ['Le muscle se construit pendant le repos, pas pendant la séance. Un muscle travaillé dur a besoin de 48 heures.', (isBeginner() ? 'C’est pour ça que ton programme alterne le haut, le bas et le corps entier : tu peux t’entraîner deux jours de suite sans retravailler les mêmes muscles.' : 'Tes séances A et B font travailler tout le corps : laisse au moins un jour entre deux séances, sauf la course du dimanche qui ne gêne pas.'), 'Deux fois par jour : inutile à ton niveau. Mieux vaut une vraie séance et bien manger.', 'Un jour de repos actif : marche, vélo, étirements, ou le retour au calme guidé.'], btns: [btn('cooldown', 'Étirements', '', true), btn('coach-tab', 'Ma récupération', ' data-tab="progress"')] };
   }
   if (id === 'doms') {
     const z = bodyStats();
@@ -420,7 +432,7 @@ function answer(id, arg) {
     const R = Object.entries(state.checkins || {}).filter(([, v]) => v.rt).sort((a, b) => (a[0] < b[0] ? 1 : -1));
     if (!L.length && !R.length) return { text: ['Ton pouls au repos et ton temps de réaction se mesurent dans le bilan du matin : 60 secondes le doigt sur la caméra, puis 20 secondes de réaction.', 'Après 7 matins, je connais ta base. Un pouls plus haut que d’habitude ou une réaction plus lente annoncent la fatigue avant que tu la sentes.'], btns: [btn('checkin', 'Bilan du matin', '', true)] };
     const t = [];
-    if (L.length) { const b = baseOf('hr', '9999'); t.push('Pouls au repos : ' + L[0][1].hr + ' bpm ce dernier matin' + (b.v ? ', pour une base de ' + Math.round(b.v) + '.' : ' (base connue après 7 mesures, encore ' + (7 - b.n) + ').')); if (b.v && L[0][1].hr - b.v >= 4) t.push('5 battements au-dessus de ta base, c’est souvent un manque de sommeil, un début de rhume ou une grosse fatigue : séance allégée.'); }
+    if (L.length) { const b = baseOf('hr', '9999'); t.push('Pouls au repos : ' + L[0][1].hr + ' bpm ce dernier matin' + (b.v ? ', pour une base de ' + Math.round(b.v) + '.' : ' (base connue après 7 mesures, encore ' + (7 - b.n) + ').')); if (b.v && L[0][1].hr - b.v >= 4) t.push((L[0][1].hr - Math.round(b.v)) + ' battements au-dessus de ta base, c’est souvent un manque de sommeil, un début de rhume ou une grosse fatigue : séance allégée.'); }
     if (R.length) { const b = baseOf('rt', '9999'); t.push('Réaction : ' + R[0][1].rt + ' ms' + (b.v ? ', pour une base de ' + Math.round(b.v) + ' ms.' : '.')); }
     t.push('Un pouls au repos qui baisse sur des mois, c’est le signe que ton cœur devient plus endurant : la course du dimanche y est pour beaucoup.');
     return { text: t, btns: [btn('forme', 'Ma forme', '', true)] };
@@ -442,10 +454,10 @@ function answer(id, arg) {
     const t = ['Le stress fatigue autant qu’une séance : ton corps récupère moins bien. Les périodes de bac blanc ou de contrôles comptent.', 'Ce qui marche : garder les séances (le sport fait baisser le stress), mais en version allégée ou courte, et dormir plus plutôt que réviser tard.', 'Après une séance, 5 minutes de respiration lente (4 secondes pour inspirer, 6 pour expirer) calment pour de vrai.'];
     return { text: t, btns: [startBtn(type === 'test' ? rot : type, 'court', 'Séance courte', true), btn('cooldown', 'Retour au calme')] };
   }
-  if (id === 'method') return { text: ['Les repères de ton programme :', 'Force : 3 à 6 répétitions lourdes (avec le gilet ou un haltère), 2 à 3 minutes de repos.', 'Muscle : 8 à 15 répétitions, 1 min 30 de repos, arrête-toi 1 ou 2 répétitions avant l’échec.', 'Endurance : 15 répétitions et plus, repos court.', 'La règle qui fait progresser : chaque séance, une répétition de plus que la dernière fois. Quand tu dépasses 15, ajoute du lest ou passe à la version plus dure : l’app le fait toute seule quand tu atteins le cap.'], btns: [btn('prog', 'Ma séance', '', true)] };
+  if (id === 'method') return { text: ['Les repères de ton programme :'].concat(isBeginner() ? ['Muscle : 8 à 15 répétitions, 1 min 30 de repos, arrête-toi 1 ou 2 répétitions avant l’échec.', 'Endurance : 15 répétitions et plus, repos court.', 'La règle qui fait progresser : chaque séance, une répétition de plus que la dernière fois. Quand tu atteins le cap, l’app passe à la version plus dure.'] : ['Chaque exercice a une fourchette, par exemple 8 à 12 répétitions. Tu pars du bas et tu ajoutes une répétition quand tu peux, sur chaque série.', 'Quand toutes tes séries touchent le haut de la fourchette, l’étape suivante est prête : plus de lest, ou une version plus dure. Je te le propose, c’est toi qui valides.', 'Le repos est réglé pour chaque exercice : 2 min 30 sur les dips lestés et les pistols, 1 à 2 minutes ailleurs.', 'Arrête chaque série 1 ou 2 répétitions avant de ne plus pouvoir, sauf la dernière série de pompes au max.']), btns: [btn('prog', 'Ma séance', '', true)] };
   if (id === 'skill') {
     const ri = rankInfo().q.find((x) => x.id === 'maitrise');
-    return { text: ['Les figures (équilibre sur les mains, L-sit, corbeau) se travaillent en début de séance, quand tu es frais : c’est le bloc « Habileté » de chaque séance.', 'Elles progressent avec la fréquence, pas avec la fatigue : plusieurs fois par semaine, en courtes séries propres.', 'Ta maîtrise du corps est à ' + (ri ? ri.letter : 'E') + '. Un handstand de 30 secondes contre le mur, c’est la lettre B.'], btns: [btn('exo', 'Équilibre sur les mains', ' data-name="Handstand Hold"', true)] };
+    return { text: [(isBeginner() ? 'Les figures (équilibre sur les mains, L-sit, corbeau) se travaillent en début de séance, quand tu es frais : c’est le bloc « Habileté » de chaque séance.' : 'Les figures (équilibre sur les mains, L-sit, corbeau) ne sont pas dans tes séances A et B. Pour en apprendre une : la partie Figures de l’onglet Défis, ou le programme de 30 jours « Équilibre », 10 minutes avant ta séance, quand tu es frais.'), 'Elles progressent avec la fréquence, pas avec la fatigue : plusieurs fois par semaine, en courtes séries propres.', 'Ta maîtrise du corps est à ' + (ri ? ri.letter : 'E') + '. Un handstand de 30 secondes contre le mur, c’est la lettre B.'], btns: [btn('exo', 'Équilibre sur les mains', ' data-name="Handstand Hold"', true)] };
   }
   if (id === 'hello') {
     const h = new Date().getHours();
@@ -609,13 +621,83 @@ function ask(id, arg, label) {
   if (id === 'pain' && !arg) a = { text: ['Où as-tu mal ? Pendant 7 jours, je retirerai de tes séances les exercices qui sollicitent cette zone.'], btns: Object.keys(PAINS).map((k) => btn('coach-ask', PAINS[k], ' data-q="pain" data-arg="' + k + '" data-l="' + PAINS[k] + '"')).join('') };
   reply(a);
 }
+// ---------- Questions de technique précises ----------
+// Chaque fiche : l'exercice concerné (débuts de mots, ou vide = n'importe lequel) et les mots du problème.
+// Elle passe avant le reste : « je mets un livre sous mon talon au pistol » doit parler du talon, pas des records.
+const TECH = [
+  { ex: ['pistol'], any: ['talon', 'cale', 'livre', 'surelev', 'disque', 'chaussure', 'stabilis'], text: [
+    'Oui, c’est une bonne idée, et c’est très courant : un talon surélevé (livre fin, disque, cale de 2 à 3 cm) compense des chevilles raides.',
+    'Le genou peut avancer plus loin, tu descends plus droit et tu ne pars plus en arrière. Ce n’est pas de la triche : les haltérophiles portent des chaussures à talon pour la même raison.',
+    'Pour t’en passer un jour : avant chaque séance, 1 minute par jambe de mobilité de cheville (face au mur, pied à 10 cm, genou qui touche le mur, talon au sol), puis baisse la hauteur de la cale petit à petit.'] },
+  { ex: ['pistol'], any: ['equilibre', 'tombe', 'arriere', 'bascul', 'stable', 'tenir', 'controle'], text: [
+    'Au pistol, on tombe presque toujours en arrière : le poids n’est pas assez sur l’avant du pied.',
+    '1. Bras tendus devant toi pendant toute la descente. 2. Tiens un haltère de 5 à 10 kg à bout de bras : ce contrepoids aide beaucoup. 3. Descends en 3 secondes, sans te laisser tomber en bas.',
+    'Si tes chevilles sont raides, mets un livre fin sous ton talon : c’est souvent ça qui débloque.'] },
+  { ex: ['pistol', 'squat', 'fente', 'bulgar', 'lunge'], any: ['genou'], text: [
+    'Le genou doit rester dans l’axe du pied, au-dessus du 2e orteil. S’il rentre vers l’intérieur, pousse-le légèrement vers l’extérieur en descendant.',
+    'Qu’il dépasse les orteils n’est pas un problème. Une douleur vive dans le genou, en revanche, si : arrête l’exercice et signale la douleur (je l’enlève 7 jours).'] },
+  { ex: ['pistol', 'mollet'], any: ['crampe'], text: [
+    'Les crampes au pistol viennent souvent du mollet trop raccourci en bas du mouvement.',
+    'Talon sur un livre fin, chevilles bien échauffées, et bois assez dans la journée. Si une crampe arrive, étire le mollet 20 secondes et refais la série.'] },
+  { ex: ['dips'], any: ['epaule', 'profond', 'jusqu ou', 'jusqu a quel'], text: [
+    'Aux dips, descends jusqu’à ce que le coude soit plié à angle droit, pas plus bas : c’est là que l’avant de l’épaule souffre.',
+    'Épaules basses (loin des oreilles), buste un peu penché en avant, coudes vers l’arrière. Si l’avant de l’épaule tire quand même, garde un lest plus léger quelques séances.'] },
+  { ex: ['dips', 'pompe', 'gilet'], any: ['lest', 'gilet', 'ceinture'], text: [
+    'Pour lester : le gilet de 10 kg d’abord, puis un haltère coincé entre les cuisses ou accroché à une ceinture pour aller plus haut.',
+    'Ton programme dit quand monter : quand toutes tes séries touchent le haut de la fourchette, l’étape suivante est prête. Monte de 5 kg à la fois, jamais plus.'] },
+  { ex: ['pompe', 'pike', 'push'], any: ['poignet'], text: [
+    'Mal aux poignets aux pompes : pose les mains sur tes haltères (poignées droites), le poignet reste droit et ne se plie plus.',
+    'Doigts bien écartés et appuie avec le bout des doigts, pas seulement la paume. Si ça fait mal même comme ça, signale la douleur : je retire les exercices qui chargent les poignets pendant 7 jours.'] },
+  { ex: ['pompe', 'push'], any: ['coude', 'ecart', 'mains', 'largeur'], text: [
+    'Mains un peu plus larges que les épaules, coudes à environ 45° du corps (en flèche, pas en T).',
+    'Coudes collés = plus de triceps, coudes ouverts = plus de pectoraux mais les épaules souffrent. Le 45° est le bon compromis.'] },
+  { ex: ['pompe', 'push', 'hollow', 'gainage', 'planche'], any: ['dos', 'creus', 'fesse', 'hanche', 'cambr'], text: [
+    'Le corps doit rester droit comme une planche, des talons à la tête.',
+    'Serre les fesses et rentre un peu le ventre avant chaque répétition. Si les hanches tombent à la fin d’une série, c’est la fin de la série : ne force pas les dernières.'] },
+  { ex: ['rowing', 'row'], any: ['dos', 'rond', 'lombaire', 'bas du dos'], text: [
+    'Au rowing, le dos reste plat : poitrine sortie, regard un peu devant toi, genoux légèrement pliés.',
+    'Avec l’haltère, pose une main et un genou sur le banc : le bas du dos est protégé. Tire le coude vers la hanche, pas vers le haut.'] },
+  { ex: [], any: ['respir', 'souffle', 'inspir', 'expir', 'bloque l air'], notRun: true, text: [
+    'Inspire pendant la descente, souffle pendant l’effort (la montée).',
+    'Sur une série lourde, tu peux bloquer l’air une seconde au moment le plus dur, mais ne retiens pas ta respiration sur toute la série.'] },
+  { ex: [], any: ['tempo', 'lentement', 'vitesse de', 'descente'], text: [
+    'Descends en 2 à 3 secondes, contrôlé, et remonte normalement, sans à-coup.',
+    'La descente lente rend chaque répétition plus dure sans ajouter de lest : c’est l’étape de certains exercices de ton programme.'] },
+];
+function techAnswer(u) {
+  const w = ' ' + u.words.join(' ') + ' ';
+  const has = (s) => w.includes(' ' + s);
+  for (const T of TECH) {
+    if (T.notRun && (has('cour') || has('running'))) continue;
+    const exOk = !T.ex.length || T.ex.some(has) || (u.exo && T.ex.some((e) => clean(exoName(u.exo) + ' ' + u.exo).some((x) => x.startsWith(e))));
+    if (exOk && T.any.some(has)) return { text: T.text, btns: u.exo ? [btn('exo', 'Fiche de l’exercice', ' data-name="' + esc(u.exo) + '"', true)] : [] };
+  }
+  return null;
+}
+// Le défi de 30 jours : c'est lui qui calcule les séries, le coach l'explique.
+function p30Answer() {
+  const s = p30status();
+  if (!s) return { text: ['Tu n’as pas de programme de 30 jours en cours.', 'Il en existe 5 (pompes +50 %, dips +50 %, équilibre, gainage, premier pistol) : 10 à 15 minutes par jour en plus de ta semaine.'], btns: [btn('p30', 'Voir les programmes', '', true)] };
+  if (s.finished) return { text: ['Ton programme « ' + s.p.name + ' » est terminé.'], btns: [btn('p30', 'Voir mon bilan', '', true)] };
+  const pl = p30plan(s.p, s.day);
+  const t = ['Les chiffres viennent du programme de 30 jours, pas de moi : il les calcule sur ton dernier test.'];
+  if (pl.test) t.push('Aujourd’hui (jour ' + s.day + ') : un test, une seule série au maximum. Les jours suivants se calculent dessus.');
+  else if (pl.rest) t.push('Aujourd’hui (jour ' + s.day + ') : repos. C’est pendant ces jours que ton maximum monte.');
+  else t.push('Jour ' + s.day + ' : ' + pl.text + ' ' + pl.why);
+  t.push('Le but : ' + (s.v0 ? 'passer de ' + s.v0 + ' à ' + goalOf(s.p, s.v0) + (s.p.t ? ' secondes' : ' répétitions d’affilée') + ' au test du jour 30.' : 'monter ton maximum.'));
+  return { text: t, btns: [btn('p30', 'Mon programme de 30 jours', '', true)] };
+}
 // Question écrite librement.
 function askText(text) {
   chat.push({ me: true, text });
   const u = understand(text);
   let a;
   try {
-    if (u.id === 'pain') a = u.zone ? answer('pain', u.zone) : { text: ['Où as-tu mal ? Je retirerai de tes séances, pendant 7 jours, les exercices qui sollicitent cette zone.'], btns: Object.keys(PAINS).map((k) => btn('coach-ask', PAINS[k], ' data-q="pain" data-arg="' + k + '" data-l="' + PAINS[k] + '"')).join('') };
+    const tech = techAnswer(u);
+    const w30 = ' ' + u.words.join(' ') + ' ';
+    if (tech) a = tech;
+    else if (/ 30 jour| defi | defis | 50 /.test(w30) && (state.p30 || / 30 jour/.test(w30))) a = p30Answer();
+    else if (u.id === 'pain') a = u.zone ? answer('pain', u.zone) : { text: ['Où as-tu mal ? Je retirerai de tes séances, pendant 7 jours, les exercices qui sollicitent cette zone.'], btns: Object.keys(PAINS).map((k) => btn('coach-ask', PAINS[k], ' data-q="pain" data-arg="' + k + '" data-l="' + PAINS[k] + '"')).join('') };
     else if (u.id === 'exo' || ((u.id === 'stuck' || u.id === 'record') && u.exo)) a = exoAnswer(u.exo);
     else if (u.id === 'progress') a = answer('stuck');
     else if (u.id === 'time') a = answer('time', u.min);

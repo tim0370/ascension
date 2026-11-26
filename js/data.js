@@ -905,6 +905,12 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 55, items: [
+    'Coach : il ne croit plus que tu stagnes quand tu montes d’étape (plus de lest ou descente plus lente). Il compare seulement des séances faites au même lest.',
+    'Coach : il répond aux questions de technique (talon surélevé au pistol, épaules aux dips, poignets aux pompes, respiration, lest…) et explique ton défi de 30 jours.',
+    'Coach : les réponses sur le repos, les figures et les séries collent maintenant à tes séances A et B.',
+    'Défi de 30 jours : séries moins lourdes (2 à 2,6 fois ton max dans la journée au lieu de 3), et « Pourquoi ces chiffres ? » explique d’où vient chaque nombre.',
+  ] },
   { v: 54, items: [
     'Finitions sur tous les écrans : carte de la séance du jour plus claire, objectifs écrits en toutes lettres (plus de « Record : – »), poids et mensurations cachés tant que tu ne les notes pas.',
     'Quêtes du jour calées sur tes séances A et B : « 80 répétitions de rowing » remplace les répétitions explosives, et le nombre de pistols est atteignable.',
