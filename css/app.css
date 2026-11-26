@@ -854,8 +854,6 @@ html, body { background: var(--bg); }
 body { font-family: var(--body); font-size: 16px; line-height: 1.45; background: var(--bg); background-attachment: scroll; }
 body::before, body::after { display: none; }
 #app { gap: 14px; padding: calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 40px); }
-/* Les deux boutons flottants sont en haut à droite : le premier élément de chaque écran leur laisse la place. */
-#app > :first-child { margin-right: 56px; min-height: 98px; }
 .homehead { display: flex; flex-direction: column; gap: 14px; }
 .homehead .today { font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1; text-transform: uppercase; color: var(--txt); }
 .homehead .today small { display: block; font-family: var(--body); font-size: 14px; font-weight: 500; text-transform: none; color: var(--mut); margin-top: 4px; }
@@ -1129,8 +1127,6 @@ html.textbig .chip { font-size: 15px; }
 @media (max-width: 400px) { .rest .col.grow .small { display: none; } }
 
 /* v54 : en séance, seul le menu reste en haut à droite, et la ligne du haut lui laisse sa place */
-body.in-session .topnav [data-tab="workout"] { display: none; }
-body.in-session #app > .row.between:first-child { padding-right: 58px; }
 @media (max-width: 360px) { .rest svg { display: none; } .rest .pill.rx { width: 42px; } }
 .pill > svg, .iconbtn > svg { flex: none; }
 
@@ -1150,3 +1146,35 @@ body.dragging .ins { visibility: hidden; }
 body:has(#rest:not(:empty)) .validbar { bottom: calc(96px + env(safe-area-inset-bottom)); }
 
 .ctaex .more { background: transparent; border: 1px dashed rgba(255, 255, 255, 0.35); }
+
+/* v59 : bouton rond en bas à droite. Un toucher = menu complet ; le garder appuyé = éventail de 5 choix (fan.js). */
+#app { padding-bottom: calc(env(safe-area-inset-bottom) + 96px); }
+.fab { position: fixed; z-index: 9; right: max(18px, calc(50vw - 222px)); bottom: calc(env(safe-area-inset-bottom) + 18px); width: 60px; height: 60px; border-radius: 50%; display: grid; place-items: center; background: var(--violet); color: #fff; border: 0; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08) inset; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; transition: transform 0.18s var(--ease), bottom 0.25s var(--ease), background 0.2s; }
+.fab svg { width: 22px; height: 22px; transition: transform 0.25s var(--ease); }
+.fab.press { transform: scale(0.92); }
+body.fan-open .fab { background: var(--surf3); transform: scale(0.9); }
+.fab .fabx { display: none; }
+body.fan-open .fab svg { display: none; }
+body.fan-open .fab .fabx { display: block; }
+body.in-focus .fab { display: none; }
+body:has(#rest:not(:empty)) .fab { bottom: calc(env(safe-area-inset-bottom) + 112px); }
+body.has-resume .resumebar { left: max(16px, calc(50vw - 224px)); right: calc(max(18px, calc(50vw - 222px)) + 72px); max-width: none; margin: 0; min-height: 60px; }
+#fan { position: fixed; inset: 0; z-index: 8; pointer-events: none; }
+#fan:empty { display: none; }
+.fanbg { position: absolute; inset: 0; background: radial-gradient(circle at calc(100% - 48px) calc(100% - 48px), rgba(10, 10, 14, 0.55), rgba(10, 10, 14, 0.88) 70%); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); opacity: 0; transition: opacity 0.2s ease; }
+#fan.on .fanbg { opacity: 1; }
+.fanhelp { position: absolute; left: 0; right: 0; top: 38%; text-align: center; font-size: 14px; color: var(--mut); opacity: 0; transition: opacity 0.2s; }
+#fan.on .fanhelp { opacity: 1; }
+#fan.on.picking .fanhelp { opacity: 0; }
+.fanit { position: absolute; width: 56px; height: 56px; margin: -28px 0 0 -28px; border-radius: 50%; display: grid; place-items: center; background: var(--surf2); color: var(--txt); border: 1px solid rgba(255, 255, 255, 0.10); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4); transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; transition: transform 0.26s var(--ease), opacity 0.18s ease, background 0.15s; }
+.fanit svg { width: 24px; height: 24px; }
+#fan.on .fanit { transform: none; opacity: 1; }
+#fan.on .fanit.hl { background: var(--violet); color: #fff; border-color: transparent; transform: scale(1.16); transition-delay: 0s !important; }
+.fanlab { position: absolute; white-space: nowrap; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: 0.3px; text-transform: uppercase; color: var(--mut); opacity: 0; transition: opacity 0.2s 0.08s, color 0.15s; }
+#fan.on .fanlab { opacity: 1; }
+#fan.on.picking .fanlab { opacity: 0.45; }
+#fan.on .fanlab.hl { color: var(--txt); opacity: 1; }
+html.light .fanbg { background: radial-gradient(circle at calc(100% - 48px) calc(100% - 48px), rgba(243, 242, 247, 0.6), rgba(243, 242, 247, 0.92) 70%); }
+html.light .fanit { background: #fff; border-color: rgba(20, 18, 40, 0.1); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12); }
+html.light body.fan-open .fab { background: #E4E2EC; color: var(--txt); }
+@media (prefers-reduced-motion: reduce) { .fanit, .fab, .fab svg { transition: none; } }

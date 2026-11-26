@@ -27,6 +27,7 @@ import { quickCard } from './jour.js';
 import './chrono.js';
 import './retour.js';
 import { coachCard } from './coach.js';
+import { initFan } from './fan.js';
 import './parcours.js';
 import { seasonCard, celebrateSeason, sheetSeason, seasonImage } from './saison.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
@@ -186,6 +187,7 @@ function sheetUnknown() {
 // ---------- Guide de l'app ----------
 const GUIDE = [
   ['S’entraîner', [
+    ['menu', 'Le bouton rond', 'En bas à droite de chaque écran. Garde le doigt dessus : un éventail s’ouvre (Aujourd’hui, Séance, Course, Progrès, Défis). Glisse sur un choix et lâche pour y aller, lâche ailleurs pour annuler. Un simple toucher ouvre le menu complet, avec la recherche.'],
     ['prog', 'Programme guidé', 'Full Body A et B en alternance, la course le dimanche. Chaque exercice a une fourchette de répétitions : quand toutes tes séries touchent le haut, l’app te propose l’étape suivante (lest, variante, descente lente). Rien ne change sans ton accord.'],
     ['plan', 'Plan de la semaine', 'Tes 7 jours remplis par l’app : séances, course du dimanche, repos. Il se refait tout seul si tu rates un jour.'],
     ['settings', 'Choisir son programme', 'Dans les Réglages : programme complet, programme débutant (3 séances faciles au poids du corps) ou sans programme (tes routines sur l’accueil).'],
@@ -769,7 +771,7 @@ function sheetWelcome(step) {
       + '<button type="button" class="pill gold-btn wide" data-act="wel" data-s="3">Continuer</button>';
   } else {
     h += '<span class="label violet">C’est prêt</span><h1 class="h1">Comment se repérer</h1><div class="slist">'
-      + [['home', 'Aujourd’hui', 'Ce que tu ouvres chaque jour : ta séance, ta forme, ta semaine.'], ['dumbbell', 'Le bouton violet', 'En haut à droite : lance ou reprends ta séance.'], ['chart', 'Le menu', 'Les trois traits en haut à droite : progrès, historique, défis, réglages.'], ['book', 'Le guide', 'Dans le menu : chaque partie de l’app expliquée.']]
+      + [['home', 'Aujourd’hui', 'Ce que tu ouvres chaque jour : ta séance, ta forme, ta semaine.'], ['dumbbell', 'Le bouton rond', 'En bas à droite. Garde le doigt dessus, glisse sur Séance, Progrès, Défis… et lâche.'], ['chart', 'Le menu', 'Touche le bouton rond : tout le reste de l’app, avec une recherche.'], ['book', 'Le guide', 'Dans le menu : chaque partie de l’app expliquée.']]
         .map(([ic, t, d]) => '<div class="srow"><span class="mico">' + ICON[ic] + '</span><span class="col grow" style="gap:2px"><span class="mt">' + t + '</span><span class="small mut">' + d + '</span></span></div>').join('') + '</div>'
       + '<button type="button" class="pill gold-btn wide" data-act="wel-end">Commencer</button>';
   }
@@ -789,7 +791,7 @@ Object.assign(ACTIONS, {
   welcome: () => sheetWelcome(0),
 });
 
-// ---------- Menu (trois traits en haut à droite) ----------
+// ---------- Menu (bouton rond en bas à droite : un toucher = ce menu, le garder appuyé = l'éventail de fan.js) ----------
 // Toute l'app, rangée en quatre groupes. Une ligne = un écran (data-tab) ou une fenêtre (data-act).
 const MENU = [
   ['Entraînement', [
@@ -846,11 +848,25 @@ function searchAll(q) {
   return (grp('Dans l’app', pages) + grp('Exercices', ex) + grp('Séances', ws)) || '<span class="small mut">Rien trouvé pour « ' + esc(q) + ' ».</span>';
 }
 function sheetMenu() {
-  sheet('<span class="h1">Menu</span><label class="field gsearch"><input id="gsearch" type="search" placeholder="Rechercher dans l’app" aria-label="Rechercher dans l’app" autocomplete="off"></label><div id="gs-res" class="col" style="gap:14px;display:none"></div><div id="gs-menu" class="col" style="gap:18px">' + MENU.map(([g, rows]) => '<div class="mgroup"><span class="label">' + g + '</span><div class="mlist">'
+  sheet('<span class="h1">Menu</span><span class="small mut">Plus rapide : garde le doigt sur le bouton rond, glisse sur un choix et lâche.</span><label class="field gsearch"><input id="gsearch" type="search" placeholder="Rechercher dans l’app" aria-label="Rechercher dans l’app" autocomplete="off"></label><div id="gs-res" class="col" style="gap:14px;display:none"></div><div id="gs-menu" class="col" style="gap:18px">' + MENU.map(([g, rows]) => '<div class="mgroup"><span class="label">' + g + '</span><div class="mlist">'
     + rows.map(([k, v, ic, t, d]) => '<button type="button" class="mrow' + (k === 'tab' && ui.tab === v ? ' on' : '') + '" ' + (k === 'tab' ? 'data-tab' : 'data-act') + '="' + v + '"><span class="mico">' + (ICON[ic] || '') + '</span><span class="col grow" style="gap:1px;min-width:0"><span class="mt">' + t + '</span><span class="small mut">' + d + '</span></span>' + ICON.chev + '</button>').join('')
     + '</div></div>').join('') + '</div>', 1, 'menu');
 }
 Object.assign(ACTIONS, { menu: () => sheetMenu() });
+// Les 5 choix de l'éventail, du haut vers la gauche.
+const FAN = () => [
+  { kind: 'tab', v: 'home', ic: 'home', t: 'Aujourd’hui' },
+  { kind: 'tab', v: 'workout', ic: 'dumbbell', t: state.active ? 'Ta séance' : 'Séance' },
+  { kind: 'act', v: 'run', ic: 'run', t: 'Course' },
+  { kind: 'tab', v: 'progress', ic: 'chart', t: 'Progrès' },
+  { kind: 'tab', v: 'defis', ic: 'trophy', t: 'Défis' },
+];
+function fanGo(it) {
+  closeSheet();
+  if (it.kind === 'tab') { ui.tab = it.v; ui.enter = true; render(); window.scrollTo(0, 0); return; }
+  if (ACTIONS[it.v]) ACTIONS[it.v](document.createElement('button'));
+}
+initFan({ items: FAN, go: fanGo, menu: () => sheetMenu() });
 
 export function render() {
   const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory, moi: viewHistory, defis: viewDefis };
@@ -872,12 +888,13 @@ export function render() {
   document.body.classList.toggle('has-resume', !!resume);
   // Pendant une séance, le bouton Séance flottant ne sert à rien (on y est) et cachait les boutons du haut.
   document.body.classList.toggle('in-session', !!state.active && ui.tab === 'workout');
+  // Écran d'un exercice : le bouton rond laisse la place à « Valider ».
+  document.body.classList.toggle('in-focus', !!state.active && ui.tab === 'workout' && state.active.view === 'focus' && state.active.exercises.length > 0);
   $('app').innerHTML = html;
   document.body.classList.toggle('zen', !!state.settings.zen);
   document.documentElement.classList.toggle('light', !!state.settings.light);
   document.documentElement.classList.toggle('textbig', !!state.settings.textBig);
   { const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = state.settings.light ? '#F3F2F7' : '#0E0E12'; }
-  document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.tab === ui.tab));
   // Un rang gagné se fête sur l'accueil, quand aucune autre fenêtre n'est ouverte.
   if (ui.tab === 'home' && state.workouts.length && !$('sheet').firstElementChild) checkRankUp(rankInfo());
   // Après une mise à jour, on montre une fois ce qui a changé.

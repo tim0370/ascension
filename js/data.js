@@ -905,6 +905,10 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 59, items: [
+    'Nouveau bouton rond en bas à droite, à portée de pouce. Garde le doigt dessus : un éventail s’ouvre. Glisse sur Séance, Course, Progrès ou Défis et lâche pour y aller.',
+    'Un simple toucher sur le bouton rond ouvre le menu complet, avec la recherche. Les boutons du haut ont disparu : l’écran est plus dégagé.',
+  ] },
   { v: 58, items: [
     'Séance : « Valider la série » reste toujours en bas de l’écran, même pendant le repos. Plus besoin de descendre à chaque série.',
     'Séance : tempo, échec, dégressive et caméra sont rangés en petits boutons sous le chiffre ; « plus facile / plus dur » est dans le menu ⋯.',
