@@ -91,7 +91,7 @@ export function p30Card() {
     + '<div class="bar gold"><div style="width:' + Math.round(((day - 1) / 30) * 100) + '%"></div></div>'
     + (s.doneToday ? '<span class="h2">Fait pour aujourd’hui</span><span class="small mut">Demain : ' + esc(isRest(day) ? 'repos' : dayPlan(p, day).test ? 'test' : 'jour ' + day) + '. ' + (s.v0 ? 'Départ ' + unit(p, s.v0) + ', but ' + unit(p, goalOf(p, s.v0)) + '.' : '') + '</span>'
       : plan.rest ? '<span class="h2">Jour de repos</span><span class="small mut">' + esc(plan.text) + ' La suite demain.</span>'
-      : '<span class="h2">' + (plan.test ? (day === 1 ? 'Test de départ' : day === 30 ? 'Test final' : 'Re-test') : setsTxt(p, plan) + (p.t ? '' : ' ' + exoName(p.exo).toLowerCase())) + '</span><span class="small mut">' + esc(plan.text) + (plan.why ? ' Basé sur ton max de ' + unit(p, plan.max) + '.' : '') + '</span>' + (plan.why ? '<button type="button" class="linkbtn small" data-act="p30">Pourquoi ces chiffres ?</button>' : '') + '<button type="button" class="pill gold-btn wide" data-act="p30-go">' + (plan.test ? 'Faire le test' : 'Faire le jour ' + day) + '</button>')
+      : '<span class="h2">' + (plan.test ? (day === 1 ? 'Test de départ' : day === 30 ? 'Test final' : 'Re-test') : setsTxt(p, plan) + (p.t ? '' : ' ' + exoName(p.exo).toLowerCase())) + '</span><span class="small mut">' + esc(plan.text) + (plan.why ? ' Basé sur ton max de ' + unit(p, plan.max) + '.' : '') + '</span>' + (plan.why ? '<button type="button" class="linkbtn small" data-act="p30">Pourquoi ces chiffres ?</button>' : '') + '<button type="button" class="pill glass wide" data-act="p30-go" style="color:var(--gold)">' + (plan.test ? 'Faire le test' : 'Faire le jour ' + day) + '</button>')
     + '</section>';
 }
 

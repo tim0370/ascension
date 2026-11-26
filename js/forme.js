@@ -321,9 +321,13 @@ export function formeRing(f, size) {
 export function formeCard(list) {
   const f = forme(list);
   if (!f.ci) {
-    return '<section class="glass card formecard tint t-teal"><div class="row" style="gap:14px;align-items:center">' + formeRing(f, 58)
-      + '<div class="col grow" style="gap:2px;min-width:0"><span class="label violet">Forme estimée</span><span style="font-weight:700">Fais ton bilan du matin</span><span class="small mut">1 min 30 : sommeil, pouls, réaction. Un vrai score, pas une estimation.</span></div></div>'
-      + '<div class="row"><button type="button" class="pill glass" data-act="forme">Détail</button><button type="button" class="pill gold-btn grow" data-act="checkin">Bilan du matin</button></div></section>';
+    // Le bilan du matin n'est proposé que le matin ; après 14 h, la carte montre juste le score estimé.
+    const am = new Date().getHours() < 14;
+    return '<section class="glass card formecard tap tint t-teal" role="button" tabindex="0" data-act="' + (am ? 'checkin' : 'forme') + '"><div class="row" style="gap:14px;align-items:center">' + formeRing(f, 58)
+      + '<div class="col grow" style="gap:2px;min-width:0"><span class="label violet">Forme estimée</span>'
+      + (am ? '<span style="font-weight:700">Fais ton bilan du matin</span><span class="small mut">1 min 30 : sommeil, pouls, réaction. Un vrai score, pas une estimation.</span>'
+        : '<span class="small" style="color:var(--soft)">' + esc(f.advice) + '</span>')
+      + '</div>' + ICON.chev + '</div></section>';
   }
   const low = f.parts.slice().sort((a, b) => a.pts / a.max - b.pts / b.max)[0];
   return '<section class="glass card formecard tap tint t-teal" role="button" tabindex="0" data-act="forme"><div class="row" style="gap:14px;align-items:center">' + formeRing(f, 58)

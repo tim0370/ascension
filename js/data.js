@@ -905,6 +905,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 58, items: [
+    'Séance : « Valider la série » reste toujours en bas de l’écran, même pendant le repos. Plus besoin de descendre à chaque série.',
+    'Séance : tempo, échec, dégressive et caméra sont rangés en petits boutons sous le chiffre ; « plus facile / plus dur » est dans le menu ⋯.',
+    'Accueil plus léger : carte de la séance compacte, un seul gros bouton, le bilan du matin seulement le matin, plus de message répété trois fois le soir.',
+  ] },
   { v: 57, items: [
     'Correction : sur un téléphone où aucun réglage d’exercice n’avait encore été fait, « Commencer » ne lançait pas la séance A ou B.',
   ] },

@@ -265,13 +265,12 @@ function viewFocus(a) {
     + '<button type="button" class="iconbtn" data-act="ex-menu" data-i="' + a.idx + '" aria-label="Options de l’exercice">' + ICON.more + '</button></div>';
   h += feelCard(a);
   h += '<div class="row" style="align-items:flex-start;gap:12px"><div class="col grow" style="gap:4px"><span class="label violet">Exercice ' + (a.idx + 1) + ' sur ' + n + '</span><h1 class="h1" style="font-size:30px">' + esc(exoName(ex.name)) + '</h1>'
-    + '<span class="small mut">' + (ex.prev ? 'La dernière fois : ' + esc(ex.prev) : 'Première fois sur cet exercice') + '</span>'
-    + (ex.step && !ex.max ? '<span class="small" style="color:var(--soft)">Fourchette : ' + ex.lo + ' à ' + ex.hi + (time ? ' s' : ' répétitions') + '</span>' : '')
+    + '<span class="small mut">' + (ex.prev ? 'Dernière fois : ' + esc(ex.prev) : 'Première fois sur cet exercice') + (ex.step && !ex.max ? '<span style="color:var(--soft)"> · vise ' + ex.lo + ' à ' + ex.hi + (time ? ' s' : '') + '</span>' : '') + '</span>'
     + (ex.how ? '<span class="small" style="color:var(--violet-soft)">' + esc(ex.how) + '</span>' : '')
-    + (ex.coach ? '<span class="coach">' + ICON.bolt + esc(ex.coach) + '</span>' : '')
-    + (ex.ready && !ex.sets.some((x) => x.done) && STEPS[ex.step] ? '<button type="button" class="pill sm gold-btn" data-act="ex-stepup" data-i="' + a.idx + '" style="align-self:flex-start;margin-top:4px">Passer à l’étape suivante</button>' : '')
+    + (ex.coach && !(ex.ready && !ex.sets.some((x) => x.done)) ? '<span class="coach">' + ICON.bolt + esc(ex.coach) + '</span>' : '')
+    + (ex.ready && !ex.sets.some((x) => x.done) && STEPS[ex.step] ? '<button type="button" class="tool" data-act="ex-stepup" data-i="' + a.idx + '" style="align-self:flex-start;margin-top:4px;color:var(--violet-soft);border-color:var(--violet)">Passer à l’étape suivante</button>' : '')
     + (ex.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(ex.note) + '</span>' : '')
-    + (() => { const F = FICHES[ex.name] || {}; const L = [['facile', 'Plus facile'], ['dur', 'Plus dur']].filter(([k]) => F[k] && EXOS[F[k]]); return L.length && !ex.sets.some((x) => x.done) ? '<div class="row wrap" style="gap:6px;margin-top:4px">' + L.map(([k, l]) => '<button type="button" class="pill sm glass" data-act="ex-swap" data-name="' + esc(F[k]) + '">' + l + ' : ' + esc(exoName(F[k])) + '</button>').join('') + '</div>' : ''; })() + '</div>'
+    + '</div>'
     + '<button type="button" class="figbtn" data-act="exo" data-name="' + esc(ex.name) + '" aria-label="Voir comment faire">' + figure(ex.name) + '</button></div>';
   h += '<div class="chips">' + ex.sets.map((x, k) => '<button type="button" class="chip' + (x.done ? ' done' : '') + (k === a.setIdx ? ' sel' : '') + (x.pr ? ' pr' : '') + '" data-act="sel-set" data-i="' + k + '" aria-label="Série ' + (k + 1) + '">' + chipLabel(ex.name, x) + '</button>').join('') + '</div>';
   if (s) {
@@ -292,19 +291,18 @@ function viewFocus(a) {
         + '<button type="button" class="stepbtn sm" data-act="step" data-f="w" data-d="1" aria-label="Plus de lest">' + ICON.plus + '</button></div>';
     }
     else h += '<button type="button" class="pill sm glass" data-act="lest-on" data-i="' + a.idx + '" style="align-self:center;color:var(--soft)">' + ICON.plus + 'Ajouter du lest (gilet, haltère)</button>';
-    // Chrono intégré pour les exercices en secondes : il remplit la durée tout seul.
-    if (time && !s.done) {
-      h += '<button type="button" class="pill glass wide' + (a.chrono ? ' on' : '') + '" data-act="chrono">' + (a.chrono ? 'Arrêter le chrono' : 'Lancer le chrono') + '</button>';
-    }
-    if (!time && !s.done) h += '<button type="button" class="pill glass wide' + (a.tempo ? ' on' : '') + '" data-act="tempo">' + (a.tempo ? 'Arrêter le tempo (' + (s.r || 0) + ' rép.)' : 'Tempo guidé : 3 s en bas, 1 s pause, 1 s en haut') + '</button>';
-    if (!s.done) h += '<button type="button" class="pill sm glass' + (s.fail ? ' on' : '') + '" data-act="fail" style="align-self:center">' + (s.fail ? 'Série jusqu’à l’échec · annuler' : 'Série jusqu’à l’échec') + '</button>';
-    if (!s.done && (s.w || 0) > 0 && !time) h += '<button type="button" class="pill sm glass" data-act="drop" style="align-self:center">Valider, puis série dégressive sans lest</button>';
-    if (!time && !s.done && camOk(ex.name)) {
-      h += '<button type="button" class="pill glass wide" data-act="cam">' + ICON.camera + 'Compter avec la caméra</button>';
-    }
-    h += (s.done
+    // Les outils (tempo, échec, dégressive, caméra) : une rangée de petits boutons, pour que Valider reste à l'écran.
+    const tools = [];
+    if (time && !s.done) tools.push('<button type="button" class="tool' + (a.chrono ? ' on' : '') + '" data-act="chrono">' + (a.chrono ? 'Arrêter le chrono' : 'Chrono') + '</button>');
+    if (!time && !s.done) tools.push('<button type="button" class="tool' + (a.tempo ? ' on' : '') + '" data-act="tempo">' + (a.tempo ? 'Arrêter le tempo (' + (s.r || 0) + ')' : 'Tempo 3-1-1') + '</button>');
+    if (!s.done) tools.push('<button type="button" class="tool' + (s.fail ? ' on' : '') + '" data-act="fail">' + (s.fail ? 'Échec · annuler' : 'Jusqu’à l’échec') + '</button>');
+    if (!s.done && (s.w || 0) > 0 && !time) tools.push('<button type="button" class="tool" data-act="drop">Valider + dégressive</button>');
+    if (!time && !s.done && camOk(ex.name)) tools.push('<button type="button" class="tool" data-act="cam">' + ICON.camera + 'Caméra</button>');
+    if (tools.length) h += '<div class="tools">' + tools.join('') + '</div>';
+    h += '</section>';
+    h += '<div class="validbar">' + (s.done
       ? '<button type="button" class="pill glass wide big" data-act="unvalidate" style="color:var(--gold)">Série validée · annuler</button>'
-      : '<button type="button" class="pill gold-btn wide big" data-act="validate">Valider la série</button>') + '</section>';
+      : '<button type="button" class="pill gold-btn wide big" data-act="validate">Valider la série</button>') + '</div>';
   }
   h += '<div class="row"><button type="button" class="pill sm glass grow" data-act="add-set">Ajouter une série</button>'
     + (ex.sets.length > 1 ? '<button type="button" class="pill sm glass grow" data-act="del-set">Retirer cette série</button>' : '') + '</div>';

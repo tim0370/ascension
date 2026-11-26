@@ -63,8 +63,8 @@ function momentCard(done) {
   if (hr < 21 || !state.workouts.length) return '';
   const t0 = midnight(), W = state.workouts.filter((w) => w.start >= t0);
   const sets = W.reduce((n, w) => n + w.exercises.reduce((k, e) => k + e.sets.filter((x) => x.done !== false).length, 0), 0);
-  if (done || sets) return '<section class="glass card col tint t-blue" style="gap:6px"><span class="label violet">Ce soir</span><span style="font-weight:700">Journée faite : ' + plural(sets, 'série', 'séries') + '</span><span class="small mut">Le muscle se construit maintenant : un vrai repas, de l’eau, et au lit avant 23 h si tu peux.</span></section>';
-  return '<section class="glass card col tint t-blue" style="gap:10px"><span class="label violet">Ce soir</span><span style="font-weight:700">Trop tard pour une grosse séance</span><span class="small mut">Après 21 h, une séance dure gêne le sommeil. Fais la version 10 minutes, ou repose-toi et fais-la demain.</span><button type="button" class="pill glass" data-act="prog">Voir la version 10 minutes</button></section>';
+  if (done || sets) return ''; // la carte du coach et la forme le disent déjà : pas trois fois la même chose
+  return '<section class="glass card tap tint t-blue row" role="button" tabindex="0" data-act="prog" style="gap:12px;align-items:center"><div class="col grow" style="gap:4px"><span class="label violet">Ce soir</span><span style="font-weight:700">Trop tard pour une grosse séance</span><span class="small mut">Après 21 h, une séance dure gêne le sommeil. Fais la version 10 minutes, ou repose-toi et fais-la demain.</span></div>' + ICON.chev + '</section>';
 }
 
 function weekBlock(wq) {
@@ -126,7 +126,7 @@ function viewHome() {
   const DAYMS = 864e5;
   if (state.workouts.length >= 5 && Date.now() - (state.lastExport || state.installed || 0) > 7 * DAYMS && Date.now() > (state.settings.backupSnooze || 0)) {
     h += '<section class="glass card col backupcard tint t-blue" style="gap:10px"><div class="row" style="gap:12px;align-items:center"><span class="ico">' + ICON.save + '</span><div class="col grow" style="gap:2px"><span style="font-weight:700">Sauvegarde tes progrès</span><span class="small mut">' + (state.lastExport ? 'Dernière sauvegarde il y a ' + Math.floor((Date.now() - state.lastExport) / DAYMS) + ' jours.' : 'Tu n’as jamais sauvegardé.') + ' Tes ' + state.workouts.length + ' séances ne sont que dans ce téléphone. Un fichier dans Fichiers ou iCloud, et rien ne se perd.</span></div></div>'
-      + '<div class="row"><button type="button" class="pill glass" data-act="backup-later">Plus tard</button><button type="button" class="pill gold-btn grow" data-act="export">Sauvegarder</button></div></section>';
+      + '<div class="row"><button type="button" class="pill glass" data-act="backup-later">Plus tard</button><button type="button" class="pill glass grow" data-act="export" style="color:var(--violet-soft)">Sauvegarder</button></div></section>';
   }
   if (photoDue()) {
     h += '<section class="glass card row tap tint t-pink" role="button" tabindex="0" data-act="photos"><span class="ico">' + ICON.cam + '</span><div class="col grow"><span class="h2">C’est le moment de ta photo</span><span class="small mut">La dernière a plus de deux semaines.</span></div>' + ICON.chev + '</section>';

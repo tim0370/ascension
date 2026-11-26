@@ -1139,3 +1139,14 @@ body.in-session #app > .row.between:first-child { padding-right: 58px; }
 .excard.shift { transition: transform 0.18s ease; }
 .excard.drag { position: relative; z-index: 5; transition: none; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55); border-color: var(--violet); }
 body.dragging .ins { visibility: hidden; }
+
+/* v58 : écran d'un exercice. Les outils en une rangée, Valider toujours visible en bas. */
+.tools { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.tool { min-height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid var(--line, rgba(255,255,255,0.08)); background: var(--surf2, rgba(255,255,255,0.05)); color: var(--soft); font: 600 14px/1 var(--body, inherit); display: inline-flex; align-items: center; gap: 6px; }
+.tool svg { width: 16px; height: 16px; flex: none; }
+.tool.on { color: #fff; border-color: var(--violet); background: rgba(124, 92, 245, 0.22); }
+.validbar { position: sticky; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 4; padding-top: 6px; }
+.validbar::before { content: ''; position: absolute; inset: -18px -16px -12px; background: linear-gradient(to bottom, transparent, var(--bg) 45%); z-index: -1; pointer-events: none; }
+body:has(#rest:not(:empty)) .validbar { bottom: calc(96px + env(safe-area-inset-bottom)); }
+
+.ctaex .more { background: transparent; border: 1px dashed rgba(255, 255, 255, 0.35); }
