@@ -905,6 +905,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 60, items: [
+    'Le bouton rond passe au milieu, en plus soigné. Un simple toucher ouvre ta séance.',
+    'Garde le doigt dessus : l’éventail s’ouvre en demi-cercle (Course, Progrès, Aujourd’hui, Défis, Menu). Glisse et lâche.',
+    'Séance commencée : un anneau doré autour du bouton montre où tu en es. Un toucher pour y revenir.',
+  ] },
   { v: 59, items: [
     'Nouveau bouton rond en bas à droite, à portée de pouce. Garde le doigt dessus : un éventail s’ouvre. Glisse sur Séance, Course, Progrès ou Défis et lâche pour y aller.',
     'Un simple toucher sur le bouton rond ouvre le menu complet, avec la recherche. Les boutons du haut ont disparu : l’écran est plus dégagé.',

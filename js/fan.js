@@ -1,19 +1,20 @@
-// Bouton rond en bas à droite (v59) : un toucher ouvre le menu complet ;
-// garder le doigt dessus ouvre un éventail de 5 choix, on glisse sur un choix et on lâche pour y aller.
+// Bouton rond en bas au milieu (v59, centré en v60) : un toucher ouvre la séance ;
+// garder le doigt dessus ouvre un éventail en demi-cercle, on glisse sur un choix et on lâche pour y aller.
 import { ICON, buzz } from './ui.js';
 
-const R = 148;        // distance entre le bouton et chaque choix
+const R = 135;        // distance entre le bouton et chaque choix
 const HOLD = 200;     // temps d'appui avant l'éventail (ms)
 const DEAD = 58;      // tout près du bouton : aucun choix (lâcher = annuler)
 
-// items() : [{ kind: 'tab' | 'act', v, ic, t }], go(item) : y aller, menu() : menu complet.
-export function initFan({ items, go, menu }) {
+// items() : [{ kind: 'tab' | 'act', v, ic, t }], go(item) : y aller, tap() : simple toucher.
+export function initFan({ items, go, tap }) {
   const fab = document.getElementById('fab');
   const fan = document.getElementById('fan');
   if (!fab || !fan) return;
   let timer = 0, open = false, sel = -1, list = [], c = { x: 0, y: 0 }, start = null, pid = null;
 
-  const angle = (i) => (list.length < 2 ? 90 : 90 + (90 * i) / (list.length - 1));
+  // De 150° (à gauche) à 30° (à droite), en passant par le haut (90°).
+  const angle = (i) => (list.length < 2 ? 90 : 150 - (120 * i) / (list.length - 1));
 
   function show() {
     open = true; sel = -1;
@@ -23,12 +24,17 @@ export function initFan({ items, go, menu }) {
     fan.innerHTML = '<div class="fanbg"></div><span class="fanhelp">Glisse sur un choix, puis lâche</span>' + list.map((it, i) => {
       const a = (angle(i) * Math.PI) / 180, cos = Math.cos(a), sin = Math.sin(a);
       const x = c.x + R * cos, y = c.y - R * sin;
-      const lx = c.x + (R + 38) * cos, ly = c.y - (R + 38) * sin;
-      // L'étiquette part vers l'extérieur de l'éventail (à gauche pour le choix de gauche, au-dessus pour celui du haut).
-      const kx = 50 + 50 * -cos, ky = 50 + 50 * sin;
+      // L'étiquette est sous son rond, à l'intérieur de l'arc (place libre).
+      const lx = x, ly = y + 34, kx = 50, ky = 0;
       return '<span class="fanit" data-i="' + i + '" style="left:' + x + 'px;top:' + y + 'px;--dx:' + (c.x - x) + 'px;--dy:' + (c.y - y) + 'px;transition-delay:' + i * 22 + 'ms">' + (ICON[it.ic] || '') + '</span>'
         + '<span class="fanlab" data-i="' + i + '" style="left:' + lx + 'px;top:' + ly + 'px;transform:translate(-' + kx + '%,-' + ky + '%)">' + it.t + '</span>';
     }).join('');
+    // Les étiquettes du bord ne sortent pas de l'écran.
+    fan.querySelectorAll('.fanlab').forEach((el) => {
+      const b = el.getBoundingClientRect(), W = innerWidth;
+      const dx = b.left < 8 ? 8 - b.left : b.right > W - 8 ? W - 8 - b.right : 0;
+      if (dx) el.style.marginLeft = dx + 'px';
+    });
     document.body.classList.add('fan-open');
     requestAnimationFrame(() => fan.classList.add('on'));
     buzz(8);
@@ -43,9 +49,9 @@ export function initFan({ items, go, menu }) {
     const dx = x - c.x, dy = c.y - y, d = Math.hypot(dx, dy);
     let i = -1;
     if (d > DEAD) {
-      let a = (Math.atan2(dy, dx) * 180) / Math.PI; // 90 = en haut, 180 = à gauche
-      if (a < 0) a += 360;
-      if (a > 60 && a < 215) {
+      let a = (Math.atan2(dy, dx) * 180) / Math.PI; // 0 = à droite, 90 = en haut, 180 = à gauche
+      if (a < -90) a += 360;
+      if (a > -25 && a < 205) {
         let best = 1e9;
         list.forEach((_, k) => { const g = Math.abs(angle(k) - a); if (g < best) { best = g; i = k; } });
       }
@@ -77,15 +83,15 @@ export function initFan({ items, go, menu }) {
     pid = null; start = null;
     clearTimeout(timer);
     fab.classList.remove('press');
-    if (!open) { if (!cancel) menu(); return; }
+    if (!open) { if (!cancel) tap(); return; }
     const it = list[sel];
     hide();
     if (it && !cancel) go(it);
   };
   fab.addEventListener('pointerup', (e) => end(e, false));
   fab.addEventListener('pointercancel', (e) => end(e, true));
-  // Au clavier (Entrée, Espace) : le menu complet.
-  fab.addEventListener('click', (e) => { if (e.detail === 0) menu(); });
+  // Au clavier (Entrée, Espace) : comme un toucher.
+  fab.addEventListener('click', (e) => { if (e.detail === 0) tap(); });
   fab.addEventListener('contextmenu', (e) => e.preventDefault());
   addEventListener('keydown', (e) => { if (open && e.key === 'Escape') hide(); });
 }
