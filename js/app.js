@@ -20,7 +20,7 @@ import { p30Card, status as p30Status } from './prog30.js';
 import { capCard, ensureCap, bigGoal } from './cap.js';
 import { testCard } from './test.js';
 import { dailyQuests, streak, SHIELD_MAX, SHIELD_EVERY, feats, myTitle, titles, skins, SKINS } from './quetes.js';
-import { bossCard } from './boss.js';
+import { bossCard, weekBoss } from './boss.js';
 import './course.js';
 import { monthBanner } from './bilan.js';
 import { quickCard } from './jour.js';
@@ -28,9 +28,9 @@ import './chrono.js';
 import './retour.js';
 import { coachCard } from './coach.js';
 import { initFan } from './fan.js';
-import { applyBg, bgThumb, FONDS } from './fond.js';
+import { applyBg, bgThumb, FONDS, setBgInfo } from './fond.js';
 import './parcours.js';
-import { seasonCard, celebrateSeason, sheetSeason, seasonImage } from './saison.js';
+import { seasonCard, celebrateSeason, sheetSeason, seasonImage, season } from './saison.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync, KINDS as NKINDS } from './notif.js';
 import { viewProgress, hevyCard, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
@@ -238,7 +238,7 @@ const GUIDE = [
   ['Ne rien perdre', [
     ['export', 'Sauvegarder', 'Un fichier avec toutes tes données, à garder dans Fichiers ou iCloud.'],
     ['home-edit', 'Personnaliser l’accueil', 'Choisis les cartes affichées.'],
-    ['', 'Fond de l’accueil', 'Réglages, Fond de l’accueil : le stade, la salle, la route, l’emblème ou ta photo derrière les cartes.'],
+    ['', 'Fond de l’accueil', 'Réglages, Fond de l’accueil : le stade, la salle, la route, l’emblème, ta flamme, ton rang, ton ombre, ta saison ou ta photo derrière les cartes. Les quatre derniers changent avec tes chiffres.'],
     ['', 'Raccourcis en haut des onglets', 'En haut de Progrès, de Défis et des Réglages : touche un nom pour aller directement à cette partie.'],
   ]],
 ];
@@ -848,28 +848,32 @@ Object.assign(ACTIONS, {
 
 // ---------- Menu (dans l'éventail du bouton rond : fan.js) ----------
 // Toute l'app, rangée en quatre groupes. Une ligne = un écran (data-tab) ou une fenêtre (data-act).
+// Menu (v63) : 16 cases visibles d'un coup, un mot chacune ; la description sert seulement à la recherche.
+// [type, valeur, icône, nom, description, nom court de la case]
 const MENU = [
   ['Entraînement', [
-    ['tab', 'home', 'home', 'Aujourd’hui', 'Ta séance du jour, ta forme, ta semaine'],
+    ['tab', 'home', 'home', 'Aujourd’hui', 'Ta séance du jour, ta forme, ta semaine, accueil', 'Accueil'],
     ['tab', 'workout', 'dumbbell', 'Séance', 'Programme, routines, séance libre, pompes du jour'],
     ['act', 'run', 'run', 'Course', 'Noter une course ou courir avec le GPS'],
-    ['act', 'p30', 'calendar', 'Programme de 30 jours', 'Un but précis, 10 à 15 minutes par jour'],
     ['act', 'chrono2', 'timer', 'Chronos', 'Tabata, EMOM, AMRAP, intervalles'],
   ]],
   ['Suivi', [
     ['tab', 'progress', 'chart', 'Progrès', 'Ton rang, tes objectifs, tes muscles, tes records'],
     ['tab', 'history', 'clock', 'Historique', 'Toutes tes séances, à revoir ou modifier'],
-    ['act', 'body', 'scale', 'Poids et mensurations', 'Ta balance et ton tour de bras'],
-    ['act', 'photos', 'cam', 'Photos de suivi', 'Ton physique, photo après photo'],
+    ['act', 'body', 'scale', 'Poids et mensurations', 'Ta balance et ton tour de bras', 'Poids'],
+    ['act', 'photos', 'cam', 'Photos de suivi', 'Ton physique, photo après photo', 'Photos'],
   ]],
   ['Défis', [
-    ['tab', 'defis', 'trophy', 'Tous les défis', 'Quêtes du jour, ton ombre, défi du mois, campagne'],
+    ['tab', 'defis', 'trophy', 'Tous les défis', 'Quêtes du jour, ton ombre, défi du mois, campagne, saison', 'Défis'],
+    ['act', 'boss', 'swords', 'Ton ombre', 'Le défi de la semaine'],
+    ['act', 'p30', 'calendar', 'Programme de 30 jours', 'Un but précis, 10 à 15 minutes par jour', '30 jours'],
     ['act', 'feats', 'medal', 'Hauts faits', 'Des exploits durs, gagnés une seule fois'],
   ]],
   ['Toi', [
     ['act', 'profile', 'user', 'Profil', 'Niveau, rang, tes chiffres à vie'],
-    ['act', 'settings', 'gear', 'Réglages', 'Entraînement, notifications, données'],
+    ['act', 'settings', 'gear', 'Réglages', 'Entraînement, notifications, fond, données'],
     ['act', 'guide', 'book', 'Guide', 'Comment marche chaque partie de l’app'],
+    ['act', 'export', 'save', 'Sauvegarder', 'Un fichier avec toutes tes données', 'Sauvegarde'],
   ]],
 ];
 // Recherche dans toute l'app : écrans et fenêtres, exercices (avec leurs autres noms), séances passées.
@@ -893,7 +897,7 @@ function searchAll(q) {
   const n = norm(q || '').trim();
   if (n.length < 2) return '<span class="small mut">Écris au moins 2 lettres : un écran, un exercice, une séance.</span>';
   const row = (attr, ic, t, d) => '<button type="button" class="mrow" ' + attr + '><span class="mico">' + (ICON[ic] || '') + '</span><span class="col grow" style="gap:1px;min-width:0"><span class="mt">' + t + '</span><span class="small mut">' + d + '</span></span>' + ICON.chev + '</button>';
-  const pages = MENU.flatMap(([, r]) => r).concat(MORE_SEARCH).filter(([, , , t, d]) => norm(t + ' ' + d).includes(n)).slice(0, 6)
+  const pages = MENU.flatMap(([, r]) => r).concat(MORE_SEARCH).filter(([, , , t, d, sh]) => norm(t + ' ' + d + ' ' + (sh || '')).includes(n)).slice(0, 6)
     .map(([k, v, ic, t, d]) => row((k === 'tab' ? 'data-tab' : 'data-act') + '="' + v + '"', ic, t, d));
   const ex = Object.keys(EXOS).filter((k) => norm(exoName(k) + ' ' + k + ' ' + (AKA[k] || []).join(' ')).includes(n)).slice(0, 8)
     .map((k) => row('data-act="exo" data-name="' + esc(k) + '"', 'dumbbell', esc(exoName(k)), 'Fiche, historique et record'));
@@ -903,8 +907,8 @@ function searchAll(q) {
   return (grp('Dans l’app', pages) + grp('Exercices', ex) + grp('Séances', ws)) || '<span class="small mut">Rien trouvé pour « ' + esc(q) + ' ».</span>';
 }
 function sheetMenu() {
-  sheet('<span class="h1">Menu</span><span class="small mut">Plus rapide : garde le doigt sur le bouton rond en bas, glisse sur un choix et lâche.</span><label class="field gsearch"><input id="gsearch" type="search" placeholder="Rechercher dans l’app" aria-label="Rechercher dans l’app" autocomplete="off"></label><div id="gs-res" class="col" style="gap:14px;display:none"></div><div id="gs-menu" class="col" style="gap:18px">' + MENU.map(([g, rows]) => '<div class="mgroup"><span class="label">' + g + '</span><div class="mlist">'
-    + rows.map(([k, v, ic, t, d]) => '<button type="button" class="mrow' + (k === 'tab' && ui.tab === v ? ' on' : '') + '" ' + (k === 'tab' ? 'data-tab' : 'data-act') + '="' + v + '"><span class="mico">' + (ICON[ic] || '') + '</span><span class="col grow" style="gap:1px;min-width:0"><span class="mt">' + t + '</span><span class="small mut">' + d + '</span></span>' + ICON.chev + '</button>').join('')
+  sheet('<span class="h1">Menu</span><label class="field gsearch"><input id="gsearch" type="search" placeholder="Rechercher un écran, un exercice…" aria-label="Rechercher dans l’app" autocomplete="off"></label><div id="gs-res" class="col" style="gap:14px;display:none"></div><div id="gs-menu" class="col" style="gap:16px">' + MENU.map(([g, rows]) => '<div class="mgroup"><span class="label">' + g + '</span><div class="mgrid">'
+    + rows.map(([k, v, ic, t, , sh]) => '<button type="button" class="mtile' + (k === 'tab' && ui.tab === v ? ' on' : '') + '" ' + (k === 'tab' ? 'data-tab' : 'data-act') + '="' + v + '" aria-label="' + t + '"><span class="mico">' + (ICON[ic] || '') + '</span><span class="mtl">' + (sh || t) + '</span></button>').join('')
     + '</div></div>').join('') + '</div>', 1, 'menu');
 }
 Object.assign(ACTIONS, { menu: () => sheetMenu() });
@@ -921,6 +925,15 @@ function fanGo(it) {
   if (it.kind === 'tab') { ui.tab = it.v; ui.enter = true; render(); window.scrollTo(0, 0); return; }
   if (ACTIONS[it.v]) ACTIONS[it.v](document.createElement('button'));
 }
+// Les fonds vivants (flamme, rang, ombre, saison) lisent ces chiffres ; une erreur ne doit jamais casser l'accueil.
+setBgInfo(() => {
+  const o = {};
+  try { o.st = streak(); } catch (e) { /* rien */ }
+  try { o.rk = rankInfo(); } catch (e) { /* rien */ }
+  try { o.se = season(); } catch (e) { /* rien */ }
+  try { o.bo = weekBoss(); } catch (e) { /* rien */ }
+  return o;
+});
 initFan({ items: FAN, go: fanGo, tap: () => fanGo({ kind: 'tab', v: 'workout' }) });
 
 // Sommaire en haut des onglets longs : tout ce que l'onglet contient, visible sans descendre, un toucher pour y aller.

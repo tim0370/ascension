@@ -3,6 +3,11 @@
 // téléphone (localStorage, clé à part pour ne pas alourdir les données), réduite à 900 px de large.
 import { state, save } from './store.js';
 import { ACTIONS, toast } from './ui.js';
+import { figure } from './anim.js';
+
+// Les fonds « vivants » (v63) lisent tes chiffres : app.js donne la fonction qui les calcule.
+let info = () => ({});
+export function setBgInfo(fn) { info = fn; }
 
 const PHOTO_KEY = 'ascension.bg';
 // Petits points toujours au même endroit (graine fixe).
@@ -21,6 +26,10 @@ export const FONDS = [
   ['salle', 'Salle', 'Ta station de dips sous un projecteur'],
   ['route', 'Course', 'La route au lever du soleil, comme le dimanche'],
   ['embleme', 'Emblème', 'Le logo d’Ascension en or'],
+  ['flamme', 'Ta flamme', 'Le feu grandit avec tes semaines réussies'],
+  ['rang', 'Ton rang', 'Ta lettre en grand, sa couleur change quand tu montes'],
+  ['ombre', 'Ton ombre', 'Toi et ton reflet, le défi de la semaine à battre'],
+  ['saison', 'Ta saison', 'La montagne du mois : chaque palier allume le chemin'],
   ['photo', 'Ta photo', 'Ton coin d’entraînement, ou ce que tu veux'],
 ];
 
@@ -133,7 +142,137 @@ function embleme() {
     + '<filter id="blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="10"/></filter>');
 }
 
-const ARTS = { stade, salle, route, embleme };
+
+// ---------- Fonds vivants (v63) : ils changent avec tes chiffres ----------
+const COND = 'font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700"';
+function flamePath(cx, base, w, h, k) {
+  // k décale la pointe : deux formes un peu différentes, la flamme passe de l'une à l'autre.
+  const t = (x) => f1(x);
+  return 'M' + cx + ' ' + base
+    + ' C' + t(cx - w * 1.15) + ' ' + t(base - h * 0.02) + ' ' + t(cx - w * 1.05) + ' ' + t(base - h * 0.42) + ' ' + t(cx - w * (0.42 + k * 0.08)) + ' ' + t(base - h * 0.68)
+    + ' C' + t(cx - w * 0.12) + ' ' + t(base - h * 0.8) + ' ' + t(cx - w * (0.28 - k * 0.2)) + ' ' + t(base - h * 0.9) + ' ' + t(cx + w * (0.04 - k * 0.12)) + ' ' + t(base - h)
+    + ' C' + t(cx + w * 0.2) + ' ' + t(base - h * 0.8) + ' ' + t(cx + w * (0.66 + k * 0.1)) + ' ' + t(base - h * 0.68) + ' ' + t(cx + w * 0.86) + ' ' + t(base - h * 0.42)
+    + ' C' + t(cx + w * 1.08) + ' ' + t(base - h * 0.16) + ' ' + t(cx + w * 0.86) + ' ' + t(base) + ' ' + cx + ' ' + base + 'Z';
+}
+function flameLayer(cx, base, w, h, fill, dur, extra) {
+  const a = flamePath(cx, base, w, h, 0), b = flamePath(cx, base, w * 0.96, h * 1.05, 1);
+  return '<path d="' + a + '" fill="' + fill + '"' + (extra || '') + '><animate attributeName="d" values="' + a + ';' + b + ';' + a + '" dur="' + dur + 's" repeatCount="indefinite"/></path>';
+}
+function flamme() {
+  const st = info().st || { n: 0 };
+  const n = st.n || 0;
+  const H = Math.min(560, 230 + Math.min(n, 30) * 11), base = 800, cx = 200;
+  const rnd = rng(17); let embers = '';
+  for (let i = 0; i < 34; i++) {
+    const x = cx + (rnd() * 2 - 1) * 150, y0 = base - rnd() * 140, d = (3 + rnd() * 4).toFixed(1), r = (0.8 + rnd() * 1.6).toFixed(1), dl = (rnd() * 6).toFixed(1);
+    embers += '<circle cx="' + f1(x) + '" cy="' + f1(y0) + '" r="' + r + '" fill="' + (rnd() > 0.5 ? '#FFC36B' : '#FF7A3D') + '">'
+      + '<animate attributeName="cy" values="' + f1(y0) + ';' + f1(y0 - H - 120) + '" dur="' + d + 's" begin="-' + dl + 's" repeatCount="indefinite"/>'
+      + '<animate attributeName="opacity" values="0;1;0" dur="' + d + 's" begin="-' + dl + 's" repeatCount="indefinite"/></circle>';
+  }
+  const label = n ? (n > 1 ? 'SEMAINES' : 'SEMAINE') : 'ALLUME-LA';
+  return svgWrap('flamme',
+    '<rect width="400" height="860" fill="url(#bg)"/>'
+    + '<ellipse cx="200" cy="' + (base - H * 0.3) + '" rx="260" ry="' + f1(H * 0.75) + '" fill="url(#halo)"/>'
+    + '<text x="200" y="' + f1(base - H - 40) + '" text-anchor="middle" ' + COND + ' font-size="230" fill="none" stroke="#FF9A4D" stroke-opacity="0.28" stroke-width="2">' + n + '</text>'
+    + '<text x="200" y="' + f1(base - H - 4) + '" text-anchor="middle" ' + COND + ' font-size="22" letter-spacing="9" fill="#FFB27A" fill-opacity="0.32">' + label + '</text>'
+    + flameLayer(cx, base, 150, H, 'url(#outer)', 2.2, ' filter="url(#soft)" opacity="0.9"')
+    + flameLayer(cx, base, 150, H, 'url(#outer)', 2.2, ' opacity="0.85"')
+    + flameLayer(cx, base, 98, H * 0.74, 'url(#mid)', 1.7)
+    + flameLayer(cx, base, 52, H * 0.46, 'url(#core)', 1.3)
+    + embers
+    + '<ellipse cx="200" cy="' + (base + 6) + '" rx="190" ry="26" fill="#FF8A3D" opacity="0.22" filter="url(#soft)"/>',
+    '<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#07050A"/><stop offset="0.6" stop-color="#140809"/><stop offset="1" stop-color="#2A0E08"/></linearGradient>'
+    + '<radialGradient id="halo"><stop offset="0" stop-color="#FF6A2B" stop-opacity="0.42"/><stop offset="0.55" stop-color="#C2321C" stop-opacity="0.12"/><stop offset="1" stop-color="#C2321C" stop-opacity="0"/></radialGradient>'
+    + '<linearGradient id="outer" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FF5A1F"/><stop offset="0.6" stop-color="#E0341C"/><stop offset="1" stop-color="#8E1A2A" stop-opacity="0.2"/></linearGradient>'
+    + '<linearGradient id="mid" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FFB03B"/><stop offset="1" stop-color="#FF6A1F" stop-opacity="0.5"/></linearGradient>'
+    + '<linearGradient id="core" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#FFF6D8"/><stop offset="1" stop-color="#FFD36B" stop-opacity="0.6"/></linearGradient>'
+    + '<filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="16"/></filter>');
+}
+
+// Couleur de chaque rang, de E à Z.
+const RANK_COL = [['#9AA0B4', '#4A4E60'], ['#D9935A', '#7A4422'], ['#9B7CFF', '#4B2FB8'], ['#4FC3F7', '#155C8A'], ['#FF5C77', '#8A1930'], ['#F1D08A', '#8C6A2C'], ['#FFFFFF', '#7C5CF5']];
+function rang() {
+  const rk = info().rk || { idx: 0, ratio: 0, rank: { letter: 'E', name: '' } };
+  const [c1, c2] = RANK_COL[Math.min(rk.idx || 0, RANK_COL.length - 1)];
+  const cx = 200, cy = 430, R = 190;
+  const per = 6 * R, pct = Math.max(0, Math.min(1, rk.ratio || 0));
+  const rings = [250, 320, 400, 490, 590].map((r, i) => '<polygon points="' + hexPts(cx, cy, r) + '" fill="none" stroke="' + c1 + '" stroke-opacity="' + (0.22 - i * 0.04).toFixed(2) + '" stroke-width="1.2"/>').join('');
+  const next = rk.next ? 'VERS ' + rk.next.letter + ' · ' + Math.round(pct * 100) + ' %' : 'RANG MAXIMUM';
+  return svgWrap('rang',
+    '<rect width="400" height="860" fill="url(#bg)"/>' + stars(50, 860, 31, c1)
+    + '<circle cx="' + cx + '" cy="' + cy + '" r="320" fill="url(#glow)"/>' + rings
+    + '<polygon points="' + hexPts(cx, cy, R) + '" fill="url(#inner)" stroke="' + c1 + '" stroke-opacity="0.18" stroke-width="10"/>'
+    + '<polygon points="' + hexPts(cx, cy, R) + '" fill="none" stroke="' + c1 + '" stroke-width="7" stroke-linejoin="round" stroke-dasharray="' + f1(per * pct) + ' ' + per + '" filter="url(#glowf)"/>'
+    + '<polygon points="' + hexPts(cx, cy, R) + '" fill="none" stroke="' + c1 + '" stroke-width="5" stroke-linejoin="round" stroke-dasharray="' + f1(per * pct) + ' ' + per + '"/>'
+    + '<text x="' + cx + '" y="' + (cy + 118) + '" text-anchor="middle" ' + COND + ' font-size="340" fill="url(#letter)" fill-opacity="0.55" stroke="' + c1 + '" stroke-opacity="0.6" stroke-width="2">' + esc0(rk.rank.letter) + '</text>'
+    + '<text x="' + cx + '" y="' + (cy + R + 52) + '" text-anchor="middle" ' + COND + ' font-size="20" letter-spacing="7" fill="' + c1 + '" fill-opacity="0.6">' + next + '</text>',
+    '<radialGradient id="bg" cx="0.5" cy="0.48" r="0.8"><stop offset="0" stop-color="' + c2 + '" stop-opacity="0.55"/><stop offset="0.55" stop-color="#0B0914"/><stop offset="1" stop-color="#050408"/></radialGradient>'
+    + '<radialGradient id="glow"><stop offset="0" stop-color="' + c1 + '" stop-opacity="0.32"/><stop offset="1" stop-color="' + c1 + '" stop-opacity="0"/></radialGradient>'
+    + '<radialGradient id="inner"><stop offset="0" stop-color="' + c2 + '" stop-opacity="0.5"/><stop offset="1" stop-color="' + c2 + '" stop-opacity="0.12"/></radialGradient>'
+    + '<linearGradient id="letter" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="' + c1 + '"/></linearGradient>'
+    + '<filter id="glowf" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>');
+}
+const esc0 = (t) => String(t || '').replace(/[<>&"]/g, '');
+
+function ombre() {
+  const bo = info().bo || {};
+  const target = bo.hp || 0;
+  const scene = svgWrap('ombre',
+    '<rect width="400" height="860" fill="url(#bg)"/>'
+    + '<ellipse cx="200" cy="470" rx="330" ry="120" fill="url(#horizon)"/>'
+    + '<rect y="470" width="400" height="390" fill="url(#floor)"/>'
+    + '<line x1="0" y1="470" x2="400" y2="470" stroke="#FF5A6E" stroke-opacity="0.45" stroke-width="1.5"/>'
+    + (target ? '<text x="200" y="250" text-anchor="middle" ' + COND + ' font-size="200" fill="none" stroke="#FF5A6E" stroke-opacity="0.22" stroke-width="2">' + target + '</text>'
+      + '<text x="200" y="290" text-anchor="middle" ' + COND + ' font-size="20" letter-spacing="8" fill="#FF8A9A" fill-opacity="0.32">À BATTRE</text>' : ''),
+    '<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#060509"/><stop offset="0.55" stop-color="#150A14"/></linearGradient>'
+    + '<radialGradient id="horizon"><stop offset="0" stop-color="#FF3B57" stop-opacity="0.35"/><stop offset="1" stop-color="#FF3B57" stop-opacity="0"/></radialGradient>'
+    + '<linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A0B14"/><stop offset="1" stop-color="#050306"/></linearGradient>');
+  if (!bo.exo) return scene;
+  const fig = figure(bo.exo, 'bgf');
+  return scene + '<div class="bgfig me">' + fig + '</div><div class="bgfig shadow">' + fig + '</div>';
+}
+
+function saison() {
+  const se = info().se || { tier: 0, name: '' };
+  const tier = Math.max(0, Math.min(30, se.tier || 0));
+  // Le chemin monte en lacets du bas vers le sommet : 30 paliers.
+  const pts = [];
+  for (let i = 0; i < 30; i++) { const t = i / 29, y = 790 - t * 620, amp = 120 * (1 - t * 0.75); pts.push([200 + Math.sin(i * 0.9) * amp, y]); }
+  const d = 'M' + pts.map((p) => f1(p[0]) + ' ' + f1(p[1])).join(' L');
+  const lit = tier > 0 ? 'M' + pts.slice(0, tier).map((p) => f1(p[0]) + ' ' + f1(p[1])).join(' L') : '';
+  const MED = { 10: '#D9935A', 20: '#D8DCE6', 30: '#F1D08A' };
+  const dots = pts.map((p, i) => {
+    const n = i + 1, on = n <= tier, cur = n === tier + 1, m = MED[n];
+    if (m) return '<circle cx="' + f1(p[0]) + '" cy="' + f1(p[1]) + '" r="11" fill="' + (on ? m : '#1A1626') + '" stroke="' + m + '" stroke-width="2.5"' + (on ? '' : ' stroke-opacity="0.5"') + '/>';
+    return '<circle cx="' + f1(p[0]) + '" cy="' + f1(p[1]) + '" r="' + (cur ? 7 : 4.5) + '" fill="' + (on ? '#F1D08A' : cur ? '#9B7CFF' : '#2A2540') + '"' + (cur ? '><animate attributeName="r" values="6;9;6" dur="1.8s" repeatCount="indefinite"/></circle>' : '/>');
+  }).join('');
+  const top = pts[29];
+  return svgWrap('saison',
+    '<rect width="400" height="860" fill="url(#sky)"/>' + stars(60, 420, 41)
+    + '<path d="M-40 860 L60 470 L120 520 L200 ' + f1(top[1] - 40) + ' L290 430 L340 400 L440 860Z" fill="url(#mount)"/>'
+    + '<path d="M200 ' + f1(top[1] - 40) + ' L176 ' + f1(top[1] + 20) + ' L192 ' + f1(top[1] + 8) + ' L204 ' + f1(top[1] + 26) + ' L222 ' + f1(top[1] + 4) + 'Z" fill="#E8E4F6" opacity="0.55"/>'
+    + '<path d="M-60 860 L40 640 L110 700 L170 620 L260 720 L330 610 L460 860Z" fill="#0C0A16" opacity="0.9"/>'
+    + '<path d="' + d + '" fill="none" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>'
+    + (lit ? '<path d="' + lit + '" fill="none" stroke="#F1D08A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#glowf)"/><path d="' + lit + '" fill="none" stroke="#F1D08A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' : '')
+    + dots
+    + '<line x1="' + f1(top[0]) + '" y1="' + f1(top[1] - 14) + '" x2="' + f1(top[0]) + '" y2="' + f1(top[1] - 52) + '" stroke="#F1D08A" stroke-width="2"/>'
+    + '<path d="M' + f1(top[0]) + ' ' + f1(top[1] - 52) + ' l26 8 l-26 8Z" fill="#F1D08A"/>'
+    + '<text x="200" y="835" text-anchor="middle" ' + COND + ' font-size="20" letter-spacing="7" fill="#F1D08A" fill-opacity="0.55">' + esc0((se.name || '').toUpperCase()) + ' · ' + tier + ' / 30</text>',
+    '<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05040B"/><stop offset="0.5" stop-color="#151036"/><stop offset="1" stop-color="#2A1D52"/></linearGradient>'
+    + '<linearGradient id="mount" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A2E6E"/><stop offset="1" stop-color="#110D22"/></linearGradient>'
+    + '<filter id="glowf" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter>');
+}
+
+const ARTS = { stade, salle, route, embleme, flamme, rang, ombre, saison };
+// Clé de redessin : un fond vivant se redessine quand ses chiffres changent.
+function sig(k) {
+  const i = ['flamme', 'rang', 'ombre', 'saison'].includes(k) ? info() : {};
+  if (k === 'flamme') return k + (i.st ? i.st.n : '');
+  if (k === 'rang') return k + (i.rk ? i.rk.idx + ':' + Math.round((i.rk.ratio || 0) * 100) : '');
+  if (k === 'ombre') return k + (i.bo ? i.bo.id + ':' + i.bo.hp : '');
+  if (k === 'saison') return k + (i.se ? i.se.key + ':' + i.se.tier : '');
+  return k;
+}
 function art(k) { return ARTS[k] ? ARTS[k]() : ''; }
 
 function photo() { try { return localStorage.getItem(PHOTO_KEY) || ''; } catch (e) { return ''; } }
@@ -147,9 +286,10 @@ export function applyBg(tab) {
   if (!el) return;
   const k = tab === 'home' && bgOn() ? state.settings.bg : '';
   document.body.dataset.bg = k;
-  if (k === drawn) return;
-  drawn = k;
-  if (!k) { el.innerHTML = ''; el.removeAttribute('style'); return; }
+  const key = k && sig(k);
+  if (key === drawn) return;
+  drawn = key;
+  if (!k) { drawn = ''; el.innerHTML = ''; el.removeAttribute('style'); return; }
   if (k === 'photo') { el.innerHTML = ''; el.style.backgroundImage = 'url("' + photo() + '")'; return; }
   el.removeAttribute('style');
   el.innerHTML = art(k);

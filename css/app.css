@@ -1207,9 +1207,9 @@ html.light .fab { box-shadow: 0 0 0 5px var(--bg), 0 12px 30px rgba(94, 63, 224,
 .hdrtap { min-height: 44px; margin: -12px 0 -8px; }
 
 /* v61 : fond de l'accueil (js/fond.js). Une image derrière, les cartes en verre dépoli par-dessus. */
-#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-size: cover; background-position: center; }
+#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; background-size: cover; background-position: center; }
 #bg:empty:not([style]) { display: none; }
-#bg svg { width: 100%; height: 100%; display: block; }
+#bg > svg { width: 100%; height: 100%; display: block; }
 body[data-bg]:not([data-bg=""]) { background: #07060C; }
 body[data-bg]:not([data-bg=""]) #bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7, 6, 14, 0.05) 0%, rgba(7, 6, 14, 0.22) 55%, rgba(7, 6, 14, 0.5) 100%); }
 body[data-bg="photo"] #bg::after { background: linear-gradient(180deg, rgba(7, 6, 14, 0.45) 0%, rgba(7, 6, 14, 0.6) 55%, rgba(7, 6, 14, 0.8) 100%); }
@@ -1228,7 +1228,7 @@ body[data-bg]:not([data-bg=""]) #app .mut { color: rgba(255, 255, 255, 0.74); }
 .bgopt.on { border-color: var(--violet); }
 .bgthumb { position: relative; display: flex; align-items: center; justify-content: center; height: 132px; border-radius: 12px; overflow: hidden; background: var(--surf2) center / cover no-repeat; border: 1px solid var(--line); }
 .bgthumb.plain { background: var(--bg); }
-.bgthumb svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bgthumb > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .bgthumb .aurore i { filter: blur(14px); }
 .bgthumb b { font-size: 30px; font-weight: 400; color: var(--mut, #aaa); }
 .bgname { font-size: 13px; font-weight: 600; text-align: center; }
@@ -1262,3 +1262,24 @@ body[data-bg]:not([data-bg=""]) #app .mut { color: rgba(255, 255, 255, 0.74); }
 #app > * { scroll-margin-top: calc(env(safe-area-inset-top) + 18px); }
 .sgroup { scroll-margin-top: 10px; }
 html.light .secchip { background: #fff; color: #2A2635; }
+
+/* v63 : cartes posées sur le fond SANS flou (on voit le fond à travers), fonds vivants */
+body[data-bg]:not([data-bg=""]) #app .glass,
+body[data-bg]:not([data-bg=""]) #app .tile { background: rgba(12, 10, 22, 0.5); border-color: rgba(255, 255, 255, 0.13); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28); }
+body[data-bg]:not([data-bg=""]) #app .glass .glass { background: rgba(255, 255, 255, 0.07); }
+body[data-bg]:not([data-bg=""]) #app .cta { background: linear-gradient(160deg, rgba(108, 76, 235, 0.72) 0%, rgba(79, 53, 201, 0.62) 100%); -webkit-backdrop-filter: none; backdrop-filter: none; }
+body[data-bg]:not([data-bg=""]) #app { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+.bgfig { position: absolute; left: 50%; width: 125%; max-width: 560px; transform: translateX(-50%); pointer-events: none; }
+.bgfig .fig { background: none; border: none; border-radius: 0; }
+.bgfig.me { bottom: 45.3%; --fig-skin: #C9B8FF; --fig-shirt: #C9B8FF; --fig-shorts: #C9B8FF; --fig-shoe: #C9B8FF; --fig-hair: #C9B8FF; --fig-skin2: #7C5CF5; --fig-shirt2: #7C5CF5; --fig-shorts2: #7C5CF5; --fig-shoe2: #7C5CF5; --fig-hair2: #7C5CF5; --fig-eq: #5B4A8C; --fig-eq2: #3A2F5E; --fig-db: #5B4A8C; --fig-band: #5B4A8C; --fig-gold: #F1D08A; --fig-floor: transparent; --fig-shadow: transparent; --fig-bg: transparent; filter: drop-shadow(0 0 10px rgba(124, 92, 245, 0.9)) drop-shadow(0 0 28px rgba(124, 92, 245, 0.5)); }
+.bgfig.shadow { top: 54.7%; transform: translateX(-50%) scaleY(-1); opacity: 0.75; --fig-skin: #5A1222; --fig-shirt: #5A1222; --fig-shorts: #5A1222; --fig-shoe: #5A1222; --fig-hair: #5A1222; --fig-skin2: #3A0A16; --fig-shirt2: #3A0A16; --fig-shorts2: #3A0A16; --fig-shoe2: #3A0A16; --fig-hair2: #3A0A16; --fig-eq: #3A0A16; --fig-eq2: #2A0712; --fig-db: #3A0A16; --fig-band: #3A0A16; --fig-gold: #FF3B57; --fig-floor: transparent; --fig-shadow: transparent; --fig-bg: transparent; filter: drop-shadow(0 0 10px rgba(255, 59, 87, 0.75)); -webkit-mask-image: linear-gradient(to top, #000 30%, transparent 100%); mask-image: linear-gradient(to top, #000 30%, transparent 100%); }
+/* v63 : menu en cases, tout visible d'un coup */
+.mgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.mtile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-height: 80px; padding: 10px 2px 9px; border-radius: 16px; background: var(--surf2); border: 1px solid transparent; color: var(--soft, #ddd); text-align: center; }
+.mtile:active { background: var(--surf3); }
+.mtile .mico { width: 38px; height: 38px; border-radius: 12px; }
+.mtile .mtl { font: 600 12.5px/1.15 var(--body); max-width: 100%; overflow-wrap: anywhere; }
+.mtile.on { border-color: var(--violet); }
+.mtile.on .mico { background: var(--violet); color: #fff; }
+@media (max-width: 350px) { .mgrid { gap: 6px; } .mtile { padding-left: 0; padding-right: 0; } .mtile .mtl { font-size: 12px; letter-spacing: -0.2px; overflow-wrap: normal; } }
+html.light .mtile { background: #fff; color: #2A2635; }

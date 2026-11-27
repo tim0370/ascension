@@ -905,6 +905,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 63, items: [
+    'Quatre fonds qui vivent avec toi : Ta flamme (le feu grandit avec tes semaines), Ton rang (ta lettre en grand, sa couleur change quand tu montes), Ton ombre (toi et ton reflet, le chiffre à battre) et Ta saison (la montagne du mois, chaque palier allume le chemin). Dans Réglages, Fond de l’accueil.',
+    'Les cartes posées sur un fond ne sont plus floues : on voit enfin le fond à travers.',
+    'Menu rangé : 16 cases visibles d’un coup, un mot chacune, plus besoin de descendre.',
+  ] },
   { v: 62, items: [
     'Nouveaux fonds de l’accueil, liés au sport : Stade (la piste sous les projecteurs), Salle (ta station de dips sous un projecteur), Course (la route au lever du soleil) et Emblème (le logo d’Ascension en or). Ta photo reste possible. Dans Réglages, Fond de l’accueil.',
     'Fini de chercher en bas de l’écran : en haut de Progrès, de Défis et des Réglages, une rangée de raccourcis montre tout ce qu’il y a dedans. Touche un nom pour y aller directement.',
