@@ -5,6 +5,7 @@ import { ICON, buzz } from './ui.js';
 const R = 135;        // distance entre le bouton et chaque choix
 const HOLD = 200;     // temps d'appui avant l'éventail (ms)
 const DEAD = 58;      // tout près du bouton : aucun choix (lâcher = annuler)
+// Un simple toucher garde son effet (ouvrir la séance), avec une petite onde.
 
 // items() : [{ kind: 'tab' | 'act', v, ic, t }], go(item) : y aller, tap() : simple toucher.
 export function initFan({ items, go, tap }) {
@@ -26,7 +27,7 @@ export function initFan({ items, go, tap }) {
       const x = c.x + R * cos, y = c.y - R * sin;
       // L'étiquette est sous son rond, à l'intérieur de l'arc (place libre).
       const lx = x, ly = y + 34, kx = 50, ky = 0;
-      return '<span class="fanit" data-i="' + i + '" style="left:' + x + 'px;top:' + y + 'px;--dx:' + (c.x - x) + 'px;--dy:' + (c.y - y) + 'px;transition-delay:' + i * 22 + 'ms">' + (ICON[it.ic] || '') + '</span>'
+      return '<span class="fanit b' + (i % 5) + '" data-i="' + i + '" style="left:' + x + 'px;top:' + y + 'px;--dx:' + (c.x - x) + 'px;--dy:' + (c.y - y) + 'px;--bob:' + (i * 0.37).toFixed(2) + 's;transition-delay:' + i * 38 + 'ms">' + (ICON[it.ic] || '') + '</span>'
         + '<span class="fanlab" data-i="' + i + '" style="left:' + lx + 'px;top:' + ly + 'px;transform:translate(-' + kx + '%,-' + ky + '%)">' + it.t + '</span>';
     }).join('');
     // Les étiquettes du bord ne sortent pas de l'écran.
@@ -39,11 +40,25 @@ export function initFan({ items, go, tap }) {
     requestAnimationFrame(() => fan.classList.add('on'));
     buzz(8);
   }
-  function hide() {
+  // v65 (bulles façon « Navigation tabs V20 ») : à la fermeture, la bulle choisie file vers le bouton,
+  // les autres se rangent dedans, et une onde part du bouton.
+  function hide(chosen) {
     open = false; sel = -1;
+    if (chosen >= 0) {
+      const b = fan.querySelector('.fanit[data-i="' + chosen + '"]');
+      if (b) b.classList.add('go');
+      ripple();
+    }
     fan.classList.remove('on');
     document.body.classList.remove('fan-open');
-    setTimeout(() => { if (!open) fan.innerHTML = ''; }, 200);
+    setTimeout(() => { if (!open) fan.innerHTML = ''; }, 320);
+  }
+  function ripple() {
+    const r = fab.getBoundingClientRect(), w = document.createElement('span');
+    w.className = 'fabripple';
+    w.style.left = r.left + r.width / 2 + 'px'; w.style.top = r.top + r.height / 2 + 'px';
+    document.body.appendChild(w);
+    setTimeout(() => w.remove(), 700);
   }
   function pick(x, y) {
     const dx = x - c.x, dy = c.y - y, d = Math.hypot(dx, dy);
@@ -83,10 +98,10 @@ export function initFan({ items, go, tap }) {
     pid = null; start = null;
     clearTimeout(timer);
     fab.classList.remove('press');
-    if (!open) { if (!cancel) tap(); return; }
-    const it = list[sel];
-    hide();
-    if (it && !cancel) go(it);
+    if (!open) { if (!cancel) { ripple(); tap(); } return; }
+    const it = list[sel], k = sel;
+    hide(it && !cancel ? k : -1);
+    if (it && !cancel) setTimeout(() => go(it), 160);
   };
   fab.addEventListener('pointerup', (e) => end(e, false));
   fab.addEventListener('pointercancel', (e) => end(e, true));

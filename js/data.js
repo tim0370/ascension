@@ -905,6 +905,12 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 65, items: [
+    'Bouton du bas : garde le doigt dessus, les choix sortent en bulles de verre. Celle que tu vises grossit, puis file vers le bouton quand tu lâches.',
+    'Pour terminer une séance, garde le doigt sur « Terminer » : une bille roule et remplit le bouton. Fini les séances terminées par erreur.',
+    'Les boutons s’écrasent sous le doigt et rebondissent, et dans les sous-onglets le choix glisse d’un nom à l’autre.',
+    'Nouveau fond d’écran « Aura » : des couleurs douces qui changent selon la page (l’accueil suit ta forme du jour).',
+  ] },
   { v: 64, items: [
     'Le fond (Réglages, Fond d’écran) est maintenant derrière toutes les pages (sauf pendant une séance), et chaque page arrive en laissant voir le fond un court instant avant que les cartes montent.',
     'Progrès et Défis sont rangés en sous-onglets en haut : Rang, Corps, Records et Jour, Semaine, Mois, Collection. Une seule partie à la fois, fini les longues pages.',

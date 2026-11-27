@@ -30,6 +30,7 @@ export const FONDS = [
   ['rang', 'Ton rang', 'Ta lettre en grand, sa couleur change quand tu montes'],
   ['ombre', 'Ton ombre', 'Toi et ton reflet, le défi de la semaine à battre'],
   ['saison', 'Ta saison', 'La montagne du mois : chaque palier allume le chemin'],
+  ['aura', 'Aura', 'Des couleurs douces qui changent selon la page et ta forme du jour'],
   ['photo', 'Ta photo', 'Ton coin d’entraînement, ou ce que tu veux'],
 ];
 
@@ -258,6 +259,22 @@ function saison() {
     + '<filter id="glowf" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter>');
 }
 
+
+// Aura (v65, idée tirée des vidéos settigation / Ultrahuman) : de grandes taches de couleur très douces qui dérivent
+// lentement. La couleur dépend de la page : l'accueil suit ta forme du jour, Progrès la couleur de ton rang,
+// Séance l'orange de l'effort, Défis l'or, Mon profil le bleu. Au changement de page, les couleurs glissent de l'une à l'autre.
+const FORME_COL = { ok: ['#3FD69B', '#2F7BFF', '#7C5CF5'], mid: ['#FFB03B', '#FF6A5A', '#7C5CF5'], low: ['#FF5A6E', '#9B3BFF', '#4B2FB8'] };
+export function auraCols(tab) {
+  const i = info();
+  if (tab === 'workout') return ['#FF7A3D', '#E0341C', '#7C5CF5'];
+  if (tab === 'progress') { const [c1, c2] = RANK_COL[Math.min((i.rk && i.rk.idx) || 0, RANK_COL.length - 1)]; return [c1, '#7C5CF5', c2]; }
+  if (tab === 'defis') return ['#F1D08A', '#FF7A85', '#7C5CF5'];
+  if (tab === 'history' || tab === 'moi') return ['#4FC3F7', '#7C5CF5', '#3FD69B'];
+  return (i.fo && FORME_COL[i.fo.tone]) || ['#7C5CF5', '#FF8A5B', '#4FC3F7'];
+}
+const AURA = '<div class="aura"><i class="a1"></i><i class="a2"></i><i class="a3"></i><i class="a4"></i></div>';
+function setAura(el, tab) { auraCols(tab).forEach((c, n) => el.style.setProperty('--a' + (n + 1), c)); }
+
 const ARTS = { stade, salle, route, embleme, flamme, rang, ombre, saison };
 // Clé de redessin : un fond vivant se redessine quand ses chiffres changent.
 function sig(k) {
@@ -282,6 +299,11 @@ export function applyBg(tab) {
   // v63 : le fond est derrière tous les écrans, sauf pendant une séance (l'écran de séance reste uni).
   const k = bgOn() && !(tab === 'workout' && state.active) ? state.settings.bg : '';
   document.body.dataset.bg = k;
+  if (k === 'aura') {
+    if (drawn !== 'aura') { drawn = 'aura'; el.removeAttribute('style'); el.innerHTML = AURA; }
+    setAura(el, tab);
+    return;
+  }
   const key = k && sig(k);
   if (key === drawn) return;
   drawn = key;
@@ -294,6 +316,7 @@ export function applyBg(tab) {
 // Aperçu miniature pour le choix dans les réglages.
 export function bgThumb(k) {
   if (!k) return '<span class="bgthumb plain"></span>';
+  if (k === 'aura') return '<span class="bgthumb" style="' + auraCols('home').map((c, n) => '--a' + (n + 1) + ':' + c).join(';') + '">' + AURA + '</span>';
   if (k === 'photo') { const p = photo(); return '<span class="bgthumb"' + (p ? ' style="background-image:url(&quot;' + p + '&quot;)"' : '') + '>' + (p ? '' : '<b>+</b>') + '</span>'; }
   return '<span class="bgthumb">' + art(k) + '</span>';
 }

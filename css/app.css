@@ -1307,3 +1307,68 @@ body[data-bg]:not([data-bg=""]) #app.enter > *:nth-child(n+6) { animation-delay:
 .seg2 button { min-height: 40px; }
 .subtabs button { min-height: 42px; }
 .whymore { min-height: 42px; }
+/* MAQUETTE photos par onglet : la photo prend la couleur du rang (teinte), le bas s'assombrit pour le texte */
+body[data-bg]:not([data-bg=""]) #app .field, body[data-bg]:not([data-bg=""]) #app .textin { background: rgba(12, 10, 22, 0.6); border-color: rgba(255, 255, 255, 0.14); }
+/* v65 : bulles en verre (vidéo « Navigation tabs V20 ») : elles jaillissent avec un rebond, flottent, la choisie file vers le bouton */
+.fanit { background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.85) 0 5%, rgba(255, 255, 255, 0.22) 13%, transparent 38%), radial-gradient(circle at 70% 78%, var(--bt, rgba(155, 124, 255, 0.55)), transparent 62%), rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.32); box-shadow: inset 0 0 14px rgba(255, 255, 255, 0.18), inset 0 -6px 14px rgba(0, 0, 0, 0.25), 0 12px 26px rgba(0, 0, 0, 0.4); -webkit-backdrop-filter: blur(8px) saturate(160%); backdrop-filter: blur(8px) saturate(160%); color: #fff; transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease, background 0.15s; }
+.fanit.b0 { --bt: rgba(255, 196, 92, 0.6); } .fanit.b1 { --bt: rgba(255, 110, 170, 0.55); } .fanit.b2 { --bt: rgba(155, 124, 255, 0.65); } .fanit.b3 { --bt: rgba(80, 210, 255, 0.55); } .fanit.b4 { --bt: rgba(90, 230, 160, 0.55); }
+#fan.on .fanit { animation: bob 2.6s ease-in-out var(--bob, 0s) infinite; }
+@keyframes bob { 50% { translate: 0 -4px; } }
+#fan.on .fanit.hl { background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.9) 0 5%, rgba(255, 255, 255, 0.25) 13%, transparent 38%), linear-gradient(160deg, #9B7CFF, #5E3FE0); border-color: rgba(255, 255, 255, 0.5); transform: scale(1.2); box-shadow: 0 0 0 6px rgba(155, 124, 255, 0.18), 0 14px 30px rgba(94, 63, 224, 0.6); }
+#fan .fanit.go { transform: translate(var(--dx), var(--dy)) scale(0.5) !important; opacity: 0 !important; transition: transform 0.3s cubic-bezier(0.5, 0, 0.75, 0), opacity 0.3s ease 0.05s !important; }
+#fan:not(.on) .fanit:not(.go) { transition: transform 0.24s cubic-bezier(0.5, 0, 0.75, 0), opacity 0.2s ease !important; transition-delay: 0s !important; }
+body.fan-open .fab .fabx { animation: xin 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes xin { from { transform: rotate(-135deg) scale(0.4); opacity: 0; } }
+.fab svg:not(.fabx) { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.fabripple { position: fixed; z-index: 10; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; border: 2px solid rgba(190, 172, 255, 0.85); pointer-events: none; animation: ripple 0.65s cubic-bezier(0.2, 0.7, 0.3, 1) forwards; }
+@keyframes ripple { from { transform: scale(1); opacity: 0.9; } to { transform: scale(2.3); opacity: 0; } }
+html.light .fanit { color: #2A2635; background: radial-gradient(circle at 32% 26%, #fff 0 6%, rgba(255, 255, 255, 0.5) 14%, transparent 40%), radial-gradient(circle at 70% 78%, var(--bt), transparent 62%), rgba(255, 255, 255, 0.6); }
+@media (prefers-reduced-motion: reduce) { #fan.on .fanit, .fabripple, body.fan-open .fab .fabx { animation: none !important; } }
+/* v65 : sous-onglets, la pastille qui « fond » d'un onglet à l'autre */
+.subtabs { position: sticky; }
+.subtabs button { position: relative; z-index: 1; }
+.subtabs button.on { background: none; box-shadow: none; }
+.subind { position: absolute; top: 4px; bottom: 4px; left: 4px; width: 0; border-radius: 999px; background: linear-gradient(160deg, #9B7CFF, #6A4BE6); box-shadow: 0 4px 16px rgba(124, 92, 245, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3); transition: left 0.34s cubic-bezier(0.34, 1.4, 0.64, 1), width 0.34s cubic-bezier(0.34, 1.4, 0.64, 1), transform 0.2s; }
+.subind.stretch { transition: left 0.15s cubic-bezier(0.4, 0, 0.6, 1), width 0.15s cubic-bezier(0.4, 0, 0.6, 1); transform: scaleY(0.86); }
+.subind.still { transition: none; }
+/* v65 : bouton « maintiens pour confirmer » : une bille roule d'un bout à l'autre et remplit le bouton */
+.holdbtn { position: relative; overflow: hidden; isolation: isolate; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.holdbtn::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.34)); transform-origin: left; transform: scaleX(0); transition: transform 0.25s ease; }
+.holdbtn.holdbtn::after { display: block; animation: none; bottom: auto; content: ''; position: absolute; top: 50%; left: 10px; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff 0 25%, #E9E3FF 45%, #9B88E6 100%); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); transition: left 0.25s ease, transform 0.25s ease; }
+.holdbtn.holding::before { transform: scaleX(1); transition: transform 0.9s linear; }
+.holdbtn.holding::after { left: calc(100% - 26px); transform: rotate(540deg); transition: left 0.9s linear, transform 0.9s linear; }
+.holdbtn.held { animation: heldpop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.holdbtn.held::before { transform: scaleX(1); background: rgba(255, 255, 255, 0.35); }
+.holdbtn.held::after { left: calc(100% - 26px); background: #fff; }
+.holdbtn .holdtxt { padding: 0 22px; white-space: nowrap; }
+@keyframes heldpop { 50% { transform: scale(1.04); } }
+/* v65 : boutons « gelée » : ils s'écrasent sous le doigt et rebondissent au lâcher (vidéos Fluffy / Fabric button) */
+.pill, .gold-btn, .reward-btn, .mtile, .tile, .subtabs button, .secchip, .seg2 button { transition: transform 0.38s cubic-bezier(0.34, 1.7, 0.5, 1), background 0.2s, color 0.2s, box-shadow 0.2s; }
+.pill:active, .gold-btn:active, .reward-btn:active, .mtile:active, .tile:active, .secchip:active, .seg2 button:active { transform: scale(0.95, 0.92); transition-duration: 0.08s; }
+@media (prefers-reduced-motion: reduce) { .holdbtn::before, .holdbtn::after { transition: none !important; } .pill:active, .gold-btn:active, .mtile:active, .tile:active { transform: none; } }
+/* v65 : fond « Aura » : grandes taches de couleur douces qui dérivent ; la couleur change selon la page (glisse en 1,2 s).
+   Le fond est déjà flou : le verre n'a pas besoin de flou, juste un voile clair, un fin bord blanc et un reflet en haut. */
+@property --a1 { syntax: '<color>'; inherits: true; initial-value: #7C5CF5; }
+@property --a2 { syntax: '<color>'; inherits: true; initial-value: #FF8A5B; }
+@property --a3 { syntax: '<color>'; inherits: true; initial-value: #4FC3F7; }
+#bg { transition: --a1 1.2s ease, --a2 1.2s ease, --a3 1.2s ease; }
+.aura { position: absolute; inset: 0; background: #0A0912; overflow: hidden; }
+.aura i { position: absolute; width: 120vmax; height: 120vmax; border-radius: 50%; opacity: 0.7; will-change: transform; }
+.aura .a1 { left: -45vmax; top: -40vmax; background: radial-gradient(closest-side, var(--a1), transparent 72%); animation: drift1 26s ease-in-out infinite alternate; }
+.aura .a2 { right: -55vmax; top: -10vmax; background: radial-gradient(closest-side, var(--a2), transparent 72%); opacity: 0.6; animation: drift2 31s ease-in-out infinite alternate; }
+.aura .a3 { left: -40vmax; bottom: -50vmax; background: radial-gradient(closest-side, var(--a3), transparent 72%); opacity: 0.6; animation: drift3 36s ease-in-out infinite alternate; }
+.aura .a4 { right: -50vmax; bottom: -30vmax; background: radial-gradient(closest-side, var(--a1), transparent 70%); opacity: 0.4; animation: drift2 41s ease-in-out infinite alternate-reverse; }
+@keyframes drift1 { to { transform: translate(18vmax, 14vmax) scale(1.12); } }
+@keyframes drift2 { to { transform: translate(-16vmax, 20vmax) scale(0.92); } }
+@keyframes drift3 { to { transform: translate(14vmax, -18vmax) scale(1.08); } }
+.bgthumb .aura i { width: 260px; height: 260px; animation: none; }
+.bgthumb .aura .a1 { left: -110px; top: -100px; } .bgthumb .aura .a2 { right: -130px; top: -20px; left: auto; }
+.bgthumb .aura .a3 { left: -60px; bottom: -150px; top: auto; } .bgthumb .aura .a4 { display: none; }
+body[data-bg="aura"] #bg::after { background: linear-gradient(180deg, rgba(8, 7, 14, 0.12) 0%, rgba(8, 7, 14, 0.28) 60%, rgba(8, 7, 14, 0.45) 100%); }
+body[data-bg="aura"] #app .glass, body[data-bg="aura"] #app .tile {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+body[data-bg="aura"] #app .glass .glass { background: rgba(255, 255, 255, 0.07); box-shadow: none; }
+body[data-bg="aura"] #app { text-shadow: none; }
+@media (prefers-reduced-motion: reduce) { .aura i { animation: none; } }

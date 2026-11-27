@@ -249,7 +249,7 @@ function viewList(a) {
   });
   h += '<button type="button" class="pill glass wide" data-act="picker" data-at="' + a.exercises.length + '" style="margin-top:4px">Ajouter un exercice</button>'
     + '<div class="row" style="margin-top:8px"><button type="button" class="pill glass grow" data-act="cancel" style="color:var(--mut)">Abandonner</button>'
-    + '<button type="button" class="pill gold-btn grow" data-act="finish">Terminer</button></div>'
+    + '<button type="button" class="pill gold-btn grow holdbtn" data-hold="finish" aria-label="Terminer la séance (garde le doigt appuyé)"><span class="holdtxt">Terminer</span></button></div>'
     + '<div style="height:90px"></div>'; // place pour le bandeau de repos
   return h;
 }

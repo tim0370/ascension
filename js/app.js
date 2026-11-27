@@ -8,10 +8,10 @@ import {
 import { NEWS, EXOS, AKA } from './data.js';
 import { rankInfo, heat, bodyLog, addWeight } from './stats.js';
 import { beep, wakeAudio, initSound, soundError } from './sound.js';
-import { hint, $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, toastUndo, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst } from './ui.js';
+import { hint, $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, toastUndo, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst, buzz } from './ui.js';
 import { routinesCard, viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
 import { progCard, progOn, isBeginner, todayList, nextInfo } from './programme.js';
-import { formeCard, painCard } from './forme.js';
+import { formeCard, painCard, forme } from './forme.js';
 import { weekCard, lundiBanner } from './semaine.js';
 import { campNow, checkCamp } from './campagne.js';
 import { monthChCard, paliersCard, duelCard, checkDuels, checkMonth, shareImage } from './defis.js';
@@ -932,6 +932,7 @@ setBgInfo(() => {
   try { o.rk = rankInfo(); } catch (e) { /* rien */ }
   try { o.se = season(); } catch (e) { /* rien */ }
   try { o.bo = weekBoss(); } catch (e) { /* rien */ }
+  try { if (state.settings.bg === 'aura') o.fo = forme(todayList()); } catch (e) { /* rien */ }
   return o;
 });
 initFan({ items: FAN, go: fanGo, tap: () => fanGo({ kind: 'tab', v: 'workout' }) });
@@ -964,13 +965,27 @@ function addSecNav() {
   const nav = document.createElement('nav');
   nav.className = 'subtabs';
   nav.setAttribute('role', 'tablist');
-  nav.innerHTML = avail.map((i) => '<button type="button" role="tab" data-subtab="' + i + '">' + rules[i][0] + '</button>').join('');
+  nav.innerHTML = '<span class="subind" aria-hidden="true"></span>' + avail.map((i) => '<button type="button" role="tab" data-subtab="' + i + '">' + rules[i][0] + '</button>').join('');
   app.firstElementChild.after(nav);
   showSub(false);
+}
+// La pastille violette « fond » vers le nouvel onglet : elle s'étire jusqu'à lui, puis se resserre (v65).
+function moveInd(anim) {
+  const nav = $('app').querySelector('.subtabs'), ind = nav && nav.querySelector('.subind'), b = nav && nav.querySelector('button.on');
+  if (!ind || !b) return;
+  const to = { l: b.offsetLeft, w: b.offsetWidth };
+  const from = { l: parseFloat(ind.style.left) || to.l, w: parseFloat(ind.style.width) || to.w };
+  const place = (l, w) => { ind.style.left = l + 'px'; ind.style.width = w + 'px'; };
+  if (!anim || !ind.style.width || matchMedia('(prefers-reduced-motion: reduce)').matches) { ind.classList.add('still'); place(to.l, to.w); void ind.offsetWidth; ind.classList.remove('still'); return; }
+  const l = Math.min(from.l, to.l), r = Math.max(from.l + from.w, to.l + to.w);
+  ind.classList.add('stretch'); place(l, r - l);
+  clearTimeout(ind._t);
+  ind._t = setTimeout(() => { ind.classList.remove('stretch'); place(to.l, to.w); }, 150);
 }
 function showSub(anim) {
   const app = $('app'), on = ui.subtab && ui.subtab[ui.tab];
   app.querySelectorAll('.subtabs [data-subtab]').forEach((b) => { const yes = +b.dataset.subtab === on; b.classList.toggle('on', yes); b.setAttribute('aria-selected', yes); });
+  moveInd(anim);
   let i = 0;
   [...app.children].forEach((k) => {
     if (k.dataset.sub === undefined) return;
@@ -1028,6 +1043,28 @@ export function render() {
   if (ui.tab === 'home' && !state.workouts.length && !state.settings.onboarded && !$('sheet').firstElementChild) sheetWelcome(0);
 }
 
+// Bouton « maintiens pour confirmer » (v65, vidéo « Pool button ») : la bille traverse le bouton en 0,9 s ;
+// lâcher avant = rien. Un simple toucher rappelle qu'il faut garder le doigt.
+const HOLD_MS = 900;
+let holdT = 0, holdEl = null;
+function holdStop() { clearTimeout(holdT); if (holdEl) holdEl.classList.remove('holding'); holdEl = null; }
+document.addEventListener('pointerdown', (ev) => {
+  const b = ev.target.closest('[data-hold]');
+  if (!b || ev.button > 0) return;
+  holdStop(); holdEl = b; b.classList.add('holding'); buzz(6);
+  holdT = setTimeout(() => {
+    const act = b.dataset.hold; b.classList.remove('holding'); b.classList.add('held'); holdEl = null; buzz(20);
+    setTimeout(() => { b.classList.remove('held'); if (ACTIONS[act]) ACTIONS[act](b); }, 260);
+  }, HOLD_MS);
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach((t) => document.addEventListener(t, (ev) => { if (holdEl && (t !== 'pointerleave' || ev.target === holdEl)) { if (!holdEl.classList.contains('held')) holdStop(); } }, true));
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-hold]');
+  if (!b) return;
+  ev.stopPropagation();
+  if (ev.detail === 0 && ACTIONS[b.dataset.hold]) { ACTIONS[b.dataset.hold](b); return; } // clavier
+  if (!b.classList.contains('held')) toast('Garde le doigt appuyé sur le bouton');
+}, true);
 document.addEventListener('click', (ev) => {
   const subt = ev.target.closest('[data-subtab]');
   if (subt) { ui.subtab = ui.subtab || {}; ui.subtab[ui.tab] = +subt.dataset.subtab; showSub(true); const nav = subt.closest('.subtabs'); if (nav && nav.getBoundingClientRect().top < 0) nav.scrollIntoView({ block: 'start' }); return; }
