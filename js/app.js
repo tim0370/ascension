@@ -238,8 +238,8 @@ const GUIDE = [
   ['Ne rien perdre', [
     ['export', 'Sauvegarder', 'Un fichier avec toutes tes données, à garder dans Fichiers ou iCloud.'],
     ['home-edit', 'Personnaliser l’accueil', 'Choisis les cartes affichées.'],
-    ['', 'Fond de l’accueil', 'Réglages, Fond de l’accueil : le stade, la salle, la route, l’emblème, ta flamme, ton rang, ton ombre, ta saison ou ta photo derrière les cartes. Les quatre derniers changent avec tes chiffres.'],
-    ['', 'Raccourcis en haut des onglets', 'En haut de Progrès, de Défis et des Réglages : touche un nom pour aller directement à cette partie.'],
+    ['', 'Fond d’écran', 'Réglages, Fond d’écran : le stade, la salle, la route, l’emblème, ta flamme, ton rang, ton ombre, ta saison ou ta photo derrière les cartes. Les quatre derniers changent avec tes chiffres.'],
+    ['', 'Sous-onglets', 'Progrès (Rang, Corps, Records) et Défis (Jour, Semaine, Mois, Collection) n’affichent qu’une partie à la fois : touche un nom en haut pour changer. En haut des Réglages, touche un nom pour aller à ce groupe.'],
   ]],
 ];
 function sheetGuide() {
@@ -523,7 +523,7 @@ function sheetSettings() {
     srow('set-sub', 'calendar', 'Objectif par semaine', plural(weekGoal(), 'séance', 'séances'), ' data-k="goal"'),
     srow('set-sub', 'timer', 'Repos par défaut', clock(rest), ' data-k="rest"'),
     srow('home-edit', 'home', 'Cartes de l’accueil'),
-    srow('set-sub', 'star', 'Fond de l’accueil', esc((FONDS.find((f) => f[0] === (state.settings.bg || '')) || FONDS[0])[1]), ' data-k="bg"'),
+    srow('set-sub', 'star', 'Fond d’écran', esc((FONDS.find((f) => f[0] === (state.settings.bg || '')) || FONDS[0])[1]), ' data-k="bg"'),
     stog('toggle-textbig', 'book', 'Texte plus grand', !!state.settings.textBig, 'Tous les textes un peu plus gros'),
     stog('toggle-light', 'star', 'Mode clair', !!state.settings.light, 'Fond clair, pratique en plein soleil'),
     ...(navigator.vibrate ? [stog('toggle-haptics', 'bell', 'Vibrations', state.settings.haptics !== false, 'Une petite vibration à chaque série validée et à chaque record')] : []),
@@ -577,7 +577,7 @@ function sheetSub(k) {
   }
   if (k === 'bg') {
     const cur = state.settings.bg || '';
-    h = '<h1 class="h1">Fond de l’accueil</h1><span class="small mut">Une image derrière l’accueil, les cartes deviennent transparentes. Seulement sur l’accueil, pas en mode clair.</span>'
+    h = '<h1 class="h1">Fond d’écran</h1><span class="small mut">Une image derrière toutes les pages, les cartes deviennent transparentes. Pas pendant une séance, ni en mode clair. Ta flamme, Ton rang, Ton ombre et Ta saison changent avec tes chiffres.</span>'
       + '<div class="bggrid">' + FONDS.map(([kk, t]) => '<button type="button" class="bgopt' + (kk === cur ? ' on' : '') + '" data-act="set-bg" data-k="' + kk + '" aria-pressed="' + (kk === cur) + '">' + bgThumb(kk) + '<span class="bgname">' + t + '</span></button>').join('') + '</div>'
       + (cur === 'photo' ? '<button type="button" class="pill glass wide" data-act="set-bg" data-k="photo" data-new="1">Choisir une autre photo</button>' : '')
       + (state.settings.light ? '<span class="small" style="color:var(--violet-soft)">Tu es en mode clair : le fond ne s’affiche pas. Coupe le mode clair pour le voir.</span>' : '');
@@ -936,33 +936,49 @@ setBgInfo(() => {
 });
 initFan({ items: FAN, go: fanGo, tap: () => fanGo({ kind: 'tab', v: 'workout' }) });
 
-// Sommaire en haut des onglets longs : tout ce que l'onglet contient, visible sans descendre, un toucher pour y aller.
-// Un raccourci par élément (trouvé par son bouton), seulement s'il est affiché.
-const SECNAV = {
-  defis: [['Quêtes', '[data-act="quests"]'], ['Ton ombre', '[data-act="boss"]'], ['Duels', '[data-act="duels"]'], ['Défi du mois', '[data-act="mch"]'], ['30 jours', '[data-act="p30"]'], ['Test du mois', '[data-act="mtest"]'], ['Saison', '[data-act="season"]'], ['Campagne', '.camp, [data-act="camp-all"]'], ['Figures', '.figgrid'], ['Hauts faits', '[data-act="feats"]'], ['Paliers', '[data-act="paliers"]']],
-  progress: [['Rang', '[data-act="rank"]'], ['Analyse', '[data-act="analyse"]'], ['Objectifs', '[data-act="cap"], [data-act="goal"], [data-act="goal-new"]'], ['Muscles', '.bodymap'], ['Carrière', '[data-act="career"]'], ['Parcours', '[data-act="parcours"]'], ['Records', '[data-act="exo"]'], ['Équilibre', '.hbar'], ['Poids', '[data-act="body"]'], ['Mensurations', '[data-act="measures"]'], ['Photos', '[data-act="photos"]']],
+// Sous-onglets (v63) : Progrès et Défis sont coupés en parties courtes, une seule affichée à la fois.
+// Chaque partie commence à un titre de section (texte du titre) ; ce qui précède le premier titre va dans la première.
+const SUBTABS = {
+  defis: [['Jour', ['Quêtes du jour']], ['Semaine', ['Défi de la semaine']], ['Mois', ['Ce mois-ci']], ['Collection', ['Campagne', 'Figures', 'Hauts faits']]],
+  progress: [['Rang', []], ['Corps', ['Ton corps', 'Équilibre du corps', 'Corps']], ['Records', ['Ton histoire', 'Mes records']]],
 };
 function addSecNav() {
-  const rules = SECNAV[ui.tab];
+  const rules = SUBTABS[ui.tab];
   const app = $('app');
   if (!rules || !app.firstElementChild) return;
   const kids = [...app.children].slice(1);
-  const chips = [];
-  rules.forEach(([label, sel], i) => {
-    const c = kids.find((k) => k.matches(sel) || k.querySelector(sel));
-    if (!c) return;
-    // Le titre de la partie juste au-dessus reste visible en arrivant.
-    const prev = c.previousElementSibling;
-    const target = prev && prev.matches('.sechead, .sec') && !prev.id ? prev : c;
-    if (!target.id) target.id = 'sec-' + i;
-    chips.push('<button type="button" class="secchip" data-sec="' + target.id + '">' + label + '</button>');
+  let cur = 0;
+  const used = new Set();
+  kids.forEach((k) => {
+    if (k.matches('.sechead, .sec')) {
+      const t = (k.querySelector('.h2') || k).textContent.trim();
+      const g = rules.findIndex(([, L]) => L.some((x) => t.startsWith(x)));
+      if (g >= 0) cur = g;
+    } else used.add(cur);
+    k.dataset.sub = cur;
   });
-  if (chips.length < 3) return;
+  const avail = rules.map((_, i) => i).filter((i) => used.has(i));
+  if (avail.length < 2) return;
+  ui.subtab = ui.subtab || {};
+  if (!avail.includes(ui.subtab[ui.tab])) ui.subtab[ui.tab] = avail[0];
   const nav = document.createElement('nav');
-  nav.className = 'secnav';
-  nav.setAttribute('aria-label', 'Dans cet onglet');
-  nav.innerHTML = chips.join('');
+  nav.className = 'subtabs';
+  nav.setAttribute('role', 'tablist');
+  nav.innerHTML = avail.map((i) => '<button type="button" role="tab" data-subtab="' + i + '">' + rules[i][0] + '</button>').join('');
   app.firstElementChild.after(nav);
+  showSub(false);
+}
+function showSub(anim) {
+  const app = $('app'), on = ui.subtab && ui.subtab[ui.tab];
+  app.querySelectorAll('.subtabs [data-subtab]').forEach((b) => { const yes = +b.dataset.subtab === on; b.classList.toggle('on', yes); b.setAttribute('aria-selected', yes); });
+  let i = 0;
+  [...app.children].forEach((k) => {
+    if (k.dataset.sub === undefined) return;
+    const show = +k.dataset.sub === on;
+    k.classList.toggle('subhide', !show);
+    k.classList.remove('subin');
+    if (show && anim) { void k.offsetWidth; k.style.setProperty('--d', Math.min(i++ * 45, 300) + 'ms'); k.classList.add('subin'); }
+  });
 }
 
 export function render() {
@@ -1013,6 +1029,8 @@ export function render() {
 }
 
 document.addEventListener('click', (ev) => {
+  const subt = ev.target.closest('[data-subtab]');
+  if (subt) { ui.subtab = ui.subtab || {}; ui.subtab[ui.tab] = +subt.dataset.subtab; showSub(true); const nav = subt.closest('.subtabs'); if (nav && nav.getBoundingClientRect().top < 0) nav.scrollIntoView({ block: 'start' }); return; }
   const sec = ev.target.closest('[data-sec]');
   if (sec) { const t = document.getElementById(sec.dataset.sec); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   const el = ev.target.closest('[data-act], [data-tab]');

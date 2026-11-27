@@ -1283,3 +1283,27 @@ body[data-bg]:not([data-bg=""]) #app { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35
 .mtile.on .mico { background: var(--violet); color: #fff; }
 @media (max-width: 350px) { .mgrid { gap: 6px; } .mtile { padding-left: 0; padding-right: 0; } .mtile .mtl { font-size: 12px; letter-spacing: -0.2px; overflow-wrap: normal; } }
 html.light .mtile { background: #fff; color: #2A2635; }
+/* v63 : sous-onglets de Progrès et Défis */
+.subhide { display: none !important; }
+.subtabs { position: sticky; top: calc(env(safe-area-inset-top) + 6px); z-index: 5; display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(28, 24, 42, 0.72); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); border: 1px solid rgba(255, 255, 255, 0.1); }
+.subtabs button { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0 6px; border-radius: 999px; color: var(--mut, #aaa); font: 600 14px/1 var(--body); white-space: nowrap; transition: background 0.2s, color 0.2s; }
+.subtabs button.on { background: var(--violet); color: #fff; box-shadow: 0 4px 14px rgba(124, 92, 245, 0.45); }
+@media (max-width: 350px) { .subtabs button { font-size: 13px; padding: 0 3px; } }
+html.light .subtabs { background: rgba(255, 255, 255, 0.85); border-color: rgba(20, 18, 40, 0.08); }
+html.light .subtabs button { color: #5A5668; }
+html.light .subtabs button.on { color: #fff; }
+.subin { animation: rise 0.34s var(--ease) both; animation-delay: var(--d, 0ms); }
+/* v63 : arrivée d'un écran sur un fond : le fond seul une fraction de seconde, puis les cartes montent une à une. */
+body[data-bg]:not([data-bg=""]) #app.enter > * { animation: bgrise 0.42s var(--ease) both !important; }
+body[data-bg]:not([data-bg=""]) #app.enter > *:nth-child(1) { animation-delay: 0.14s !important; }
+body[data-bg]:not([data-bg=""]) #app.enter > *:nth-child(2) { animation-delay: 0.18s !important; }
+body[data-bg]:not([data-bg=""]) #app.enter > *:nth-child(3) { animation-delay: 0.22s !important; }
+body[data-bg]:not([data-bg=""]) #app.enter > *:nth-child(4) { animation-delay: 0.26s !important; }
+body[data-bg]:not([data-bg=""]) #app.enter > *:nth-child(5) { animation-delay: 0.30s !important; }
+body[data-bg]:not([data-bg=""]) #app.enter > *:nth-child(n+6) { animation-delay: 0.34s !important; }
+@keyframes bgrise { from { opacity: 0; transform: translateY(18px) scale(0.98); } }
+@media (prefers-reduced-motion: reduce) { body[data-bg]:not([data-bg=""]) #app.enter > *, .subin { animation: none !important; } }
+/* v63 : cibles de toucher à 40 px au moins */
+.seg2 button { min-height: 40px; }
+.subtabs button { min-height: 42px; }
+.whymore { min-height: 42px; }

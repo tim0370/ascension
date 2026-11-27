@@ -169,12 +169,10 @@ function flamme() {
       + '<animate attributeName="cy" values="' + f1(y0) + ';' + f1(y0 - H - 120) + '" dur="' + d + 's" begin="-' + dl + 's" repeatCount="indefinite"/>'
       + '<animate attributeName="opacity" values="0;1;0" dur="' + d + 's" begin="-' + dl + 's" repeatCount="indefinite"/></circle>';
   }
-  const label = n ? (n > 1 ? 'SEMAINES' : 'SEMAINE') : 'ALLUME-LA';
   return svgWrap('flamme',
     '<rect width="400" height="860" fill="url(#bg)"/>'
     + '<ellipse cx="200" cy="' + (base - H * 0.3) + '" rx="260" ry="' + f1(H * 0.75) + '" fill="url(#halo)"/>'
     + '<text x="200" y="' + f1(base - H - 40) + '" text-anchor="middle" ' + COND + ' font-size="230" fill="none" stroke="#FF9A4D" stroke-opacity="0.28" stroke-width="2">' + n + '</text>'
-    + '<text x="200" y="' + f1(base - H - 4) + '" text-anchor="middle" ' + COND + ' font-size="22" letter-spacing="9" fill="#FFB27A" fill-opacity="0.32">' + label + '</text>'
     + flameLayer(cx, base, 150, H, 'url(#outer)', 2.2, ' filter="url(#soft)" opacity="0.9"')
     + flameLayer(cx, base, 150, H, 'url(#outer)', 2.2, ' opacity="0.85"')
     + flameLayer(cx, base, 98, H * 0.74, 'url(#mid)', 1.7)
@@ -197,15 +195,13 @@ function rang() {
   const cx = 200, cy = 430, R = 190;
   const per = 6 * R, pct = Math.max(0, Math.min(1, rk.ratio || 0));
   const rings = [250, 320, 400, 490, 590].map((r, i) => '<polygon points="' + hexPts(cx, cy, r) + '" fill="none" stroke="' + c1 + '" stroke-opacity="' + (0.22 - i * 0.04).toFixed(2) + '" stroke-width="1.2"/>').join('');
-  const next = rk.next ? 'VERS ' + rk.next.letter + ' · ' + Math.round(pct * 100) + ' %' : 'RANG MAXIMUM';
   return svgWrap('rang',
     '<rect width="400" height="860" fill="url(#bg)"/>' + stars(50, 860, 31, c1)
     + '<circle cx="' + cx + '" cy="' + cy + '" r="320" fill="url(#glow)"/>' + rings
     + '<polygon points="' + hexPts(cx, cy, R) + '" fill="url(#inner)" stroke="' + c1 + '" stroke-opacity="0.18" stroke-width="10"/>'
     + '<polygon points="' + hexPts(cx, cy, R) + '" fill="none" stroke="' + c1 + '" stroke-width="7" stroke-linejoin="round" stroke-dasharray="' + f1(per * pct) + ' ' + per + '" filter="url(#glowf)"/>'
     + '<polygon points="' + hexPts(cx, cy, R) + '" fill="none" stroke="' + c1 + '" stroke-width="5" stroke-linejoin="round" stroke-dasharray="' + f1(per * pct) + ' ' + per + '"/>'
-    + '<text x="' + cx + '" y="' + (cy + 118) + '" text-anchor="middle" ' + COND + ' font-size="340" fill="url(#letter)" fill-opacity="0.55" stroke="' + c1 + '" stroke-opacity="0.6" stroke-width="2">' + esc0(rk.rank.letter) + '</text>'
-    + '<text x="' + cx + '" y="' + (cy + R + 52) + '" text-anchor="middle" ' + COND + ' font-size="20" letter-spacing="7" fill="' + c1 + '" fill-opacity="0.6">' + next + '</text>',
+    + '<text x="' + cx + '" y="' + (cy + 118) + '" text-anchor="middle" ' + COND + ' font-size="340" fill="url(#letter)" fill-opacity="0.55" stroke="' + c1 + '" stroke-opacity="0.6" stroke-width="2">' + esc0(rk.rank.letter) + '</text>',
     '<radialGradient id="bg" cx="0.5" cy="0.48" r="0.8"><stop offset="0" stop-color="' + c2 + '" stop-opacity="0.55"/><stop offset="0.55" stop-color="#0B0914"/><stop offset="1" stop-color="#050408"/></radialGradient>'
     + '<radialGradient id="glow"><stop offset="0" stop-color="' + c1 + '" stop-opacity="0.32"/><stop offset="1" stop-color="' + c1 + '" stop-opacity="0"/></radialGradient>'
     + '<radialGradient id="inner"><stop offset="0" stop-color="' + c2 + '" stop-opacity="0.5"/><stop offset="1" stop-color="' + c2 + '" stop-opacity="0.12"/></radialGradient>'
@@ -222,8 +218,7 @@ function ombre() {
     + '<ellipse cx="200" cy="470" rx="330" ry="120" fill="url(#horizon)"/>'
     + '<rect y="470" width="400" height="390" fill="url(#floor)"/>'
     + '<line x1="0" y1="470" x2="400" y2="470" stroke="#FF5A6E" stroke-opacity="0.45" stroke-width="1.5"/>'
-    + (target ? '<text x="200" y="250" text-anchor="middle" ' + COND + ' font-size="200" fill="none" stroke="#FF5A6E" stroke-opacity="0.22" stroke-width="2">' + target + '</text>'
-      + '<text x="200" y="290" text-anchor="middle" ' + COND + ' font-size="20" letter-spacing="8" fill="#FF8A9A" fill-opacity="0.32">À BATTRE</text>' : ''),
+    + (target ? '<text x="200" y="250" text-anchor="middle" ' + COND + ' font-size="200" fill="none" stroke="#FF5A6E" stroke-opacity="0.22" stroke-width="2">' + target + '</text>' : ''),
     '<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#060509"/><stop offset="0.55" stop-color="#150A14"/></linearGradient>'
     + '<radialGradient id="horizon"><stop offset="0" stop-color="#FF3B57" stop-opacity="0.35"/><stop offset="1" stop-color="#FF3B57" stop-opacity="0"/></radialGradient>'
     + '<linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A0B14"/><stop offset="1" stop-color="#050306"/></linearGradient>');
@@ -252,12 +247,12 @@ function saison() {
     + '<path d="M-40 860 L60 470 L120 520 L200 ' + f1(top[1] - 40) + ' L290 430 L340 400 L440 860Z" fill="url(#mount)"/>'
     + '<path d="M200 ' + f1(top[1] - 40) + ' L176 ' + f1(top[1] + 20) + ' L192 ' + f1(top[1] + 8) + ' L204 ' + f1(top[1] + 26) + ' L222 ' + f1(top[1] + 4) + 'Z" fill="#E8E4F6" opacity="0.55"/>'
     + '<path d="M-60 860 L40 640 L110 700 L170 620 L260 720 L330 610 L460 860Z" fill="#0C0A16" opacity="0.9"/>'
-    + '<path d="' + d + '" fill="none" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>'
+    + '<g opacity="0.62">' + '<path d="' + d + '" fill="none" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>'
     + (lit ? '<path d="' + lit + '" fill="none" stroke="#F1D08A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#glowf)"/><path d="' + lit + '" fill="none" stroke="#F1D08A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>' : '')
     + dots
     + '<line x1="' + f1(top[0]) + '" y1="' + f1(top[1] - 14) + '" x2="' + f1(top[0]) + '" y2="' + f1(top[1] - 52) + '" stroke="#F1D08A" stroke-width="2"/>'
     + '<path d="M' + f1(top[0]) + ' ' + f1(top[1] - 52) + ' l26 8 l-26 8Z" fill="#F1D08A"/>'
-    + '<text x="200" y="835" text-anchor="middle" ' + COND + ' font-size="20" letter-spacing="7" fill="#F1D08A" fill-opacity="0.55">' + esc0((se.name || '').toUpperCase()) + ' · ' + tier + ' / 30</text>',
+    + '</g>',
     '<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05040B"/><stop offset="0.5" stop-color="#151036"/><stop offset="1" stop-color="#2A1D52"/></linearGradient>'
     + '<linearGradient id="mount" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A2E6E"/><stop offset="1" stop-color="#110D22"/></linearGradient>'
     + '<filter id="glowf" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter>');
@@ -280,11 +275,12 @@ function photo() { try { return localStorage.getItem(PHOTO_KEY) || ''; } catch (
 export const bgOn = () => !!state.settings.bg && !state.settings.light && FONDS.some((f) => f[0] === state.settings.bg) && (state.settings.bg !== 'photo' || !!photo());
 
 let drawn = '';
-// Appelé à chaque affichage : le fond n'existe que sur l'accueil.
+// Appelé à chaque affichage.
 export function applyBg(tab) {
   const el = document.getElementById('bg');
   if (!el) return;
-  const k = tab === 'home' && bgOn() ? state.settings.bg : '';
+  // v63 : le fond est derrière tous les écrans, sauf pendant une séance (l'écran de séance reste uni).
+  const k = bgOn() && !(tab === 'workout' && state.active) ? state.settings.bg : '';
   document.body.dataset.bg = k;
   const key = k && sig(k);
   if (key === drawn) return;
@@ -326,7 +322,7 @@ function pickPhoto(done) {
 Object.assign(ACTIONS, {
   'set-bg': (el) => {
     const k = el.dataset.k;
-    const finish = () => { state.settings.bg = k; save(); drawn = '-'; if (ACTIONS['bg-refresh']) ACTIONS['bg-refresh'](); toast(k ? 'Fond de l’accueil : ' + FONDS.find((x) => x[0] === k)[1] : 'Fond uni'); };
+    const finish = () => { state.settings.bg = k; save(); drawn = '-'; if (ACTIONS['bg-refresh']) ACTIONS['bg-refresh'](); toast(k ? 'Fond d’écran : ' + FONDS.find((x) => x[0] === k)[1] : 'Fond uni'); };
     if (k === 'photo' && (!photo() || el.dataset.new)) { pickPhoto(finish); return; }
     finish();
   },

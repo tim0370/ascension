@@ -905,6 +905,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 64, items: [
+    'Le fond (Réglages, Fond d’écran) est maintenant derrière toutes les pages (sauf pendant une séance), et chaque page arrive en laissant voir le fond un court instant avant que les cartes montent.',
+    'Progrès et Défis sont rangés en sous-onglets en haut : Rang, Corps, Records et Jour, Semaine, Mois, Collection. Une seule partie à la fois, fini les longues pages.',
+    'Petits boutons agrandis pour mieux viser (sous-onglets, chronos, carte des muscles).',
+  ] },
   { v: 63, items: [
     'Quatre fonds qui vivent avec toi : Ta flamme (le feu grandit avec tes semaines), Ton rang (ta lettre en grand, sa couleur change quand tu montes), Ton ombre (toi et ton reflet, le chiffre à battre) et Ta saison (la montagne du mois, chaque palier allume le chemin). Dans Réglages, Fond de l’accueil.',
     'Les cartes posées sur un fond ne sont plus floues : on voit enfin le fond à travers.',
