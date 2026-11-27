@@ -1181,3 +1181,76 @@ html.light .fanit { background: #fff; border-color: rgba(20, 18, 40, 0.1); box-s
 html.light body.fan-open .fab { background: #E4E2EC; color: var(--txt); }
 html.light .fab { box-shadow: 0 0 0 5px var(--bg), 0 12px 30px rgba(94, 63, 224, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.28); }
 @media (prefers-reduced-motion: reduce) { .fanit, .fab, .fab svg { transition: none; } }
+
+/* v61 : bilan de fin de séance (ce que tu as fait d'abord, l'XP en petit). */
+.sumhead { gap: 6px; padding-top: 4px; }
+.sumline { color: var(--soft); font-size: 15px; font-weight: 500; }
+.sumxp { align-self: flex-start; margin-top: 4px; font-family: var(--display); font-weight: 700; font-size: 17px; color: var(--gold); background: rgba(226, 194, 122, 0.10); border: 1px solid rgba(226, 194, 122, 0.30); border-radius: 999px; padding: 5px 12px; }
+.sumrec { border-color: rgba(226, 194, 122, 0.45) !important; }
+.feelmore summary { cursor: pointer; color: var(--violet-soft); font-weight: 600; min-height: 44px; display: flex; align-items: center; list-style: none; }
+.feelmore summary::-webkit-details-marker { display: none; }
+.feelmore[open] summary { color: var(--mut); }
+/* Une icône dans un bouton garde sa taille (le bouton GPS de la fenêtre Course l'affichait en géant). */
+.pill > svg:not([width]) { width: 20px; height: 20px; flex: none; }
+.pill.big > svg:not([width]) { width: 24px; height: 24px; }
+/* v61 : accueil une fois la séance du jour faite. */
+.donecard { gap: 14px; }
+.donering { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: rgba(76, 201, 140, 0.14); color: var(--vert); border: 1.5px solid rgba(76, 201, 140, 0.5); }
+.donering svg { width: 22px; height: 22px; stroke-width: 2.6; }
+.grade.sm { width: 46px; height: 46px; border-radius: 14px; font-size: 28px; animation: none; }
+.grade.sm.gS { background: linear-gradient(160deg, #F4E6BC, #CDAA62 55%, #8F6D33); color: #24190A; }
+.grade.sm.gA { background: linear-gradient(160deg, #B6A4FF, #6B4FD8); }
+.grade.sm.gD, .grade.sm.gE { background: rgba(255, 255, 255, 0.08); color: var(--soft); box-shadow: none; }
+.donestats .num { font-size: 20px; }
+/* Zones à toucher d'au moins 44 px (règle Apple), sans changer l'apparence. */
+.linkbtn { min-height: 44px; display: inline-flex; align-items: center; }
+.hdrtap { min-height: 44px; margin: -12px 0 -8px; }
+
+/* v61 : fond de l'accueil (js/fond.js). Une image derrière, les cartes en verre dépoli par-dessus. */
+#bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-size: cover; background-position: center; }
+#bg:empty:not([style]) { display: none; }
+#bg svg { width: 100%; height: 100%; display: block; }
+body[data-bg]:not([data-bg=""]) { background: #07060C; }
+body[data-bg]:not([data-bg=""]) #bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7, 6, 14, 0.05) 0%, rgba(7, 6, 14, 0.22) 55%, rgba(7, 6, 14, 0.5) 100%); }
+body[data-bg="photo"] #bg::after { background: linear-gradient(180deg, rgba(7, 6, 14, 0.45) 0%, rgba(7, 6, 14, 0.6) 55%, rgba(7, 6, 14, 0.8) 100%); }
+body[data-bg]:not([data-bg=""]) #app .glass,
+body[data-bg]:not([data-bg=""]) #app .tile { background: rgba(18, 14, 32, 0.3); border-color: rgba(255, 255, 255, 0.14); -webkit-backdrop-filter: blur(16px) saturate(170%); backdrop-filter: blur(16px) saturate(170%); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25); }
+body[data-bg]:not([data-bg=""]) #app .glass .glass { background: rgba(255, 255, 255, 0.08); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+body[data-bg]:not([data-bg=""]) #app .cta { background: linear-gradient(160deg, rgba(108, 76, 235, 0.82) 0%, rgba(79, 53, 201, 0.74) 100%); -webkit-backdrop-filter: blur(22px) saturate(150%); backdrop-filter: blur(22px) saturate(150%); border: 1px solid rgba(255, 255, 255, 0.18); }
+body[data-bg]:not([data-bg=""]) #app .mut { color: rgba(255, 255, 255, 0.74); }
+.aurore { position: absolute; inset: 0; background: #0A0817; overflow: hidden; }
+.aurore i { position: absolute; border-radius: 50%; filter: blur(64px); }
+.aurore i:nth-child(1) { width: 85%; height: 42%; left: -20%; top: -6%; background: #6C4CEB; opacity: 0.85; }
+.aurore i:nth-child(2) { width: 70%; height: 38%; right: -22%; top: 30%; background: #1C9CC4; opacity: 0.5; }
+.aurore i:nth-child(3) { width: 90%; height: 40%; left: 0; bottom: -12%; background: #A8358C; opacity: 0.45; }
+.bggrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.bgopt { display: flex; flex-direction: column; gap: 6px; align-items: stretch; padding: 4px; border-radius: 16px; border: 2px solid transparent; background: none; color: inherit; font: inherit; }
+.bgopt.on { border-color: var(--violet); }
+.bgthumb { position: relative; display: flex; align-items: center; justify-content: center; height: 132px; border-radius: 12px; overflow: hidden; background: var(--surf2) center / cover no-repeat; border: 1px solid var(--line); }
+.bgthumb.plain { background: var(--bg); }
+.bgthumb svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bgthumb .aurore i { filter: blur(14px); }
+.bgthumb b { font-size: 30px; font-weight: 400; color: var(--mut, #aaa); }
+.bgname { font-size: 13px; font-weight: 600; text-align: center; }
+/* v61 audit : onglets à deux choix assez hauts pour le doigt, petits chiffres lisibles. */
+.seg2 button { min-height: 38px; padding: 8px 12px; font-size: 13px; }
+.lb span { font-size: 11.5px; }
+@media (max-width: 360px) { .seg2 button { padding: 8px 7px; font-size: 12.5px; } }
+.ready { min-height: 32px; padding: 6px 13px 6px 10px; font-size: 13px; }
+.whymore { min-height: 40px; margin: -8px 0 -10px; padding-right: 12px; }
+/* Réglages sur petit écran : le titre garde sa ligne, la valeur se raccourcit. */
+.srow .mt { min-width: 0; }
+.srow .sv { min-width: 0; max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 1; }
+@media (max-width: 360px) { .srow .sv { max-width: 38%; font-size: 14px; } .srow { gap: 10px; } }
+.fshield b { font-size: 11px; }
+@media (max-width: 360px) { .srow .stepbtn.sm + .num { min-width: 44px !important; font-size: 21px !important; } }
+@media (max-width: 360px) { .donering { width: 38px; height: 38px; } .donecard .h1 { font-size: 24px !important; } .donecard .row { gap: 10px !important; } }
+/* Constats du coach : un petit point de couleur près du titre, plus de grosse barre sur le côté. */
+.tip { align-items: flex-start; gap: 11px; padding: 14px 14px 14px 16px; background: var(--surf); }
+.tip > i { width: 9px; height: 9px; align-self: flex-start; margin-top: 7px; border-radius: 50%; }
+.tip.good > i { box-shadow: 0 0 0 4px rgba(76, 197, 154, 0.16); }
+.tip.warn > i { box-shadow: 0 0 0 4px rgba(255, 154, 61, 0.16); }
+.tip.tap > svg { align-self: center; }
+/* Entre deux exercices : juste un petit « + » discret, sans trait sur toute la largeur. */
+.ins::before, .ins::after { background: transparent; }
+.ins svg { width: 16px; height: 16px; opacity: 0.55; }

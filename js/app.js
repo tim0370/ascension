@@ -3,14 +3,14 @@
 import {
   state, save, exoName, sorted, runs, xpOf, totalXp, levelInfo, weekStreak,
   fr, dur, clock, pace, dateFr, setText, workoutText, importHevy, exportJson, importJson,
-  weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines, isHevy, unknownExos, renameExo, guessExo,
+  weekDays, totals, xpBreakdown, weekQuest, weekGoal, routines, isHevy, unknownExos, renameExo, guessExo, isBand,
 } from './store.js';
 import { NEWS, EXOS, AKA } from './data.js';
 import { rankInfo, heat, bodyLog, addWeight } from './stats.js';
 import { beep, wakeAudio, initSound, soundError } from './sound.js';
 import { hint, $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, toastUndo, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst } from './ui.js';
 import { routinesCard, viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
-import { progCard, progOn, isBeginner, todayList } from './programme.js';
+import { progCard, progOn, isBeginner, todayList, nextInfo } from './programme.js';
 import { formeCard, painCard } from './forme.js';
 import { weekCard, lundiBanner } from './semaine.js';
 import { campNow, checkCamp } from './campagne.js';
@@ -28,6 +28,7 @@ import './chrono.js';
 import './retour.js';
 import { coachCard } from './coach.js';
 import { initFan } from './fan.js';
+import { applyBg, bgThumb, FONDS } from './fond.js';
 import './parcours.js';
 import { seasonCard, celebrateSeason, sheetSeason, seasonImage } from './saison.js';
 import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
@@ -107,17 +108,19 @@ function viewHome() {
       + '<div class="seg">' + a.exercises.map((e) => '<i class="' + (e.sets.length && e.sets.every((x) => x.done) ? 'on' : '') + '"></i>').join('') + '</div>'
       + '<button type="button" class="pill gold-btn wide" data-tab="workout">Reprendre la séance</button></section>';
   } else {
-    const doneToday = state.workouts.find((w) => w.start >= t0 && !w.boss && !w.quick && w.exercises.some((e) => e.name !== 'Running'));
+    // La dernière séance du jour (s'il y en a eu deux, on montre la plus récente).
+    const doneToday = state.workouts.filter((w) => w.start >= t0 && !w.boss && !w.quick && w.exercises.some((e) => e.name !== 'Running')).sort((a, b) => b.start - a.start)[0];
     if (!state.settings.modeSet && state.workouts.length < 30) h += modeCard();
     h += painCard();
     const fc = has && progOn() && show('forme');
-    h += progOn() ? progCard(true, !!doneToday, fc) : routinesCard();
+    h += doneToday && progOn() ? doneCard(doneToday) : progOn() ? progCard(true, !!doneToday, fc) : routinesCard();
     h += momentCard(!!doneToday);
     for (const k of homeOrder()) {
       if (k === 'forme' && fc) h += formeCard(todayList());
       else if (k === 'coach' && has && show('coach') && progOn()) h += coachCard();
       else if (k === 'week' && has && show('week')) h += weekBlock(wq);
       else if (k === 'p30' && has && show('p30') && p30Status()) h += p30Card();
+      else if (k === 'prog' && has && show('prog')) h += progressCard();
     }
   }
 
@@ -156,7 +159,7 @@ function viewDefis() {
   if (has) h += head('Défi de la semaine', 't-red') + bossCard() + duelCard();
   h += head('Ce mois-ci', 't-gold') + (has ? monthChCard() : '') + p30Card() + (has ? testCard() + seasonCard() : '');
   if (has) celebrateSeason();
-  h += head('Campagne', 't-violet', '<button type="button" class="small mut row" style="gap:4px" data-act="camp-all">Les 6 chapitres' + ICON.chev + '</button>') + campNow();
+  h += head('Campagne', 't-violet', '<button type="button" class="small mut row hdrtap" style="gap:4px" data-act="camp-all">Les 6 chapitres' + ICON.chev + '</button>') + campNow();
   h += head('Figures', 't-pink') + dojoView();
   const got = fx.list.filter((f) => f.done).length;
   h += head('Hauts faits', 't-gold') + '<section class="glass card row tap tint t-gold" role="button" tabindex="0" data-act="feats" style="gap:14px"><span class="medal" style="background:linear-gradient(160deg,#F3DFA8,#B8913F);color:#24190A;border:none">' + ICON.medal + '</span><div class="col grow" style="gap:2px"><span class="h2">' + got + ' sur ' + fx.list.length + '</span><span class="small mut">Des exploits durs, gagnés une seule fois. Certains donnent une couleur d’emblème.</span></div>' + ICON.chev + '</section>';
@@ -235,6 +238,7 @@ const GUIDE = [
   ['Ne rien perdre', [
     ['export', 'Sauvegarder', 'Un fichier avec toutes tes données, à garder dans Fichiers ou iCloud.'],
     ['home-edit', 'Personnaliser l’accueil', 'Choisis les cartes affichées.'],
+    ['', 'Fond de l’accueil', 'Réglages, Fond de l’accueil : un paysage, des lumières ou ta photo derrière les cartes.'],
   ]],
 ];
 function sheetGuide() {
@@ -246,7 +250,7 @@ function sheetGuide() {
 }
 
 // ---------- Personnaliser l'accueil ----------
-const HOME_CARDS = [['forme', 'Ta forme du jour'], ['coach', 'Coach'], ['week', 'Ta semaine'], ['p30', 'Programme de 30 jours']];
+const HOME_CARDS = [['forme', 'Ta forme du jour'], ['coach', 'Coach'], ['prog', 'Tes progrès'], ['week', 'Ta semaine'], ['p30', 'Programme de 30 jours']];
 function show(k) { return !(state.settings.hide || {})[k]; }
 // Ordre des cartes sous la séance du jour (réglable, flèches dans « Personnaliser »).
 function homeOrder() { const o = (state.settings.homeOrder || []).filter((k) => HOME_CARDS.some(([x]) => x === k)); return o.concat(HOME_CARDS.map(([k]) => k).filter((k) => !o.includes(k))); }
@@ -368,7 +372,9 @@ function summary(w) {
   const r = w.exercises.find((e) => e.name === 'Running');
   if (r && w.exercises.length === 1) { const s = r.sets[0] || {}; return fr(s.d || 0) + ' km · ' + dur(s.t || 0); }
   const sets = w.exercises.reduce((k, e) => k + e.sets.length, 0);
-  return plural(w.exercises.length, 'exercice', 'exercices') + ' · ' + plural(sets, 'série', 'séries') + (w.end > w.start ? ' · ' + dur((w.end - w.start) / 1000) : '');
+  // Durée arrondie à la minute dans les listes (les secondes n'aident pas à relire une séance).
+  const sec = (w.end - w.start) / 1000;
+  return plural(w.exercises.length, 'exercice', 'exercices') + ' · ' + plural(sets, 'série', 'séries') + (sec > 0 ? ' · ' + (sec >= 3600 ? dur(sec - (sec % 60)) : sec >= 60 ? Math.round(sec / 60) + ' min' : dur(sec)) : '');
 }
 
 const isRun = (w) => w.exercises.some((e) => e.name === 'Running');
@@ -421,13 +427,50 @@ export function sheetDetail(id) {
   sheet('<div class="col"><span class="label">' + dateFr(w.start, true) + ' · ' + time + '</span><h1 class="h1">' + esc(titleOf(w)) + '</h1>'
     + '<span class="small mut">' + esc(summary(w)) + ' · <span class="gold-text" style="font-weight:600">+' + xpOf(w) + ' XP</span>' + (w.prs ? ' · ' + plural(w.prs, 'record', 'records') : '') + '</span></div>'
     + '<div class="list">' + w.exercises.map((e) => '<button type="button" class="item" data-act="exo" data-name="' + esc(e.name) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(e.name)) + (e.sets.some((x) => x.pr) ? ' <span class="gold-text small">· record</span>' : '') + '</span><span class="small mut">'
-      + esc(e.name === 'Running' ? e.sets.map((s) => setText(s) + ' · ' + pace(s.d, s.t)).join(', ') : e.sets.map(setText).join(', ')) + '</span>' + (e.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(e.note) + '</span>' : '') + '</div>' + ICON.chev + '</button>').join('') + '</div>'
+      + esc(e.name === 'Running' ? e.sets.map((s) => setText(s) + ' · ' + pace(s.d, s.t)).join(', ') : e.sets.map((s) => setText(s, e.name)).join(', ')) + '</span>' + (e.note ? '<span class="small" style="color:var(--gold)">Note : ' + esc(e.note) + '</span>' : '') + '</div>' + ICON.chev + '</button>').join('') + '</div>'
     + (w.path && w.path.length > 1 ? '<section class="glass card col" style="gap:8px"><span class="label violet">Ton tracé</span>' + routeSvg(w.path) + '<span class="small dim">Départ en vert, arrivée en or. Le tracé reste dans ton téléphone.</span></section>' : '')
     + (w.splits && w.splits.length ? '<section class="glass card col" style="gap:6px"><span class="label violet">Temps par kilomètre (GPS)</span>' + w.splits.map((x, i) => { const b = Math.min(...w.splits); return '<div class="row between small"><span class="mut">Km ' + (i + 1) + '</span><span class="num"' + (x === b && w.splits.length > 1 ? ' style="color:var(--vert)"' : '') + '>' + Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0') + '</span></div>'; }).join('') + '</section>' : '')
     + '<div class="col" style="gap:8px"><span class="label">Ressenti</span><div class="row" id="feel-row">' + feelPills(w) + '</div></div>'
-    + '<div class="row"><button type="button" class="pill glass grow" data-act="share" data-id="' + esc(w.id) + '">Partager en image</button>'
+    + '<div class="row"><button type="button" class="pill glass grow" data-act="share" data-id="' + esc(w.id) + '">' + ICON.share + 'Partager</button>'
     + '<button type="button" class="pill glass grow" data-act="copy" data-id="' + esc(w.id) + '" style="color:var(--gold)">' + ICON.copy + 'Pour Claude</button></div>'
     + '<div class="row"><button type="button" class="pill glass grow" data-act="edit-workout" data-id="' + esc(w.id) + '">Modifier</button><button type="button" class="pill glass grow" data-act="delete" data-id="' + esc(w.id) + '" style="color:var(--mut)">Supprimer</button></div>' + closeBtn);
+}
+
+// Tes progrès sur l'accueil (v61) : ce qui a monté en un mois, au même lest, et ton dernier record.
+function progressCard() {
+  const DAYMS = 864e5, now = Date.now(), ws = sorted();
+  const recent = ws.filter((w) => now - w.start < 14 * DAYMS), old = ws.filter((w) => now - w.start >= 28 * DAYMS && now - w.start < 70 * DAYMS);
+  const val = (s) => s.r || s.t || 0;
+  const best = (list, name, kg) => Math.max(0, ...list.flatMap((w) => w.exercises.filter((e) => e.name === name).flatMap((e) => e.sets.filter((s) => (s.w || 0) === kg).map(val))));
+  const seen = new Set(), gains = [];
+  for (const w of recent) for (const e of w.exercises) {
+    if (e.name === 'Running' || seen.has(e.name) || !e.sets.length) continue;
+    seen.add(e.name);
+    const kg = e.sets[0].w || 0, r1 = best(recent, e.name, kg), r0 = best(old, e.name, kg);
+    if (r0 && r1 > r0) gains.push({ name: e.name, kg: isBand(e.name) ? 0 : kg, r0, r1, t: !e.sets[0].r && !!e.sets[0].t, p: (r1 - r0) / r0 });
+  }
+  gains.sort((a, b) => b.p - a.p);
+  let rec = null;
+  for (const w of ws) { if (now - w.start > 30 * DAYMS) break; for (const e of w.exercises) { const s = e.sets.find((x) => x.pr); if (s && e.name !== 'Running') { rec = { w, e, s }; break; } } if (rec) break; }
+  if (!gains.length && !rec) return '';
+  const u = (g, v) => (g.t ? dur(v) : v + ' rép.');
+  return '<section class="glass card col tap progcard" role="button" tabindex="0" data-tab="progress" style="gap:10px"><div class="row between"><span class="label" style="color:var(--gold)">Tes progrès · en un mois</span>' + ICON.chev + '</div>'
+    + gains.slice(0, 3).map((g) => '<div class="row between" style="gap:10px"><span style="font-weight:600;min-width:0">' + esc(exoName(g.name)) + (g.kg ? ' <span class="small mut">' + String(g.kg).replace('.', ',') + ' kg</span>' : '') + '</span><span class="num gold-text" style="font-size:17px;white-space:nowrap">' + u(g, g.r0) + ' → ' + u(g, g.r1) + '</span></div>').join('')
+    + (rec ? '<span class="small mut">Dernier record : ' + esc(exoName(rec.e.name)) + ', ' + esc(setText(rec.s, rec.e.name)) + ' · ' + (() => { const d = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(rec.w.start).setHours(0, 0, 0, 0)) / DAYMS); return d === 0 ? 'aujourd’hui' : d === 1 ? 'hier' : 'il y a ' + d + ' jours'; })() + '</span>' : '')
+    + '</section>';
+}
+
+// Séance du jour faite : l'accueil montre ce que tu as fait, la suivante en petit (v61).
+function doneCard(w) {
+  const sets = w.exercises.reduce((n, e) => n + e.sets.length, 0), reps = w.exercises.reduce((n, e) => n + e.sets.reduce((m, s) => m + (s.r || 0), 0), 0);
+  let nx = null; try { nx = nextInfo(); } catch (e) { /* rien */ }
+  return '<section class="glass card col donecard tap" role="button" tabindex="0" data-act="detail" data-id="' + esc(w.id) + '">'
+    + '<div class="row" style="gap:14px;align-items:center"><span class="donering">' + ICON.check + '</span><div class="col grow" style="gap:3px;min-width:0"><span class="label" style="color:var(--vert)">Séance faite aujourd’hui</span><span class="h1" style="font-size:28px">' + esc(titleOf(w)) + '</span></div>'
+    + (w.grade ? '<span class="grade sm g' + w.grade + '">' + w.grade + '</span>' : '') + '</div>'
+    + '<div class="stats3 donestats"><div><span class="num">' + ((w.end - w.start) >= 60e3 ? Math.round((w.end - w.start) / 60e3) + ' min' : dur((w.end - w.start) / 1000)) + '</span><span class="small mut">durée</span></div><div><span class="num">' + sets + '</span><span class="small mut">séries</span></div><div><span class="num">' + reps + '</span><span class="small mut">répétitions</span></div></div>'
+    + (w.prs ? '<span class="small gold-text" style="font-weight:600">' + plural(w.prs, 'record battu', 'records battus') + ' aujourd’hui</span>' : '')
+    + '<div class="row between" style="gap:10px"><span class="small mut">' + (nx ? 'Prochaine : ' + esc(nx.title) + ' · environ ' + nx.min + ' min' : '') + '</span><span class="small" style="color:var(--violet-soft);font-weight:600;white-space:nowrap">Voir le bilan</span></div>'
+    + '</section>';
 }
 
 // ---------- Course (une fenêtre, plus un onglet) ----------
@@ -442,7 +485,7 @@ function sheetRun() {
     + '<label class="field grow" style="height:52px"><input id="run-m" inputmode="numeric" placeholder="0" aria-label="Minutes"><span class="unit">min</span></label>'
     + '<label class="field grow" style="height:52px"><input id="run-s" inputmode="numeric" placeholder="0" aria-label="Secondes"><span class="unit">s</span></label></div>'
     + '<label class="row" style="gap:10px"><span class="small mut">Jour</span><input class="textin grow" type="date" id="run-date" value="' + todayIso + '" max="' + todayIso + '" style="height:46px"></label>'
-    + '<button type="button" class="pill gold-btn wide" data-act="add-run">Enregistrer</button></div>';
+    + '<button type="button" class="pill glass wide" data-act="add-run" style="color:var(--violet-soft)">Enregistrer cette course</button></div>';
   if (rs.length) {
     const longest = rs.reduce((a, b) => (b.d > a.d ? b : a));
     const timed = rs.filter((x) => x.d >= 3 && x.t > 0);
@@ -450,7 +493,8 @@ function sheetRun() {
     h += '<div class="row" style="align-items:stretch"><button type="button" class="exo grow" style="text-align:left" data-act="detail" data-id="' + esc(longest.id) + '"><span class="label">Plus longue</span><span class="h2 gold-text">' + fr(longest.d) + ' km</span><span class="small mut">' + dateFr(longest.date, true) + '</span></button>'
       + (fastest ? '<button type="button" class="exo grow" style="text-align:left" data-act="detail" data-id="' + esc(fastest.id) + '"><span class="label">Meilleure allure</span><span class="h2 gold-text">' + pace(fastest.d, fastest.t) + '</span><span class="small mut">' + fr(fastest.d) + ' km · ' + dateFr(fastest.date, true) + '</span></button>' : '') + '</div>';
     const RR = runRecords();
-    h += '<div class="exo"><span class="label">Tes records</span><div class="stats3"><div><span class="num gold-text" style="font-size:20px">' + fmtTime(RR.km1) + '</span><span class="small mut">1 km</span></div><div><span class="num gold-text" style="font-size:20px">' + fmtTime(RR.km5) + '</span><span class="small mut">5 km</span></div><div><span class="num gold-text" style="font-size:20px">' + fmtTime(RR.km10) + '</span><span class="small mut">10 km</span></div></div>'
+    const rec = (v, k) => '<div><span class="num ' + (v ? 'gold-text' : 'dim') + '" style="font-size:' + (v ? 20 : 15) + 'px">' + (v ? fmtTime(v) : 'pas encore') + '</span><span class="small mut">' + k + '</span></div>';
+    h += '<div class="exo"><span class="label">Tes records</span><div class="stats3">' + rec(RR.km1, '1 km') + rec(RR.km5, '5 km') + rec(RR.km10, '10 km') + '</div>'
       + (RR.p10 ? '<span class="small mut">Prévision d’après ta meilleure course : 5 km en ' + fmtTime(RR.p5) + ', 10 km en ' + fmtTime(RR.p10) + ', semi-marathon en ' + fmtTime(RR.p21) + '.</span>' : '') + '</div>';
     const ra = routesAll();
     if (ra) h += '<div class="exo"><span class="label">Tous tes parcours, ramenés au même départ</span>' + ra + '</div>';
@@ -477,6 +521,7 @@ function sheetSettings() {
     srow('set-sub', 'calendar', 'Objectif par semaine', plural(weekGoal(), 'séance', 'séances'), ' data-k="goal"'),
     srow('set-sub', 'timer', 'Repos par défaut', clock(rest), ' data-k="rest"'),
     srow('home-edit', 'home', 'Cartes de l’accueil'),
+    srow('set-sub', 'star', 'Fond de l’accueil', esc((FONDS.find((f) => f[0] === (state.settings.bg || '')) || FONDS[0])[1]), ' data-k="bg"'),
     stog('toggle-textbig', 'book', 'Texte plus grand', !!state.settings.textBig, 'Tous les textes un peu plus gros'),
     stog('toggle-light', 'star', 'Mode clair', !!state.settings.light, 'Fond clair, pratique en plein soleil'),
     ...(navigator.vibrate ? [stog('toggle-haptics', 'bell', 'Vibrations', state.settings.haptics !== false, 'Une petite vibration à chaque série validée et à chaque record')] : []),
@@ -527,6 +572,13 @@ function sheetSub(k) {
     const off = state.settings.notifOff || {};
     h = '<h1 class="h1">Rappels</h1><div class="slist"><div class="srow"><span class="mico">' + ICON.clock + '</span><span class="grow mt">Heure</span><button type="button" class="stepbtn sm" data-act="notif-hour" data-d="-1" aria-label="Plus tôt">' + ICON.minus + '</button><span class="num" style="font-size:24px;min-width:56px;text-align:center">' + notifHour() + ' h</span><button type="button" class="stepbtn sm" data-act="notif-hour" data-d="1" aria-label="Plus tard">' + ICON.plus + '</button></div></div>'
       + '<div class="slist">' + NKINDS.map(([kk, t, d]) => stog('notif-kind', 'notif', t, !off[kk], d).replace('data-act="notif-kind"', 'data-act="notif-kind" data-k="' + kk + '"')).join('') + '</div>';
+  }
+  if (k === 'bg') {
+    const cur = state.settings.bg || '';
+    h = '<h1 class="h1">Fond de l’accueil</h1><span class="small mut">Une image derrière l’accueil, les cartes deviennent transparentes. Seulement sur l’accueil, pas en mode clair.</span>'
+      + '<div class="bggrid">' + FONDS.map(([kk, t]) => '<button type="button" class="bgopt' + (kk === cur ? ' on' : '') + '" data-act="set-bg" data-k="' + kk + '" aria-pressed="' + (kk === cur) + '">' + bgThumb(kk) + '<span class="bgname">' + t + '</span></button>').join('') + '</div>'
+      + (cur === 'photo' ? '<button type="button" class="pill glass wide" data-act="set-bg" data-k="photo" data-new="1">Choisir une autre photo</button>' : '')
+      + (state.settings.light ? '<span class="small" style="color:var(--violet-soft)">Tu es en mode clair : le fond ne s’affiche pas. Coupe le mode clair pour le voir.</span>' : '');
   }
   sheet(h + '<button type="button" class="pill gold-btn wide" data-act="close2">OK</button>', 2);
 }
@@ -656,6 +708,7 @@ Object.assign(ACTIONS, {
   more: () => { ui.historyLimit += 40; render(); },
   'set-rest': (el) => { state.settings.rest = +el.dataset.s; save(); sheetSettings(); },
   'set-sub': (el) => sheetSub(el.dataset.k),
+  'bg-refresh': () => { render(); sheetSettings(); },
   'notif-kind': (el) => { const o = Object.assign({}, state.settings.notifOff); o[el.dataset.k] = !o[el.dataset.k]; state.settings.notifOff = o; save(); resync(); sheetSub('notif'); },
   'set-goal': (el) => { state.settings.weekGoal = +el.dataset.n; save(); render(); sheetSettings(); },
   'toggle-sound': () => { state.settings.sound = state.settings.sound === false; save(); sheetSettings(); },
@@ -899,6 +952,7 @@ export function render() {
   document.body.classList.toggle('zen', !!state.settings.zen);
   document.documentElement.classList.toggle('light', !!state.settings.light);
   document.documentElement.classList.toggle('textbig', !!state.settings.textBig);
+  applyBg(ui.tab);
   { const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = state.settings.light ? '#F3F2F7' : '#0E0E12'; }
   // Un rang gagné se fête sur l'accueil, quand aucune autre fenêtre n'est ouverte.
   if (ui.tab === 'home' && state.workouts.length && !$('sheet').firstElementChild) checkRankUp(rankInfo());

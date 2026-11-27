@@ -95,7 +95,7 @@ export function sheetGps() {
   const iv = ui.runIv !== undefined ? ui.runIv : (s.runIv || 0);
   ui.runIv = iv;
   h += '<section class="glass card col" style="gap:10px"><span class="h2">Fractionné</span><div class="row" style="gap:8px">'
-    + [[0, 'Non'], [30, '30 s / 30 s'], [60, '1 min / 1 min'], [120, '2 / 2 min']].map(([v, l]) => '<button type="button" class="pill sm ' + (v === iv ? 'gold-btn' : 'glass') + ' grow" data-act="run-iv" data-v="' + v + '">' + l + '</button>').join('') + '</div>'
+    + [[0, 'Non'], [30, '30/30 s'], [60, '1/1 min'], [120, '2/2 min']].map(([v, l]) => '<button type="button" class="pill sm ' + (v === iv ? 'gold-btn' : 'glass') + ' grow" style="white-space:nowrap;padding-inline:8px" data-act="run-iv" data-v="' + v + '">' + l + '</button>').join('') + '</div>'
     + (iv ? '<span class="small mut">Après 5 minutes d’échauffement, la voix alterne « Vite » et « Récupère » toutes les ' + (iv < 60 ? iv + ' secondes' : iv / 60 + ' minute' + (iv > 60 ? 's' : '')) + '. C’est ce qui fait gagner le plus de vitesse.</span>' : '') + '</section>';
   h += '<button type="button" class="pill glass wide' + (voice ? ' on' : '') + '" data-act="run-voice">' + (voice ? 'Voix : oui, à chaque kilomètre' : 'Voix : non') + '</button>';
   h += '<button type="button" class="pill gold-btn wide big" data-act="run-start">Partir</button>'

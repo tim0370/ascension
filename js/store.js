@@ -373,7 +373,10 @@ export function dateFr(ms, withYear) {
   if (withYear) o.year = 'numeric';
   return new Date(ms).toLocaleDateString('fr-FR', o);
 }
-export function setText(s) {
+// Un élastique n'a pas de kilos : on n'affiche que les répétitions (le chiffre reste gardé pour les records).
+export const isBand = (name) => typeof name === 'string' && /\(Band\)|Banded|élastique/i.test(name);
+export function setText(s, name) {
+  if (isBand(name) && s.r) return s.r + ' rép.';
   if (s.d && s.t) return fr(s.d) + ' km en ' + dur(s.t);
   if (s.t && !s.r) return dur(s.t);
   if (s.w && !s.r) return fr(s.w, 1) + ' kg' + (s.d ? ' sur ' + Math.round(s.d * 1000) + ' m' : '');
@@ -387,7 +390,7 @@ export function workoutText(w) {
     if (e.name === 'Running') {
       for (const s of e.sets) lines.push((i + 1) + '. Course à pied : ' + fr(s.d) + ' km en ' + dur(s.t || 0) + ' (' + pace(s.d, s.t) + ')');
     } else {
-      lines.push((i + 1) + '. ' + exoName(e.name) + ' : ' + e.sets.map(setText).join(', ') + (e.note ? ' (note : ' + e.note + ')' : ''));
+      lines.push((i + 1) + '. ' + exoName(e.name) + ' : ' + e.sets.map((s) => setText(s, e.name)).join(', ') + (e.note ? ' (note : ' + e.note + ')' : ''));
     }
   });
   if (w.feel) lines.push('Ressenti : ' + w.feel);

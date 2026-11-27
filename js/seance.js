@@ -13,7 +13,7 @@ import { beep, wakeAudio } from './sound.js';
 import { bodyLog } from './stats.js';
 import {
   state, save, exoName, lastSets, kindOf, sorted, xpOf, totalXp, levelInfo, countPrs, isRecord,
-  fr, dur, clock, dateFr, setText, exoHistory, routines, measureOf, lestOf, restOf, setPref, prefOf,
+  fr, dur, clock, dateFr, setText, isBand, exoHistory, routines, measureOf, lestOf, restOf, setPref, prefOf,
 } from './store.js';
 import { hint, buzz, $, esc, norm, clean, plural, toNum, ui, ACTIONS, ICON, checkDark, toast, sheet, closeSheet, closeSheet2, closeBtn, burst, setsSummary, chartSvg, xpFly, levelUp as levelUp_ } from './ui.js';
 import { render, sheetDetail } from './app.js';
@@ -108,7 +108,7 @@ function buildExo(name, sets, title) {
     name, coach, lastFeel: feel || '',
     sets: sets.map((s, i) => { const p = (prev && (prev[i] || prev[prev.length - 1])) || s; return { r: time ? 0 : (p.r || s.r || 0), w: p.w || s.w || 0, t: time ? (p.t || s.t || 0) : 0, done: false }; }),
     goals: sets.map((s, i) => { const p = prev && (prev[i] || prev[prev.length - 1]); if (!p) return null; if (time) return p.t ? { t: p.t + 5 * plus } : null; return p.r ? { r: p.r + plus } : null; }),
-    prev: prev ? prev.map(setText).join(', ') : '',
+    prev: prev ? prev.map((s) => setText(s, name)).join(', ') : '',
     // Le fantôme : ce que tu as fait la dernière fois, série par série.
     ghost: prev ? prev.map((x) => ({ r: x.r || 0, w: x.w || 0, t: x.t || 0 })) : null,
     // La note laissée la dernière fois sur cet exercice revient toute seule.
@@ -187,7 +187,10 @@ export function viewWorkout() {
   const a = state.active;
   if (!a) {
     let h = '<div class="col" style="gap:2px"><span class="small mut">' + (progOn() ? 'Ton programme guidé' : 'Tes routines') + '</span><h1 class="h1">Séance</h1></div>';
-    h += progOn() ? progCard(true) : routinesCard();
+    // Séance déjà faite aujourd'hui : la carte montre la suivante, sans pousser à la faire tout de suite.
+    const t0 = new Date().setHours(0, 0, 0, 0);
+    const doneToday = state.workouts.some((w) => w.start >= t0 && !w.boss && !w.quick && w.exercises.some((e) => e.name !== 'Running'));
+    h += progOn() ? progCard(true, doneToday) : routinesCard();
     // Le reste (routines, séance libre, course) est rangé derrière deux tuiles, pour laisser la place au programme.
     const T = (act, t, label, fig, title, sub) => '<section class="glass tile tap tint figtile ' + t + '" role="button" tabindex="0" data-act="' + act + '"><span class="label violet">' + label + '</span><div class="tilefig">' + figure(fig) + '</div>' + (title ? '<span class="h2">' + title + '</span>' : '') + '<span class="small mut">' + sub + '</span></section>';
     h += '<div class="tiles">' + T('routines', 't-violet', 'Mes routines', 'Triceps Dip', plural(routines().length, 'routine', 'routines'), 'Full Body, séance libre')
@@ -440,12 +443,14 @@ export function sheetExo(name) {
   const g = EXOS[name] && GROUPES[EXOS[name].g];
   let h = '<div class="col"><span class="label">' + (g ? esc(g) + ' · ' : '') + (list.length ? plural(list.length, 'séance', 'séances') : 'jamais fait') + '</span><h1 class="h1">' + esc(exoName(name)) + '</h1></div>';
   h += figure(name, 'big');
+  // Déjà fait : tes chiffres d'abord (records, courbes), la technique ensuite. Jamais fait : la technique d'abord.
+  let tech = '', aka = '', stats = '';
   if (f) {
-    h += '<div class="exo"><span class="label">Muscles</span><span style="color:var(--soft)">' + esc(f.muscles) + '</span></div>';
-    if (AKA[name] && AKA[name].length) h += '<div class="exo"><span class="label">Aussi appelé</span><span class="small mut">' + esc(AKA[name].slice(0, 6).join(', ')) + '</span></div>';
-    h += '<div class="exo"><span class="label violet">Comment faire</span>'
+    tech += '<div class="exo"><span class="label">Muscles</span><span style="color:var(--soft)">' + esc(f.muscles) + '</span></div>';
+    if (AKA[name] && AKA[name].length) aka = '<div class="exo"><span class="label">Aussi appelé</span><span class="small mut">' + esc(AKA[name].slice(0, 6).join(', ')) + '</span></div>';
+    tech += '<div class="exo"><span class="label violet">Comment faire</span>'
       + f.steps.map((x, i) => '<div class="row" style="align-items:flex-start"><span class="num gold-text" style="width:18px;font-size:16px">' + (i + 1) + '</span><span class="grow" style="color:var(--soft)">' + esc(x) + '</span></div>').join('') + '</div>';
-    h += '<div class="exo"><span class="label">Erreurs fréquentes</span>'
+    tech += '<div class="exo"><span class="label">Erreurs fréquentes</span>'
       + f.erreurs.map((x) => '<div class="row" style="align-items:flex-start;gap:10px"><span class="errdot"></span><span class="grow small" style="color:var(--soft)">' + esc(x) + '</span></div>').join('') + '</div>';
     // Version plus facile et plus dure : touchables pour voir leur fiche.
     const step = (k, label) => {
@@ -453,28 +458,29 @@ export function sheetExo(name) {
       if (k === name) return '<div class="exo grow" style="gap:4px"><span class="label">' + label + '</span><span class="small" style="color:var(--soft)">' + (label === 'Plus dur' ? 'Ajoute du lest : gilet ou haltère' : 'Moins de répétitions, plus lentement') + '</span></div>';
       return '<button type="button" class="exo grow vary" data-act="exo" data-name="' + esc(k) + '">' + figure(k) + '<span class="label">' + label + '</span><span class="small" style="font-weight:600">' + esc(exoName(k)) + '</span></button>';
     };
-    if (f.facile || f.dur) h += '<div class="row" style="align-items:stretch">' + step(f.facile, 'Plus facile') + step(f.dur, 'Plus dur') + '</div>';
+    if (f.facile || f.dur) tech += '<div class="row" style="align-items:stretch">' + step(f.facile, 'Plus facile') + step(f.dur, 'Plus dur') + '</div>';
   }
   if (list.length >= 2) {
     const values = list.slice(0, 24).reverse().map((x) => Math.max(...x.sets.map((s) => s.r || s.t || 0)));
-    h += '<div class="exo"><span class="label">Meilleure série de chaque séance</span>' + chartSvg(values, time ? ' s' : ' rép.') + '</div>';
+    stats += '<div class="exo"><span class="label">Meilleure série de chaque séance</span>' + chartSvg(values, time ? ' s' : ' rép.') + '</div>';
   }
   // Force estimée sur une répétition (formule d'Epley, poids du corps compris) : seulement si du lest a été utilisé.
   if (!time && list.length >= 2 && list.some((x) => x.sets.some((q) => q.w > 0))) {
     const bwk = (bodyLog()[0] || {}).kg || 65;
     const e1 = list.slice(0, 24).reverse().map((x) => Math.round(Math.max(...x.sets.map((q) => (bwk + (q.w || 0)) * (1 + (q.r || 0) / 30))) - bwk));
-    h += '<div class="exo"><span class="label">Force estimée sur 1 répétition</span>' + chartSvg(e1, ' kg') + '<span class="small mut">Le lest que tu pourrais porter pour une seule répétition, calculé d’après tes séries (lest et répétitions). Ça monte = tu deviens plus fort, même si tu changes de nombre de répétitions.</span></div>';
+    stats += '<div class="exo"><span class="label">Force estimée sur 1 répétition</span>' + chartSvg(e1, ' kg') + '<span class="small mut">Le lest que tu pourrais porter pour une seule répétition, calculé d’après tes séries (lest et répétitions). Ça monte = tu deviens plus fort, même si tu changes de nombre de répétitions.</span></div>';
   }
   // Comparé aux garçons de 16 à 19 ans (pompes et dips d'affilée, sans lest).
   const TT = TESTS.find((x) => x.exo === name && !x.timer);
-  if (TT && most) { const bestR = Math.max(0, ...list.flatMap((x) => x.sets.filter((q) => !q.w).map((q) => q.r || 0))); if (bestR) h += '<div class="exo"><span class="label violet">Par rapport aux garçons de ton âge</span><span style="font-weight:600">Ton record sans lest (' + bestR + ') : mieux que ' + percentile(TT, bestR) + ' % des garçons de 16 à 19 ans</span><span class="small mut">' + (TT.approx ? 'Repère approximatif : il n’existe pas de norme officielle pour cet exercice.' : 'D’après les normes de condition physique pour les 15-19 ans.') + '</span></div>'; }
+  if (TT && most) { const bestR = Math.max(0, ...list.flatMap((x) => x.sets.filter((q) => !q.w).map((q) => q.r || 0))); if (bestR) stats += '<div class="exo"><span class="label violet">Par rapport aux garçons de ton âge</span><span style="font-weight:600">Ton record sans lest (' + bestR + ') : mieux que ' + percentile(TT, bestR) + ' % des garçons de 16 à 19 ans</span><span class="small mut">' + (TT.approx ? 'Repère approximatif : il n’existe pas de norme officielle pour cet exercice.' : 'D’après les normes de condition physique pour les 15-19 ans.') + '</span></div>'; }
   if (most) {
-    h += '<div class="row" style="align-items:stretch"><div class="exo grow"><span class="label">' + (time ? 'Le plus long' : 'Le plus de répétitions') + '</span><span class="num gold-text" style="font-size:22px">' + esc(setText(most.set)) + '</span><span class="small mut">' + dateFr(most.date, true) + '</span></div>'
-      + (heavy ? '<div class="exo grow"><span class="label">Le plus lourd</span><span class="num gold-text" style="font-size:22px">' + esc(setText(heavy.set)) + '</span><span class="small mut">' + dateFr(heavy.date, true) + '</span></div>' : '') + '</div>';
+    stats = '<div class="row" style="align-items:stretch"><div class="exo grow"><span class="label">' + (time ? 'Le plus long' : 'Le plus de répétitions') + '</span><span class="num gold-text" style="font-size:22px">' + esc(setText(most.set, name)) + '</span><span class="small mut">' + dateFr(most.date, true) + '</span></div>'
+      + (heavy && !isBand(name) && setText(heavy.set, name) !== setText(most.set, name) ? '<div class="exo grow"><span class="label">Le plus lourd</span><span class="num gold-text" style="font-size:22px">' + esc(setText(heavy.set)) + '</span><span class="small mut">' + dateFr(heavy.date, true) + '</span></div>' : '') + '</div>' + stats;
   }
-  if (list.length && !time && name !== 'Running') h += potential(name, list);
+  if (list.length && !time && name !== 'Running') stats += potential(name, list);
+  h += list.length ? stats + tech + aka : tech + aka;
   if (list.length) {
-    h += '<span class="label">' + plural(list.length, 'séance', 'séances') + ' · les dernières</span><div class="list">' + list.slice(0, 12).map((x) => '<button type="button" class="item" data-act="detail" data-id="' + esc(x.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + dateFr(x.date, true) + '</span><span class="small mut">' + esc(x.sets.map(setText).join(', ')) + '</span></div>' + ICON.chev + '</button>').join('') + '</div>';
+    h += '<span class="label">' + plural(list.length, 'séance', 'séances') + ' · les dernières</span><div class="list">' + list.slice(0, 12).map((x) => '<button type="button" class="item" data-act="detail" data-id="' + esc(x.id) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + dateFr(x.date, true) + '</span><span class="small mut">' + esc(x.sets.map((s) => setText(s, name)).join(', ')) + '</span></div>' + ICON.chev + '</button>').join('') + '</div>';
   } else {
     h += '<span class="mut">Tu n’as encore jamais fait cet exercice.</span>';
   }
@@ -627,13 +633,20 @@ function gradeOf(a, w) {
     if (g) { goals += 1; if ((g.r && (st.r || 0) >= g.r) || (g.t && (st.t || 0) >= g.t)) hit += 1; }
   });
   if (!planned) return null;
+  w.plan = { planned, done, goals, hit };
   let score = 40 * (done / planned) + (goals ? 35 * (hit / goals) : 20) + Math.min(15, (w.prs || 0) * 8);
   if (w.ghost) score += w.ghost.won > w.ghost.lost ? 10 : w.ghost.won === w.ghost.lost ? 5 : 0;
   else score += 5;
   w.score = Math.round(score);
   return score >= 90 ? 'S' : score >= 75 ? 'A' : score >= 60 ? 'B' : score >= 45 ? 'C' : score >= 30 ? 'D' : 'E';
 }
-const GRADE_TXT = { S: 'Parfait. Tout fait, objectifs battus.', A: 'Très belle séance.', B: 'Solide. Encore un effort sur les objectifs.', C: 'Correct, mais tu peux faire mieux.', D: 'Séance difficile. Ça arrive.', E: 'Le plus dur, c’était de venir. C’est fait.' };
+// Ce qui fait la note, en chiffres (pour qu'elle ne contredise jamais le reste du bilan).
+function gradeWhy(w) {
+  const p = w.plan;
+  if (!p) return '';
+  return [p.done + ' séries sur ' + p.planned, p.goals ? p.hit + ' objectifs atteints sur ' + p.goals : '', w.prs ? plural(w.prs, 'record', 'records') : '', w.ghost ? (w.ghost.won > w.ghost.lost ? 'duel gagné' : w.ghost.won === w.ghost.lost ? 'duel à égalité' : 'duel perdu') : ''].filter(Boolean).join(' · ');
+}
+const GRADE_TXT = { S: 'Excellente séance.', A: 'Très belle séance.', B: 'Bonne séance.', C: 'Séance correcte.', D: 'Séance en dessous de d’habitude.', E: 'Séance très courte.' };
 
 function finishWorkout() {
   const a = state.active;
@@ -717,6 +730,12 @@ function announceNext() {
 }
 
 // Ressenti de la séance : trois boutons, celui choisi passe en or.
+const FEEL_CODE = { Facile: 'f', Bien: 'b', Dur: 'd' };
+// Un exercice précis différent du reste de la séance (ex. pistols très durs, le reste facile).
+function feelExRows(w) {
+  return w.exercises.map((e, i) => '<div class="col" style="gap:6px"><span class="small" style="font-weight:600">' + esc(exoName(e.name)) + '</span><div class="row" style="gap:6px">'
+    + [['f', 'Facile'], ['b', 'Bien'], ['d', 'Dur']].map(([k, l]) => '<button type="button" class="pill sm grow ' + (e.feelOwn && e.feel === k ? 'gold-btn' : 'glass') + '" data-act="feel-x" data-id="' + esc(w.id) + '" data-i="' + i + '" data-v="' + k + '">' + l + '</button>').join('') + '</div></div>').join('');
+}
 export function feelPills(w) {
   return ['Facile', 'Bien', 'Dur'].map((f) => '<button type="button" class="pill sm grow ' + (w.feel === f ? 'gold-btn' : 'glass') + '" data-act="feel" data-id="' + esc(w.id) + '" data-v="' + f + '">' + f + '</button>').join('');
 }
@@ -741,14 +760,14 @@ async function shareImage(w) {
   text(dateFr(w.start, true), W - 80, 130, '500 34px Barlow, sans-serif', '#A29DB0', 'right');
   text(r ? r.label : clean(w.title), 80, 260, '700 84px "Barlow Condensed", sans-serif', '#F4F2F8');
   text('+' + xpOf(w) + ' XP', 80, 400, '700 120px "Barlow Condensed", sans-serif', gold);
-  const stats = [[dur((w.end - w.start) / 1000), 'durée'], [String(sets), 'séries'], [String(reps), 'répétitions']];
+  const stats = [[(w.end - w.start) >= 60e3 ? Math.round((w.end - w.start) / 60e3) + ' min' : dur((w.end - w.start) / 1000), 'durée'], [String(sets), 'séries'], [String(reps), 'répétitions']];
   if (w.prs) stats.push([String(w.prs), w.prs > 1 ? 'records' : 'record']);
   stats.forEach((st, i) => { const x = 80 + i * ((W - 160) / stats.length); text(st[0], x, 520, '700 56px "Barlow Condensed", sans-serif', '#F4F2F8'); text(st[1], x, 566, '500 30px Barlow, sans-serif', '#A29DB0'); });
   g.fillStyle = 'rgba(255,255,255,0.10)'; g.fillRect(80, 620, W - 160, 2);
   let y = 700;
   for (const e of w.exercises.slice(0, 9)) {
     text(exoName(e.name), 80, y, '600 38px Barlow, sans-serif', '#F4F2F8');
-    let line = e.sets.map(setText).join(', ');
+    let line = e.sets.map((s) => setText(s, e.name)).join(', ');
     g.font = '500 32px Barlow, sans-serif';
     while (g.measureText(line).width > 520 && line.length > 4) line = line.slice(0, -2);
     text(line, W - 80, y, '500 32px Barlow, sans-serif', e.sets.some((s) => s.pr) ? '#D8BD82' : '#A29DB0', 'right');
@@ -774,46 +793,59 @@ function sheetSummary(w, label, xpBefore, qNew, fNew) {
   const gained = xpAfter - xpBefore;
   const levelUp = after.level > before.level;
   let sets = 0, reps = 0, kg = 0;
-  for (const e of w.exercises) for (const s of e.sets) { sets += 1; reps += s.r || 0; kg += (s.w || 0) * (s.r || 0); }
+  for (const e of w.exercises) for (const s of e.sets) { sets += 1; reps += s.r || 0; if (!isBand(e.name)) kg += (s.w || 0) * (s.r || 0); }
   const prev = sorted().find((o) => o.id !== w.id && o.start < w.start && norm(o.title) === norm(w.title));
   const total = (e) => e.sets.reduce((n, s) => n + (s.r || s.t || 0), 0);
+  const maxW = (e) => (isBand(e.name) ? 0 : Math.max(0, ...e.sets.map((s) => s.w || 0)));
   const lines = w.exercises.map((e) => {
     const pe = prev && prev.exercises.find((x) => x.name === e.name);
     const unit = e.sets[0] && !e.sets[0].r ? ' s' : ' rép.';
     let delta = '';
     if (prev && !pe) delta = 'Nouveau';
-    else if (pe) { const d = total(e) - total(pe); delta = d > 0 ? '+' + d + unit : (d < 0 ? d + unit : 'Pareil'); }
-    return { name: e.name, text: e.sets.map(setText).join(', '), delta, up: delta.charAt(0) === '+', rec: e.sets.some((s) => s.pr) };
+    else if (pe) {
+      // Lest plus lourd que la dernière fois : c'est ça le progrès, même avec moins de répétitions.
+      const d = total(e) - total(pe), dw = maxW(e) - maxW(pe), kgs = (x) => String(Math.abs(x)).replace('.', ',') + ' kg';
+      delta = dw > 0 ? '+' + kgs(dw) : d > 0 ? '+' + d + unit : dw < 0 ? '-' + kgs(dw) : d < 0 ? d + unit : 'Pareil';
+    }
+    return { name: e.name, text: e.sets.map((s) => setText(s, e.name)).join(', '), delta, up: delta.charAt(0) === '+', rec: e.sets.some((s) => s.pr) };
   });
   const recs = lines.filter((l) => l.rec);
   const stat = (k, v) => '<div><span class="num" style="font-size:20px">' + v + '</span><span class="small mut">' + k + '</span></div>';
 
-  let h = '<div class="col center" style="gap:6px"><span class="label violet">Séance terminée</span><h1 class="h1" style="font-size:30px">' + esc(label) + '</h1>'
-    + '<span class="num gold-text" style="font-size:66px;line-height:1.1">+<span id="xp-count">0</span> XP</span></div>';
-  if (w.grade) h += '<section class="glass card gradecard g' + w.grade + '"><span class="grade">' + w.grade + '</span><div class="col grow" style="gap:3px"><span class="label">Note de la séance</span><span style="font-weight:600">' + esc(GRADE_TXT[w.grade]) + '</span><span class="small mut">Séries faites, objectifs atteints, records et duel contre ton fantôme · ' + w.score + ' sur 100</span></div></section>';
-  // Le mot du coach : ce que la séance dit de toi, et la suite.
+  // v61 : ce que tu as fait d'abord (records, comparaison), l'XP en petit ; une seule question « comment c'était ».
+  const pl = w.plan || null, short = pl && pl.planned && pl.done / pl.planned < 0.75;
+  const comp = lines.filter((l) => l.delta && l.delta !== 'Nouveau');
+  const ups = comp.filter((l) => l.up).length, downs = comp.filter((l) => l.delta.charAt(0) === '-').length;
+  let h = '<div class="col sumhead"><span class="label violet">Séance terminée</span><h1 class="h1" style="font-size:32px">' + esc(label) + '</h1>'
+    + '<span class="sumline">' + [(w.end - w.start) >= 60e3 ? Math.round((w.end - w.start) / 60e3) + ' min' : dur((w.end - w.start) / 1000), plural(sets, 'série', 'séries'), reps ? reps + ' rép.' : '', kg ? Math.round(kg).toLocaleString('fr-FR') + ' kg' : ''].filter(Boolean).join(' · ') + '</span>'
+    + '<span class="xptag sumxp">+<span id="xp-count">0</span> XP</span></div>';
+  if (recs.length) {
+    h += '<section class="glass card col sumrec" style="gap:8px"><span class="gold-text h2">' + plural(recs.length, 'record battu', 'records battus') + '</span>'
+      + recs.map((l) => '<div class="row between" style="gap:10px"><span style="font-weight:600">' + esc(exoName(l.name)) + '</span><span class="small mut" style="text-align:right">' + esc(l.text) + '</span></div>').join('') + '</section>';
+  }
+  h += '<span class="label">' + (prev ? 'Par rapport à la dernière fois' : 'Ta séance') + (prev && comp.length ? ' · ' + (ups ? ups + ' en hausse' : 'aucune hausse') + (downs ? ', ' + downs + ' en baisse' : '') : '') + '</span><div class="list">'
+    + lines.map((l) => '<button type="button" class="item" data-act="exo" data-name="' + esc(l.name) + '"><div class="col grow" style="gap:2px;min-width:0"><span style="font-weight:600">' + esc(exoName(l.name)) + '</span><span class="small mut">' + esc(l.text) + '</span></div>'
+      + (l.delta ? '<span class="small ' + (l.up ? 'gold-text' : 'mut') + '" style="font-weight:600;white-space:nowrap">' + l.delta + '</span>' : '') + '</button>').join('') + '</div>';
+  // Comment c'était : une seule question pour toute la séance (elle règle les objectifs de la prochaine fois).
+  h += '<section class="glass card col" style="gap:10px"><span class="h2">Comment c’était ?</span><span class="small mut">Ta réponse règle les objectifs de la prochaine séance.</span><div class="row" id="feel-row" style="gap:8px">' + feelPills(w) + '</div>'
+    + '<details class="feelmore"><summary class="small">Un exercice différent des autres ?</summary><div class="col" id="feel-ex" style="gap:10px;margin-top:10px">' + feelExRows(w) + '</div></details></section>';
+  // Le mot du coach, qui dit la même chose que les chiffres au-dessus.
   try {
-    const ups = lines.filter((l) => l.up).length, downs = lines.filter((l) => l.delta.charAt(0) === '-').length, ci = checkin(w.start);
+    const ci = checkin(w.start);
     const t = [];
-    if (recs.length) t.push(plural(recs.length, 'record', 'records') + ' aujourd’hui.' + (ci && ci.f >= 75 ? ' Ton score du matin (' + ci.f + ') l’annonçait.' : ''));
-    else if (prev && ups >= Math.max(1, lines.length / 2)) t.push('Mieux que la dernière fois sur ' + ups + ' exercice' + (ups > 1 ? 's' : '') + ' sur ' + lines.length + ' : la progression continue.');
-    else if (prev && downs > ups) t.push('Un peu moins bien que la dernière fois sur ' + downs + ' exercice' + (downs > 1 ? 's' : '') + (ci && ci.h && ci.h < 7 ? ' : tes ' + String(ci.h).replace('.', ',') + ' h de sommeil y sont sûrement pour quelque chose.' : '. Une séance moyenne ne change rien à la tendance.'));
-    else t.push('Séance faite, c’est ce qui compte le plus.');
+    if (short) t.push('Séance raccourcie : ' + pl.done + ' séries sur ' + pl.planned + '. Ce qui est fait compte, la prochaine reprendra là où tu en es.');
+    else if (recs.length) t.push(plural(recs.length, 'record', 'records') + ' aujourd’hui.' + (ci && ci.f >= 75 ? ' Ton score du matin (' + ci.f + ') l’annonçait.' : ''));
+    else if (prev && ups && ups >= downs) t.push('Mieux que la dernière fois sur ' + ups + ' exercice' + (ups > 1 ? 's' : '') + ' sur ' + comp.length + ' : la progression continue.');
+    else if (prev && downs > ups) t.push('Un peu en dessous de la dernière fois sur ' + downs + ' exercice' + (downs > 1 ? 's' : '') + (ci && ci.h && ci.h < 7 ? ' : tes ' + String(ci.h).replace('.', ',') + ' h de sommeil y sont sûrement pour quelque chose.' : '. Une séance moyenne ne change rien à la tendance.'));
+    else t.push('Même niveau que la dernière fois : c’est en tenant ce niveau que le prochain record arrive.');
     if (!w.quick && !w.boss) { const m = monthAgo(w); if (m) t.push(m); }
     t.push('Maintenant : un vrai repas avec des protéines dans les 2 heures, puis une bonne nuit.');
-    h += '<section class="glass card row tint t-cyan" style="gap:12px;align-items:flex-start"><span class="coachav">' + ICON.bolt + '</span><div class="col grow" style="gap:4px"><span class="label violet">Le mot du coach</span><span class="small" style="color:var(--soft)">' + esc(t.join(' ')) + '</span></div></section>';
+    h += '<section class="glass card row" style="gap:12px;align-items:flex-start"><span class="coachav">' + ICON.bolt + '</span><div class="col grow" style="gap:4px"><span class="label violet">Le mot du coach</span><span class="small" style="color:var(--soft)">' + esc(t.join(' ')) + '</span></div></section>';
   } catch (e) { console.error(e); }
-  h += '<section class="glass card hud col" style="gap:10px"><div class="row between"><span class="h2">Niveau ' + after.level + '</span>'
-    + (levelUp ? '<span class="tag gold">Niveau supérieur</span>' : '<span class="small mut">Encore ' + (after.need - after.into) + ' XP</span>') + '</div>'
-    + '<div class="bar"><div id="xp-bar" style="transition:width 1.2s cubic-bezier(0.2,0.8,0.2,1);width:' + (levelUp ? 0 : Math.round((before.into / before.need) * 100)) + '%"></div></div></section>';
-  h += '<section class="glass card"><div class="stats3" style="grid-template-columns:repeat(' + (kg ? 4 : 3) + ',minmax(0,1fr))">' + stat('durée', dur((w.end - w.start) / 1000)) + stat(sets > 1 ? 'séries' : 'série', sets) + stat('répétitions', reps) + (kg ? stat('kg soulevés', Math.round(kg).toLocaleString('fr-FR')) : '') + '</div></section>';
-  if (recs.length) {
-    h += '<section class="glass card col" style="gap:8px;border-color:rgba(205,170,98,0.5)"><span class="gold-text h2">' + plural(recs.length, 'record battu', 'records battus') + '</span>'
-      + recs.map((l) => '<div class="row between"><span style="font-weight:500">' + esc(exoName(l.name)) + '</span><span class="small mut">' + esc(l.text) + '</span></div>').join('') + '</section>';
-  }
+  if (w.grade) h += '<section class="glass card gradecard g' + w.grade + '"><span class="grade">' + w.grade + '</span><div class="col grow" style="gap:3px"><span class="label">Note de la séance</span><span style="font-weight:600">' + esc(short ? 'Séance raccourcie.' : GRADE_TXT[w.grade]) + '</span><span class="small mut">' + esc(gradeWhy(w)) + '</span></div></section>';
   if (w.ghost) {
     const g = w.ghost, win = g.won > g.lost;
-    h += '<section class="glass card col duel' + (win ? ' win' : '') + '" style="gap:8px"><div class="row between"><span class="h2">' + (win ? 'Duel gagné contre ton fantôme' : g.won === g.lost ? 'Égalité avec ton fantôme' : 'Ton fantôme gagne cette fois') + '</span></div>'
+    h += '<section class="glass card col duel' + (win ? ' win' : '') + '" style="gap:8px"><span class="h2">' + (win ? 'Duel gagné contre ton fantôme' : g.won === g.lost ? 'Égalité avec ton fantôme' : 'Ton fantôme gagne cette fois') + '</span>'
       + '<div class="duelbar"><i style="width:' + Math.round((g.won / g.total) * 100) + '%"></i><b style="width:' + Math.round((g.lost / g.total) * 100) + '%"></b></div>'
       + '<span class="small mut">Contre toi la dernière fois : ' + plural(g.won, 'série gagnée', 'séries gagnées') + ', ' + plural(g.lost, 'perdue', 'perdues') + (g.total - g.won - g.lost ? ', ' + (g.total - g.won - g.lost) + ' à égalité' : '') + '.</span></section>';
   }
@@ -823,14 +855,13 @@ function sheetSummary(w, label, xpBefore, qNew, fNew) {
   }
   if (qNew.length) {
     h += '<section class="glass card col" style="gap:8px"><span class="h2">' + plural(qNew.length, 'quête réussie', 'quêtes réussies') + '</span>'
-      + qNew.map((q) => '<div class="row between"><span>' + esc(q.label) + '</span><span class="gold-text" style="font-weight:600">+' + q.xp + ' XP</span></div>').join('') + '</section>';
+      + qNew.map((q) => '<div class="row between" style="gap:10px"><span>' + esc(q.label) + '</span><span class="gold-text" style="font-weight:600;white-space:nowrap">+' + q.xp + ' XP</span></div>').join('') + '</section>';
   }
-  h += '<span class="label">' + (prev ? 'Par rapport à la dernière fois' : 'Ta séance') + '</span><div class="list">'
-    + lines.map((l) => '<button type="button" class="item" data-act="exo" data-name="' + esc(l.name) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(l.name)) + '</span><span class="small mut">' + esc(l.text) + '</span></div>'
-      + (l.delta ? '<span class="small ' + (l.up ? 'gold-text' : 'mut') + '" style="font-weight:600;white-space:nowrap">' + l.delta + '</span>' : '') + '</button>').join('') + '</div>';
-  h += '<div class="col" style="gap:8px"><span class="label">Comment c’était ?</span><div class="row" id="feel-row">' + feelPills(w) + '</div></div>';
+  h += '<section class="glass card col" style="gap:10px"><div class="row between"><span class="h2">Niveau ' + after.level + '</span>'
+    + (levelUp ? '<span class="tag gold">Niveau supérieur</span>' : '<span class="small mut">Encore ' + (after.need - after.into) + ' XP</span>') + '</div>'
+    + '<div class="bar"><div id="xp-bar" style="transition:width 1.2s cubic-bezier(0.2,0.8,0.2,1);width:' + (levelUp ? 0 : Math.round((before.into / before.need) * 100)) + '%"></div></div></section>';
   h += '<button type="button" class="pill glass wide" data-act="cooldown" style="color:var(--violet-soft)">Retour au calme · 3 min d’étirements</button>';
-  h += '<div class="row"><button type="button" class="pill glass grow" data-act="share" data-id="' + esc(w.id) + '">Partager en image</button>'
+  h += '<div class="row"><button type="button" class="pill glass grow" data-act="share" data-id="' + esc(w.id) + '">' + ICON.share + 'Partager</button>'
     + '<button type="button" class="pill glass grow" data-act="copy" data-id="' + esc(w.id) + '" style="color:var(--gold)">' + ICON.copy + 'Pour Claude</button></div>' + closeBtn;
   sheet(h, 1, 'full');
 
@@ -1011,7 +1042,6 @@ Object.assign(ACTIONS, {
     const beat = goal && (time ? s.t >= goal.t : s.r >= goal.r);
     startRest();
     const next = ex.sets.findIndex((x) => !x.done);
-    if (next < 0 && !ex.feel) a.feelAsk = a.exercises.indexOf(ex);
     const ssN = a.exercises[a.idx + 1], ssP = a.exercises[a.idx - 1];
     if (ex.ss && ssN && !exDone(ssN)) { a.rest = null; a.idx += 1; a.setIdx = firstTodo(ssN); ui.enter = true; toast('Supersérie : enchaîne sans repos'); top(); }
     else if (ssP && ssP.ss && !exDone(ssP)) { a.idx -= 1; a.setIdx = firstTodo(ssP); ui.enter = true; toast('Repos, puis on recommence la supersérie'); top(); }
@@ -1126,9 +1156,19 @@ Object.assign(ACTIONS, {
     const w = state.workouts.find((x) => x.id === el.dataset.id);
     if (!w) return;
     w.feel = w.feel === el.dataset.v ? '' : el.dataset.v;
+    // La réponse vaut pour tous les exercices, sauf ceux réglés à part.
+    for (const e of w.exercises) if (!e.feelOwn) { if (w.feel) e.feel = FEEL_CODE[w.feel]; else delete e.feel; }
     save();
     const row = $('feel-row');
     if (row) row.innerHTML = feelPills(w);
+    if (w.feel) toast(w.feel === 'Facile' ? 'Noté : objectifs plus hauts la prochaine fois' : w.feel === 'Dur' ? 'Noté : mêmes objectifs et un peu plus de repos' : 'Noté');
+  },
+  'feel-x': (el) => {
+    const w = state.workouts.find((x) => x.id === el.dataset.id), e = w && w.exercises[+el.dataset.i];
+    if (!e) return;
+    if (e.feelOwn && e.feel === el.dataset.v) { delete e.feelOwn; if (w.feel) e.feel = FEEL_CODE[w.feel]; else delete e.feel; } else { e.feel = el.dataset.v; e.feelOwn = true; }
+    save();
+    const box = $('feel-ex'); if (box) box.innerHTML = feelExRows(w);
   },
   share: (el) => { const w = state.workouts.find((x) => x.id === el.dataset.id); if (w) shareImage(w); },
   'ed-dup': () => {

@@ -1,7 +1,7 @@
 // Coach : lit tout ton historique et te parle comme un entraîneur. Tout est calculé dans le téléphone,
 // sans internet ni IA : forme du matin, charge, douleurs, stagnation, records prévus, ce qui te réussit,
 // régularité, équilibre, course, rang. Les phrases changent d'un jour à l'autre.
-import { state, save, sorted, exoName, runs, weekGoal, weekQuest, dur, fr, pace, lastSets, exoHistory, measureOf } from './store.js';
+import { state, save, sorted, exoName, runs, weekGoal, weekQuest, dur, fr, pace, lastSets, exoHistory, measureOf, isBand } from './store.js';
 import { EXOS, FICHES } from './data.js';
 import { esc, plural, ui, ACTIONS, ICON, sheet, $ } from './ui.js';
 import { TYPES, nextType, plan, testDue, minutes, weekIdx, weakQuality, isBeginner, STEPS, stepReady, stepStall, curStep, nextStep } from './programme.js';
@@ -28,7 +28,9 @@ function exoTrends() {
     if (now - w.start > 84 * DAY) break;
     for (const e of w.exercises) {
       if (e.name === 'Running' || !e.sets.length) continue;
-      const b = e.sets.reduce((m, s) => (amount(s) > amount(m) ? s : m), e.sets[0]);
+      // Élastique : le chiffre noté en kg n'est pas un vrai lest, on ne compare que les répétitions.
+      const sets = isBand(e.name) ? e.sets.map((s) => Object.assign({}, s, { w: 0 })) : e.sets;
+      const b = sets.reduce((m, s) => (amount(s) > amount(m) ? s : m), sets[0]);
       (by[e.name] = by[e.name] || []).push({ date: w.start, best: b, feel: e.feel });
     }
   }
@@ -70,7 +72,7 @@ function stuckTip(t) {
   return tips;
 }
 
-const showSet = (name, s) => (s.r ? s.r + ' rép.' : s.t ? dur(s.t) : '') + (s.w ? ' avec ' + fr(s.w, 1) + ' kg' : '');
+const showSet = (name, s) => (s.r ? s.r + ' rép.' : s.t ? dur(s.t) : '') + (s.w && !/\(Band\)|élastique/i.test(name) ? ' avec ' + fr(s.w, 1) + ' kg' : '');
 
 // Une phrase parmi plusieurs, qui change chaque jour (pour ne pas lire toujours la même chose).
 const seed = () => Math.floor(Date.now() / DAY);
@@ -524,7 +526,7 @@ export function monthAgo(w) { return monthTxt(w).replace(/\.\./g, '.'); }
 function monthTxt(w) {
   const old = real().filter((o) => o.id !== w.id && o.start <= w.start - 21 * DAY && o.start >= w.start - 45 * DAY);
   if (!old.length) return '';
-  const best = (e) => { const L = e.sets.filter((x) => x.r || x.t); return L.length ? L.reduce((m, x) => (amount(x) > amount(m) ? x : m), L[0]) : null; };
+  const best = (e) => { const L = e.sets.filter((x) => x.r || x.t).map((x) => (isBand(e.name) ? Object.assign({}, x, { w: 0 }) : x)); return L.length ? L.reduce((m, x) => (amount(x) > amount(m) ? x : m), L[0]) : null; };
   const cmp = [];
   for (const e of w.exercises) {
     if (e.name === 'Running') continue;

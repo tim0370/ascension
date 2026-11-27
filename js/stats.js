@@ -77,7 +77,7 @@ function best(m, table, value) {
   return out;
 }
 const top = (scores, w) => { const x = scores.slice().sort((a, b) => b - a); return w.reduce((k, wi, i) => k + wi * (x[i] || 0), 0); };
-const src = (label, b, sc) => ({ label, best: b ? exoShort(b.name) + ' : ' + setText(b.s) : 'Pas encore fait', score: sc, name: b && b.name });
+const src = (label, b, sc) => ({ label, best: b ? exoShort(b.name) + ' : ' + setText(b.s, b.name) : 'Pas encore fait', score: sc, name: b && b.name });
 const exoShort = (n) => (n === 'Running' ? 'Course' : exoName(n));
 
 export function qualities() {
@@ -129,7 +129,9 @@ export function qualities() {
     maitrise: top(mait.map((x) => x.score), [0.65, 0.35]),
   };
   const det = { force, explo, vitesse, endu, maitrise: mait.slice(0, 4) };
-  return QUALITES.map((q) => { const s = Math.min(6, sc[q.id]); return Object.assign({}, q, { score: s, letter: letterOf(s), frac: s >= 6 ? 1 : s % 1, sources: det[q.id] }); });
+  // Aucune performance de ce type dans l'historique : la qualité n'est pas encore mesurée (pas « 0 % »).
+  const none = { explo: !ex, vitesse: !run };
+  return QUALITES.map((q) => { const s = Math.min(6, sc[q.id]); return Object.assign({}, q, { score: s, letter: letterOf(s), frac: s >= 6 ? 1 : s % 1, sources: det[q.id], none: !!none[q.id] }); });
 }
 
 // Ton rang = la moyenne de tes 5 lettres. Les épreuves du rang suivant restent comme objectifs concrets.

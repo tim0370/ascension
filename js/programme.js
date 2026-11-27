@@ -485,6 +485,12 @@ export function whyList(type, list, f, auto) {
   out.push('Chaque série vise ta dernière fois + 1 répétition (ou + 5 secondes).');
   return out;
 }
+// La séance suivante, en court (pour l'accueil une fois la séance du jour faite).
+export function nextInfo() {
+  const type = testDue() ? 'test' : nextType();
+  const list = plan(type, '');
+  return { type, title: title(type), n: list.length, min: minutes(list, type === 'test') };
+}
 export function progCard(main, doneToday, noForme) {
   const type = testDue() ? 'test' : nextType();
   const f = forme(plan(type, ''));
@@ -502,7 +508,7 @@ export function progCard(main, doneToday, noForme) {
   }
   return '<section class="' + (main ? 'cta' : 'glass card') + ' hud tap" role="button" tabindex="0" data-act="prog" style="display:flex;flex-direction:column;gap:14px">'
     + (main && list.length ? '<div class="ctafig">' + figure(list[0].name) + '</div>' : '') + '<div class="col ctahead" style="gap:4px">'
-    + '<span class="label violet">' + (doneToday ? 'Faite aujourd’hui · suivante' : weekLabel()) + '</span>'
+    + '<span class="label violet">' + (doneToday ? 'Séance faite aujourd’hui · prochaine' : weekLabel()) + '</span>'
     + '<span class="h1">' + esc(title(type)) + '</span>'
     + '<span class="small" style="color:var(--soft)">' + plural(list.length, 'exercice', 'exercices') + ' · environ ' + minutes(list, type === 'test') + ' min</span>'
     + (main ? '' : '<span class="small mut">' + esc(names) + '</span>')
@@ -514,7 +520,7 @@ export function progCard(main, doneToday, noForme) {
     + (main ? '<button type="button" class="whymore" data-act="prog">Détails ' + ICON.chev + '</button>' : '')
     + weeksBar()
     + '<div class="row">' + (type === 'test' ? '' : auto ? '<button type="button" class="pill glass" data-act="prog-start" data-type="' + type + '" data-mode="normal">Normale</button>' : '<button type="button" class="pill glass" data-act="prog-start" data-type="' + type + '" data-mode="court">Courte</button>')
-    + '<button type="button" class="pill gold-btn grow" data-act="prog-start" data-type="' + type + '" data-mode="' + auto + '">' + (type === 'test' ? 'Faire le re-test' : 'Commencer') + '</button></div></section>';
+    + '<button type="button" class="pill ' + (doneToday ? 'glass' : 'gold-btn') + ' grow" data-act="prog-start" data-type="' + type + '" data-mode="' + auto + '">' + (type === 'test' ? 'Faire le re-test' : doneToday ? 'La faire quand même' : 'Commencer') + '</button></div></section>';
 }
 
 const BLOC_C = { Dos: '#6FD3E8', 'Épaules': 'var(--violet-soft)', Jambes: 'var(--vert)', Pectoraux: 'var(--rouge)', Abdos: '#6FD3E8', Bras: 'var(--gold)', Finisher: 'var(--flamme)', Objectif: 'var(--gold)', 'Habileté': 'var(--violet-soft)', Force: 'var(--rouge)', 'Explosivité': 'var(--flamme)', Muscle: 'var(--gold)', Gainage: '#6FD3E8', Endurance: 'var(--vert)' };
@@ -526,7 +532,7 @@ function planList(list) {
     if (e.step) sub = '<span class="small mut">' + esc(stepLine(e)) + (e.swap ? ' · remplace ' + esc(exoName(e.swap)) + ' (douleur)' : '') + '</span>' + (e.ready ? '<span class="small gold-text">Prêt pour l’étape suivante</span>' : e.stall ? '<span class="small" style="color:var(--flamme)">Bloqué depuis 3 séances</span>' : '');
     else sub = '<span class="small mut">' + esc(e.label ? exoName(e.name) : setsSummary(e.sets) + (e.main ? ' · principal' : '')) + (e.next && e.cap ? ' · ' + e.cap + (measureOf(e.name) === 'time' ? ' s' : ' rép.') + ' pour passer à ' + esc(exoName(e.next)) : '') + (e.swap ? ' · remplace ' + esc(exoName(e.swap)) + ' (douleur)' : '') + (e.alt ? ' · à la place de ' + esc(exoName(e.alt)) : '') + '</span>';
     return '<button type="button" class="item" data-act="exo" data-name="' + esc(e.name) + '"><span class="num dim" style="width:20px">' + (i + 1) + '</span><div class="col grow" style="gap:2px;min-width:0">'
-      + (e.bloc ? '<span class="label" style="color:' + (BLOC_C[e.bloc] || 'var(--mut)') + ';font-size:10px">' + esc(e.bloc) + '</span>' : '')
+      + (e.bloc ? '<span class="label" style="color:' + (BLOC_C[e.bloc] || 'var(--mut)') + ';font-size:12px">' + esc(e.bloc) + '</span>' : '')
       + '<span style="font-weight:600">' + esc(e.label || exoName(e.name)) + (e.fresh ? ' <span class="small gold-text">nouveau</span>' : '') + '</span>'
       + sub + '</div>' + ICON.chev + '</button>';
   }).join('') + '</div>';

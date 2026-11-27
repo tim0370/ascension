@@ -80,7 +80,7 @@ export function tally(ws) {
         t.exo[e.name] = (t.exo[e.name] || 0) + 1;
         const r = s.r || 0;
         t.reps += r;
-        t.kg += r * (p * share(e.name) + (s.w || 0));
+        t.kg += r * (p * share(e.name) + (/\(Band\)|élastique/i.test(e.name) ? 0 : (s.w || 0)));
         const g = famille(e.name);
         if (g === 'pompes') t.pompes += r;
         else if (g === 'dips') t.dips += r;
@@ -177,7 +177,7 @@ function slides(y, m) {
     const uniq = [];
     for (const r of t.recs.slice().reverse()) if (!uniq.some((u) => u.name === r.name)) uniq.push(r);
     S.push({ c: 'or', h: '<span class="st-k">Records battus</span><span class="st-big" data-count="' + t.recs.length + '">' + t.recs.length + '</span>'
-      + '<div class="st-list">' + uniq.slice(0, 4).map((r) => '<div><span>' + esc(exoName(r.name)) + '</span><b>' + esc(setText(r.set)) + '</b></div>').join('') + '</div>' });
+      + '<div class="st-list">' + uniq.slice(0, 4).map((r) => '<div><span>' + esc(exoName(r.name)) + '</span><b>' + esc(setText(r.set, r.name)) + '</b></div>').join('') + '</div>' });
   }
   if (t.km) {
     const pace = t.best ? Math.floor(t.best.pace / 60) + '’' + String(Math.round(t.best.pace % 60)).padStart(2, '0') : '';

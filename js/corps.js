@@ -171,7 +171,10 @@ function figureSvg(side, mode, z) {
   }
   // Lignes des abdos, pour le relief
   const lines = side === 'front' ? '<path d="M50,56 L50,88 M45,65 L55,65 M45,74.5 L55,74.5" stroke="rgba(10,8,20,0.55)" stroke-width="0.8" fill="none"/>' : '<path d="M50,47 L50,73" stroke="rgba(10,8,20,0.55)" stroke-width="0.8" fill="none"/>';
-  return '<svg class="bodysvg" viewBox="18 0 64 190" aria-hidden="false"><g fill="rgba(255,255,255,0.06)">' + BASE + '</g>' + p + lines + '</svg>';
+  // Un reflet doux sur chaque muscle (clair en haut, sombre en bas) : du relief au lieu d'aplats.
+  const all = Object.values(shapes[0]).map((d) => '<path d="' + d + '"/><path d="' + mirror(d) + '"/>').join('') + Object.values(shapes[1]).map((d) => '<path d="' + d + '"/>').join('');
+  const sh = '<defs><linearGradient id="bsh-' + side + '" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.22"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.22"/></linearGradient></defs>';
+  return '<svg class="bodysvg" viewBox="18 0 64 190" aria-hidden="false">' + sh + '<g fill="rgba(255,255,255,0.06)">' + BASE + '</g>' + p + '<g fill="url(#bsh-' + side + ')" stroke="rgba(10,8,20,0.45)" stroke-width="0.5" pointer-events="none">' + all + '</g>' + lines + '</svg>';
 }
 
 export function bodyMap(mode) {
@@ -187,8 +190,8 @@ export function bodyCard() {
   const mid = Object.keys(z).filter((k) => z[k].rec >= 55 && z[k].rec < 90).map((k) => ZONES[k].name.toLowerCase());
   const ready = Object.keys(z).filter((k) => z[k].last && z[k].rec >= 90);
   const low = Object.keys(z).filter((k) => z[k].avg >= 2 && z[k].week < z[k].avg * 0.5).map((k) => ZONES[k].name.toLowerCase());
+  const list = (a) => a.slice(0, 3).join(', ') + (a.length > 3 ? ' et ' + (a.length - 3) + ' autre' + (a.length > 4 ? 's' : '') : '');
   let txt;
-  const list = (a) => a.slice(0, 3).join(', ') + (a.length > 3 ? '…' : '');
   if (mode === 'rec') txt = tired.length || mid.length ? (tired.length ? 'Fatigués : ' + list(tired) + '. ' : '') + (mid.length ? 'Presque prêts : ' + list(mid) + '. ' : '') + 'Le reste est prêt.' : ready.length ? 'Tout ce que tu as travaillé est récupéré : tu peux y aller fort.' : 'Pas d’entraînement récent.';
   else txt = low.length ? 'Moins travaillé que d’habitude cette semaine : ' + low.slice(0, 3).join(', ') + '.' : 'Séries de la semaine par muscle. Plus c’est violet, plus tu as travaillé.';
   const legend = mode === 'rec'

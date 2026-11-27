@@ -10,7 +10,7 @@ export const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
 export const toNum = (v) => parseFloat(String(v).replace(',', '.')) || 0;
 
 // Numéro de version affiché dans les réglages. À augmenter avec VERSION dans sw.js et NEWS dans data.js.
-export const VERSION = 60;
+export const VERSION = 61;
 
 // État de l'interface (pas enregistré). hFilter = filtre de l'historique. edit = brouillon en cours ; pick = à quoi sert le choix d'exercice.
 export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null, hQuery: '' };
@@ -40,6 +40,7 @@ export const ICON = {
   copy: svg('<rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>', 'width="18" height="18"'),
   chev: svg('<path d="M9 6l6 6-6 6"/>', 'class="chev"'),
   up: svg('<path d="M6 14l6-6 6 6"/>'),
+  share: svg('<path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'),
   down: svg('<path d="M6 10l6 6 6-6"/>'),
   x: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
   back: svg('<path d="M15 6l-6 6 6 6"/>', 'width="18" height="18"'),

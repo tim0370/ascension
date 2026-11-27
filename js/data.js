@@ -905,6 +905,17 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 61, items: [
+    'Fond de l’accueil : Sommet, Aurore, Nuit, Salle néon ou ta propre photo, avec les cartes en verre par-dessus. Dans Réglages, Fond de l’accueil.',
+    '« Comment c’était ? » n’est plus demandé après chaque exercice : une seule fois, à la fin. Tu peux quand même noter un exercice à part.',
+    'Nouveau bilan de fin : ce que tu as fait et tes records d’abord, l’XP en petit, et un lest plus lourd compte enfin comme un progrès.',
+    'Séance faite : l’accueil le montre au lieu de te pousser à recommencer, avec ta prochaine séance.',
+    'Nouvelle carte « Tes progrès » sur l’accueil : ce qui a monté en un mois.',
+    'Notifications : plus de rappel de séance pendant ta séance, et elles se réactivent toutes seules si l’iPhone les a coupées.',
+    'Course : le bouton GPS s’affiche de nouveau correctement.',
+    'Élastiques : plus de kilos affichés ni comptés.',
+    'Vérification complète de tous les écrans : petits écrans, boutons trop petits, textes coupés, fiche exercice (tes chiffres d’abord), coach plus lisible, carte des muscles en relief.',
+  ] },
   { v: 60, items: [
     'Le bouton rond passe au milieu, en plus soigné. Un simple toucher ouvre ta séance.',
     'Garde le doigt dessus : l’éventail s’ouvre en demi-cercle (Course, Progrès, Aujourd’hui, Défis, Menu). Glisse et lâche.',

@@ -1,7 +1,7 @@
 // Onglet Progression : examens de rang, arbres de progression, équilibre du corps, poids et photos.
 import { capCard } from './cap.js';
 import { RANKS, TREES, CATS, LETTRES, QUALITES, EXOS } from './data.js';
-import { state, save, fr, dateFr, routines, exoHistory, exoName, setText, isHevy } from './store.js';
+import { state, save, fr, dateFr, routines, exoHistory, exoName, setText, isHevy, isBand } from './store.js';
 import { rankInfo, testStatus, allTrees, treeStatus, balance, bodyLog, addWeight, delWeight, bodyInfo, letterOf } from './stats.js';
 import { figure } from './anim.js';
 import { addPhoto, listPhotos, deletePhoto, setPhotoDate, photoFiles } from './photos.js';
@@ -50,7 +50,7 @@ export function rankCard(info) {
     + '<div class="tap" role="button" tabindex="0" data-act="rank">' + radarSvg(info.q) + '</div><div class="list">';
   for (const x of info.q) {
     h += '<button type="button" class="item" data-act="quality" data-id="' + x.id + '"><span class="qletter">' + x.letter + '</span><div class="col grow" style="gap:5px"><div class="row between"><span style="font-weight:600">' + esc(x.name) + '</span>'
-      + '<span class="small mut" style="white-space:nowrap">' + (x.score >= 6 ? 'Maximum' : Math.round(x.frac * 100) + ' % vers ' + LETTRES[Math.floor(x.score) + 1]) + '</span></div><div class="bar thin"><div style="width:' + Math.round(x.frac * 100) + '%"></div></div></div>' + ICON.chev + '</button>';
+      + '<span class="small mut" style="white-space:nowrap">' + (x.none ? 'Pas encore mesurée' : x.score >= 6 ? 'Maximum' : Math.round(x.frac * 100) + ' % vers ' + LETTRES[Math.floor(x.score) + 1]) + '</span></div><div class="bar thin"><div style="width:' + Math.round(x.frac * 100) + '%"></div></div></div>' + ICON.chev + '</button>';
   }
   return h + '</div></section>';
 }
@@ -105,7 +105,7 @@ function sheetQuality(id) {
   const x = info.q.find((k) => k.id === id);
   if (!x) return;
   let h = '<div class="row" style="gap:16px"><span class="qletter big">' + x.letter + '</span><div class="col grow" style="gap:4px"><span class="label violet">Qualité</span><span class="h1">' + esc(x.name) + '</span>'
-    + '<span class="small mut">' + (x.score >= 6 ? 'Lettre maximum' : Math.round(x.frac * 100) + ' % vers la lettre ' + LETTRES[Math.floor(x.score) + 1]) + '</span></div></div>'
+    + '<span class="small mut">' + (x.none ? 'Pas encore mesurée : fais un des exercices ci-dessous une fois pour avoir ta vraie lettre' : x.score >= 6 ? 'Lettre maximum' : Math.round(x.frac * 100) + ' % vers la lettre ' + LETTRES[Math.floor(x.score) + 1]) + '</span></div></div>'
     + '<div class="bar"><div style="width:' + Math.round(x.frac * 100) + '%"></div></div>'
     + '<span style="color:var(--soft)">' + esc(x.desc) + '</span>';
   h += '<span class="label">Ce qui compte</span><div class="list">' + x.sources.map((sc) => {
@@ -172,7 +172,7 @@ export function viewProgress() {
   if (rows.length) {
     h += '<div class="sec"><span class="h2 row" style="gap:10px"><i class="secdot t-gold"></i>Mes records</span><span class="small mut">' + plural(rows.length, 'exercice', 'exercices') + '</span></div><section class="glass card list tint t-gold" style="padding:4px 16px">'
       + rows.map((x) => '<button type="button" class="item" data-act="exo" data-name="' + esc(x.n) + '"><div class="col grow" style="gap:2px"><span style="font-weight:600">' + esc(exoName(x.n)) + '</span><span class="small mut">' + dateFr(x.h.most.date, true) + '</span></div>'
-        + '<div class="col" style="gap:2px;align-items:flex-end"><span class="gold-text" style="font-weight:600">' + esc(setText(x.h.most.set)) + '</span>' + (x.h.heavy && x.h.heavy.set !== x.h.most.set ? '<span class="small mut">' + esc(setText(x.h.heavy.set)) + '</span>' : '') + '</div></button>').join('') + '</section>';
+        + '<div class="col" style="gap:2px;align-items:flex-end"><span class="gold-text" style="font-weight:600">' + esc(setText(x.h.most.set, x.n)) + '</span>' + (x.h.heavy && setText(x.h.heavy.set, x.n) !== setText(x.h.most.set, x.n) && !isBand(x.n) ? '<span class="small mut">' + esc(setText(x.h.heavy.set)) + '</span>' : '') + '</div></button>').join('') + '</section>';
   }
 
   const b = balance();

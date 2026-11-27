@@ -51,9 +51,12 @@ export function planItems(withRest) {
   // Séance du jour : les jours prévus de cette semaine (aujourd'hui compris s'il n'est pas encore l'heure).
   if (kindOn('day')) {
     const days = P ? P.days.filter((d) => !d.done.length && (d.kind === 'seance' || d.kind === 'course') && d.i >= (new Date(now).getDay() + 6) % 7) : [];
+    // Séance en cours : pas de rappel « séance du jour » pour aujourd'hui (il arrivait pendant la séance).
+    const busy = a && midnight(a.start || now) === t0;
     for (const d of days) {
       const at = atHour(d.a + 3 * 3600e3, h);
       if (at <= now) continue;
+      if (busy && midnight(at) === t0) continue;
       const run = d.kind === 'course';
       items.push({ at, title: run ? 'Course du jour' : (d.label || 'Séance du jour'), body: (run ? 'C’est le jour de ta course.' : 'Ta séance du jour t’attend' + (d.sub ? ', ' + d.sub : '') + '.') + (st.n ? ' Ta flamme : ' + st.n + ' semaine' + (st.n > 1 ? 's' : '') + '.' : ''), tag: 'day' });
     }
@@ -69,6 +72,7 @@ export function planItems(withRest) {
         for (let k = s.doneToday ? 1 : 0; k <= 2; k++) {
           const dn = s.day + k - (s.doneToday ? 1 : 0);
           if (dn > 30) break;
+          if (k === 0 && a && a.p30) continue; // le jour du défi est en cours
           const pl = p30Day(s.p, dn);
           if (pl.rest) continue;
           const at = atHour(t0 + k * DAY + 3 * 3600e3, h);
@@ -104,8 +108,12 @@ export function syncPlan(withRest) {
   const key = JSON.stringify(items);
   if (key === lastSent) return;
   lastSent = key;
-  post('/plan', { items }, true).catch(() => { lastSent = ''; });
+  post('/plan', { items }, true).then((r) => {
+    // 410 : le serveur n'a plus l'abonnement (l'iPhone l'a changé ou annulé). On se réabonne tout seul et on renvoie.
+    if (r && r.status === 410 && !healing) { healing = true; subscribe().then(() => { lastSent = ''; syncPlan(withRest); }).catch(() => { lastSent = ''; }).finally(() => { healing = false; }); }
+  }).catch(() => { lastSent = ''; });
 }
+let healing = false;
 
 function keyBytes(b64) {
   const s = b64.replace(/-/g, '+').replace(/_/g, '/');
@@ -123,7 +131,9 @@ async function subscribe() {
   if (!state.settings.pushId) state.settings.pushId = Array.from(crypto.getRandomValues(new Uint8Array(12)), (x) => x.toString(36).padStart(2, '0')).join('').slice(0, 20);
   const r = await post('/sub', { sub: sub.toJSON() });
   if (!r.ok) throw new Error('sub');
+  lastSub = Date.now();
 }
+let lastSub = 0;
 
 export async function enablePush(after) {
   if (!pushPossible()) { toast('Ouvre Ascension depuis son icône sur l’écran d’accueil pour activer les notifications'); return; }
@@ -144,7 +154,12 @@ export async function enablePush(after) {
 
 // À chaque ouverture : on renvoie l'abonnement (il peut changer) et les rappels.
 export async function initPush() {
-  document.addEventListener('visibilitychange', () => syncPlan(document.visibilityState === 'hidden'));
+  document.addEventListener('visibilitychange', () => {
+    const vis = document.visibilityState === 'visible';
+    // L'iPhone garde l'app en mémoire des jours entiers : au retour, on revérifie l'abonnement (au plus toutes les 3 h).
+    if (vis && pushOn() && Date.now() - lastSub > 3 * 3600e3) { subscribe().then(() => { lastSent = ''; syncPlan(false); }).catch(() => {}); return; }
+    syncPlan(!vis);
+  });
   window.addEventListener('pagehide', () => syncPlan(true));
   if (!pushPossible() || !pushOn()) return;
   try { await subscribe(); } catch (e) { /* hors ligne : on réessaiera */ }
