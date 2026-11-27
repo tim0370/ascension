@@ -238,7 +238,8 @@ const GUIDE = [
   ['Ne rien perdre', [
     ['export', 'Sauvegarder', 'Un fichier avec toutes tes données, à garder dans Fichiers ou iCloud.'],
     ['home-edit', 'Personnaliser l’accueil', 'Choisis les cartes affichées.'],
-    ['', 'Fond de l’accueil', 'Réglages, Fond de l’accueil : un paysage, des lumières ou ta photo derrière les cartes.'],
+    ['', 'Fond de l’accueil', 'Réglages, Fond de l’accueil : le stade, la salle, la route, l’emblème ou ta photo derrière les cartes.'],
+    ['', 'Raccourcis en haut des onglets', 'En haut de Progrès, de Défis et des Réglages : touche un nom pour aller directement à cette partie.'],
   ]],
 ];
 function sheetGuide() {
@@ -509,13 +510,14 @@ function sheetRun() {
 // s'ouvrent dans une petite fenêtre par-dessus (ui.sub), les oui/non se basculent sur place.
 const srow = (act, ic, t, v, extra) => '<button type="button" class="srow" data-act="' + act + '"' + (extra || '') + '><span class="mico">' + (ICON[ic] || '') + '</span><span class="grow mt">' + t + '</span>' + (v !== undefined ? '<span class="sv">' + v + '</span>' : '') + ICON.chev + '</button>';
 const stog = (act, ic, t, on, sub) => '<button type="button" class="srow" data-act="' + act + '" role="switch" aria-checked="' + !!on + '"><span class="mico">' + (ICON[ic] || '') + '</span><span class="col grow" style="gap:1px;min-width:0"><span class="mt">' + t + '</span>' + (sub ? '<span class="small mut">' + sub + '</span>' : '') + '</span><span class="sw' + (on ? ' on' : '') + '"><i></i></span></button>';
-const sgroup = (t, rows, note) => '<div class="sgroup">' + (t ? '<span class="label">' + t + '</span>' : '') + '<div class="slist">' + rows.join('') + '</div>' + (note ? '<span class="small mut note">' + note + '</span>' : '') + '</div>';
+const sgroup = (t, rows, note) => '<div class="sgroup"' + (t ? ' id="sg-' + norm(t).replace(/[^a-z]/g, '') + '"' : '') + '>' + (t ? '<span class="label">' + t + '</span>' : '') + '<div class="slist">' + rows.join('') + '</div>' + (note ? '<span class="small mut note">' + note + '</span>' : '') + '</div>';
 
 function sheetSettings() {
   const rest = state.settings.rest || 90;
   const kg = bodyLog().length ? fr(bodyLog()[0].kg, 1) + ' kg' : 'à noter';
   const unk = unknownExos().length;
   let h = '<h1 class="h1">Réglages</h1>';
+  h += '<nav class="secnav insheet" aria-label="Parties des réglages">' + ['Entraînement', 'Son et voix', 'Notifications', 'Profil', 'Données', 'À propos'].map((t) => '<button type="button" class="secchip" data-sec="sg-' + norm(t).replace(/[^a-z]/g, '') + '">' + t + '</button>').join('') + '</nav>';
   h += sgroup('Entraînement', [
     srow('set-sub', 'dumbbell', 'Façon de t’entraîner', esc({ full: 'Programme complet', debutant: 'Débutant', libre: 'Sans programme' }[modeNow()]), ' data-k="mode"'),
     srow('set-sub', 'calendar', 'Objectif par semaine', plural(weekGoal(), 'séance', 'séances'), ' data-k="goal"'),
@@ -921,6 +923,35 @@ function fanGo(it) {
 }
 initFan({ items: FAN, go: fanGo, tap: () => fanGo({ kind: 'tab', v: 'workout' }) });
 
+// Sommaire en haut des onglets longs : tout ce que l'onglet contient, visible sans descendre, un toucher pour y aller.
+// Un raccourci par élément (trouvé par son bouton), seulement s'il est affiché.
+const SECNAV = {
+  defis: [['Quêtes', '[data-act="quests"]'], ['Ton ombre', '[data-act="boss"]'], ['Duels', '[data-act="duels"]'], ['Défi du mois', '[data-act="mch"]'], ['30 jours', '[data-act="p30"]'], ['Test du mois', '[data-act="mtest"]'], ['Saison', '[data-act="season"]'], ['Campagne', '.camp, [data-act="camp-all"]'], ['Figures', '.figgrid'], ['Hauts faits', '[data-act="feats"]'], ['Paliers', '[data-act="paliers"]']],
+  progress: [['Rang', '[data-act="rank"]'], ['Analyse', '[data-act="analyse"]'], ['Objectifs', '[data-act="cap"], [data-act="goal"], [data-act="goal-new"]'], ['Muscles', '.bodymap'], ['Carrière', '[data-act="career"]'], ['Parcours', '[data-act="parcours"]'], ['Records', '[data-act="exo"]'], ['Équilibre', '.hbar'], ['Poids', '[data-act="body"]'], ['Mensurations', '[data-act="measures"]'], ['Photos', '[data-act="photos"]']],
+};
+function addSecNav() {
+  const rules = SECNAV[ui.tab];
+  const app = $('app');
+  if (!rules || !app.firstElementChild) return;
+  const kids = [...app.children].slice(1);
+  const chips = [];
+  rules.forEach(([label, sel], i) => {
+    const c = kids.find((k) => k.matches(sel) || k.querySelector(sel));
+    if (!c) return;
+    // Le titre de la partie juste au-dessus reste visible en arrivant.
+    const prev = c.previousElementSibling;
+    const target = prev && prev.matches('.sechead, .sec') && !prev.id ? prev : c;
+    if (!target.id) target.id = 'sec-' + i;
+    chips.push('<button type="button" class="secchip" data-sec="' + target.id + '">' + label + '</button>');
+  });
+  if (chips.length < 3) return;
+  const nav = document.createElement('nav');
+  nav.className = 'secnav';
+  nav.setAttribute('aria-label', 'Dans cet onglet');
+  nav.innerHTML = chips.join('');
+  app.firstElementChild.after(nav);
+}
+
 export function render() {
   const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory, moi: viewHistory, defis: viewDefis };
   // L'animation d'arrivée ne joue que quand on change d'écran, pas à chaque série cochée.
@@ -949,6 +980,7 @@ export function render() {
   // Écran d'un exercice : le bouton rond laisse la place à « Valider ».
   document.body.classList.toggle('in-focus', !!state.active && ui.tab === 'workout' && state.active.view === 'focus' && state.active.exercises.length > 0);
   $('app').innerHTML = html;
+  addSecNav();
   document.body.classList.toggle('zen', !!state.settings.zen);
   document.documentElement.classList.toggle('light', !!state.settings.light);
   document.documentElement.classList.toggle('textbig', !!state.settings.textBig);
@@ -968,6 +1000,8 @@ export function render() {
 }
 
 document.addEventListener('click', (ev) => {
+  const sec = ev.target.closest('[data-sec]');
+  if (sec) { const t = document.getElementById(sec.dataset.sec); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); return; }
   const el = ev.target.closest('[data-act], [data-tab]');
   if (el && el.disabled) return;
   if (el && el.dataset.act && ACTIONS[el.dataset.act]) { ACTIONS[el.dataset.act](el); return; }

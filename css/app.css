@@ -1254,3 +1254,11 @@ body[data-bg]:not([data-bg=""]) #app .mut { color: rgba(255, 255, 255, 0.74); }
 /* Entre deux exercices : juste un petit « + » discret, sans trait sur toute la largeur. */
 .ins::before, .ins::after { background: transparent; }
 .ins svg { width: 16px; height: 16px; opacity: 0.55; }
+
+/* v62 : sommaire des onglets longs et des réglages (tout ce qu'il y a dedans, sans descendre). */
+.secnav { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 4px; }
+.secchip { min-height: 40px; padding: 9px 14px; border-radius: 999px; background: var(--surf); border: 1px solid var(--line); color: var(--soft, #ddd); font: 600 14px/1.1 var(--body); }
+.secchip:active { background: var(--violet); color: #fff; border-color: transparent; }
+#app > * { scroll-margin-top: calc(env(safe-area-inset-top) + 18px); }
+.sgroup { scroll-margin-top: 10px; }
+html.light .secchip { background: #fff; color: #2A2635; }
