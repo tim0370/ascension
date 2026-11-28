@@ -10,7 +10,7 @@ export const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
 export const toNum = (v) => parseFloat(String(v).replace(',', '.')) || 0;
 
 // Numéro de version affiché dans les réglages. À augmenter avec VERSION dans sw.js et NEWS dans data.js.
-export const VERSION = 65;
+export const VERSION = 66;
 
 // État de l'interface (pas enregistré). hFilter = filtre de l'historique. edit = brouillon en cours ; pick = à quoi sert le choix d'exercice.
 export const ui = { tab: 'home', historyLimit: 40, pickerQuery: '', enter: true, edit: null, pick: null, hQuery: '' };
@@ -104,14 +104,20 @@ export function ring(ratio, label, gold) {
 export function toast(msg, gold) {
   $('toast').innerHTML = '<div class="toast glass' + (gold ? ' gold' : '') + '">' + esc(msg) + '</div>';
   clearTimeout(toast.t);
-  toast.t = setTimeout(() => { $('toast').innerHTML = ''; }, 2600);
+  toast.t = setTimeout(() => toastOut(), 2600);
+}
+// v66 : le message repart vers le haut au lieu de disparaître d'un coup.
+function toastOut(after) {
+  const el = $('toast').firstElementChild;
+  if (el) el.classList.add('out');
+  toast.t = setTimeout(() => { $('toast').innerHTML = ''; if (after) after(); }, 200);
 }
 // Message avec « Annuler » : la dernière action (une suppression) peut être défaite pendant 6 secondes.
 export function toastUndo(msg, undo) {
   ui.undo = undo;
   $('toast').innerHTML = '<div class="toast glass undo"><span>' + esc(msg) + '</span><button type="button" class="undobtn" data-act="undo">Annuler</button></div>';
   clearTimeout(toast.t);
-  toast.t = setTimeout(() => { $('toast').innerHTML = ''; ui.undo = null; }, 6000);
+  toast.t = setTimeout(() => toastOut(() => { ui.undo = null; }), 6000);
 }
 
 // Petite vibration (Android seulement : Safari sur iPhone ne permet pas aux sites de faire vibrer).
@@ -134,8 +140,22 @@ export function sheet(html, layer, cls) {
   box.innerHTML = '<div class="sheet' + (cls ? ' ' + cls : '') + (open ? ' noanim' : '') + '"><div>' + x + html + '</div></div>';
   document.body.classList.add('locked'); // la page derrière ne défile plus
 }
-export function closeSheet() { $('sheet').innerHTML = ''; $('sheet2').innerHTML = ''; ui.edit = null; document.body.classList.remove('locked'); }
-export function closeSheet2() { $('sheet2').innerHTML = ''; if (!$('sheet').firstElementChild) document.body.classList.remove('locked'); }
+// v66 : une fenêtre fermée ne disparaît plus d'un coup : une copie redescend pendant 0,24 s
+// (la vraie est vidée tout de suite, rien ne change pour le reste du code).
+function sheetOut(box) {
+  const s = box && box.firstElementChild;
+  if (!s || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  try {
+    const g = s.cloneNode(true);
+    g.classList.remove('noanim'); g.classList.add('out'); g.setAttribute('aria-hidden', 'true');
+    g.querySelectorAll('[id]').forEach((e) => { if (!e.closest('svg')) e.removeAttribute('id'); });
+    if (box.id === 'sheet2') g.style.zIndex = 12;
+    document.body.appendChild(g);
+    setTimeout(() => g.remove(), 260);
+  } catch (e) { /* rien */ }
+}
+export function closeSheet() { sheetOut($('sheet2')); sheetOut($('sheet')); $('sheet').innerHTML = ''; $('sheet2').innerHTML = ''; ui.edit = null; document.body.classList.remove('locked'); }
+export function closeSheet2() { sheetOut($('sheet2')); $('sheet2').innerHTML = ''; if (!$('sheet').firstElementChild) document.body.classList.remove('locked'); }
 export const closeBtn = '<button type="button" class="pill gold-btn wide" data-act="close">Fermer</button>';
 
 // « +10 XP » qui s'envole depuis un bouton (récompense visible à chaque série).

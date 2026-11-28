@@ -905,6 +905,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 66, items: [
+    'Les fenêtres redescendent en douceur quand tu les fermes, et les messages repartent vers le haut au lieu de disparaître d’un coup.',
+    'Fin de séance : tes records arrivent avec un éclat doré, puis tes exercices un par un.',
+    'Sur l’accueil, l’anneau de ta forme se dessine à l’arrivée.',
+  ] },
   { v: 65, items: [
     'Bouton du bas : garde le doigt dessus, les choix sortent en bulles de verre. Celle que tu vises grossit, puis file vers le bouton quand tu lâches.',
     'Pour terminer une séance, garde le doigt sur « Terminer » : une bille roule et remplit le bouton. Fini les séances terminées par erreur.',
