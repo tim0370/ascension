@@ -20,7 +20,11 @@ export const iaState = () => ({ st, pct, err, mo: files ? Math.round(files.reduc
 export const iaWanted = () => !!(state.settings && state.settings.ia);
 
 async function list() {
-  if (!files) files = await (await fetch(BASE + 'liste.json', { cache: 'no-cache' })).json();
+  // La liste en ligne d'abord (« fresh » : sw.js la laisse passer), pour voir tout de suite un fichier refait ; sinon celle gardée.
+  if (!files) {
+    try { const r = await fetch(BASE + 'liste.json?fresh=' + Date.now(), { cache: 'no-store' }); if (!r.ok) throw new Error('liste'); files = await r.json(); }
+    catch (e) { files = await (await fetch(BASE + 'liste.json')).json(); }
+  }
   return files;
 }
 const cacheOk = () => typeof caches !== 'undefined' && location.protocol === 'https:';
