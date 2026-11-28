@@ -905,6 +905,10 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 71, items: [
+    'Nouveau dans le menu : Exercices. Tous les exercices de l’app avec leur animation, rangés par famille, tes exercices en premier. Cherche un nom ou touche un exercice pour voir sa fiche (comment le faire, erreurs, tes records).',
+    'Les chronos (Tabata, EMOM…) restent dans l’onglet Séance et dans la recherche du menu.',
+  ] },
   { v: 70, items: [
     'Retour aux personnages 2D partout : l’essai en 3D des pompes, des dips et du burpee est arrêté.',
     'Animations corrigées : au burpee, les bras redescendent par devant au lieu de tourner dans le dos, et le coude ne se retourne plus d’un coup.',

@@ -295,7 +295,7 @@ export const bgOn = () => !!state.settings.bg && !state.settings.light && FONDS.
 let drawn = '';
 // v67 : « Photos de sport » (idée RanKings) : une vraie photo en haut de la page, qui défile avec elle
 // et se fond dans le fond sombre. Une photo par onglet, rangée dans l'app (img/fonds/, marche hors ligne).
-const HERO = { home: 'home', workout: 'workout', progress: 'progress', defis: 'defis', history: 'history', moi: 'history' };
+const HERO = { home: 'home', workout: 'workout', progress: 'progress', defis: 'defis', history: 'history', moi: 'history', exos: 'workout' };
 let heroNow = '';
 function heroTop(tab) {
   const h = document.getElementById('hero');

@@ -1441,3 +1441,6 @@ html.light { --fig-b0: #FFFFFF; --fig-b1: #C9CCD6; --fig-b2: #6E7280; --fig-f1: 
 html.light .bodysvg .bsil { fill: #C9C9D2; }
 html.light .bodysvg .mz { fill: #9A9AA6; stroke: #F4F3F8; }
 html.light .bodysvg .mz.on { fill: var(--mc); }
+
+/* v71 : écran Exercices, champ de recherche lisible sur la photo du haut */
+body.has-hero #exos-q { background: rgba(14, 14, 18, 0.74); border-color: rgba(255, 255, 255, 0.14); }

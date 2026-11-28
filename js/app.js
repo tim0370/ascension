@@ -36,6 +36,7 @@ import { enablePush, disablePush, initPush, pushOn, notifHour, resync, KINDS as 
 import { viewProgress, hevyCard, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
 import { routeSvg, runRecords, routesAll, fmtTime } from './course.js';
 import { init3d } from './fig3d.js';
+import { viewExos } from './exos.js';
 
 const DAY = 864e5;
 const local = ['localhost', '127.0.0.1'].includes(location.hostname); // tests sur le PC
@@ -193,6 +194,7 @@ const GUIDE = [
   ['S’entraîner', [
     ['menu', 'Le bouton rond', 'En bas au milieu de chaque écran. Un toucher ouvre ta séance (un anneau montre où tu en es si elle est commencée). Garde le doigt dessus : un éventail s’ouvre (Course, Progrès, Aujourd’hui, Défis, Menu). Glisse sur un choix et lâche pour y aller, lâche sur le bouton pour annuler.'],
     ['prog', 'Programme guidé', 'Full Body A et B en alternance, la course le dimanche. Chaque exercice a une fourchette de répétitions : quand toutes tes séries touchent le haut, l’app te propose l’étape suivante (lest, variante, descente lente). Rien ne change sans ton accord.'],
+    ['exos', 'Exercices', 'Dans le menu : tous les exercices de l’app avec leur animation. Cherche par nom ou choisis une famille, puis touche un exercice pour voir comment le faire, les erreurs à éviter et tes chiffres.'],
     ['plan', 'Plan de la semaine', 'Tes 7 jours remplis par l’app : séances, course du dimanche, repos. Il se refait tout seul si tu rates un jour.'],
     ['settings', 'Choisir son programme', 'Dans les Réglages : programme complet, programme débutant (3 séances faciles au poids du corps) ou sans programme (tes routines sur l’accueil).'],
     ['routines', 'Mes routines', 'Tes listes d’exercices : touche une routine, puis « Modifier les exercices » pour en ajouter ou en retirer. Et la séance libre.'],
@@ -857,7 +859,7 @@ const MENU = [
     ['tab', 'home', 'home', 'Aujourd’hui', 'Ta séance du jour, ta forme, ta semaine, accueil', 'Accueil'],
     ['tab', 'workout', 'dumbbell', 'Séance', 'Programme, routines, séance libre, pompes du jour'],
     ['act', 'run', 'run', 'Course', 'Noter une course ou courir avec le GPS'],
-    ['act', 'chrono2', 'timer', 'Chronos', 'Tabata, EMOM, AMRAP, intervalles'],
+    ['tab', 'exos', 'stack', 'Exercices', 'Tous les exercices avec leur animation, leur fiche et tes chiffres'],
   ]],
   ['Suivi', [
     ['tab', 'progress', 'chart', 'Progrès', 'Ton rang, tes objectifs, tes muscles, tes records'],
@@ -880,6 +882,7 @@ const MENU = [
 ];
 // Recherche dans toute l'app : écrans et fenêtres, exercices (avec leurs autres noms), séances passées.
 const MORE_SEARCH = [
+  ['act', 'chrono2', 'timer', 'Chronos', 'Tabata, EMOM, AMRAP, intervalles'],
   ['act', 'analyse', 'chart', 'Analyse', 'Ce mois contre le mois dernier, meilleures séances, records'],
   ['act', 'week', 'calendar', 'Ta semaine', 'Plan de la semaine, jours fixes, vacances'],
   ['act', 'coach', 'bolt', 'Coach', 'Conseils et questions'],
@@ -913,7 +916,7 @@ function sheetMenu() {
     + rows.map(([k, v, ic, t, , sh]) => '<button type="button" class="mtile' + (k === 'tab' && ui.tab === v ? ' on' : '') + '" ' + (k === 'tab' ? 'data-tab' : 'data-act') + '="' + v + '" aria-label="' + t + '"><span class="mico">' + (ICON[ic] || '') + '</span><span class="mtl">' + (sh || t) + '</span></button>').join('')
     + '</div></div>').join('') + '</div>', 1, 'menu');
 }
-Object.assign(ACTIONS, { menu: () => sheetMenu() });
+Object.assign(ACTIONS, { menu: () => sheetMenu(), exos: () => { ui.tab = 'exos'; ui.enter = true; closeSheet(); render(); window.scrollTo(0, 0); } });
 // Les 5 choix de l'éventail, de gauche à droite (un simple toucher, lui, ouvre la séance).
 const FAN = () => [
   { kind: 'act', v: 'run', ic: 'run', t: 'Course' },
@@ -999,7 +1002,7 @@ function showSub(anim) {
 }
 
 export function render() {
-  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory, moi: viewHistory, defis: viewDefis };
+  const views = { home: viewHome, workout: viewWorkout, progress: viewProgress, history: viewHistory, moi: viewHistory, defis: viewDefis, exos: viewExos };
   // L'animation d'arrivée ne joue que quand on change d'écran, pas à chaque série cochée.
   $('app').classList.toggle('enter', ui.enter);
   ui.enter = false;
