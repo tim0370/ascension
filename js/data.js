@@ -905,7 +905,7 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
-  { v: 77, items: [
+  { v: 78, items: [
     'La petite IA du coach se met à jour toute seule quand elle apprend de nouvelles phrases (seul un petit fichier est retéléchargé).',
   ] },
   { v: 75, items: [

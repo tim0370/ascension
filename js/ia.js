@@ -39,7 +39,7 @@ export function iaStart() {
         const c = await caches.open(IA_CACHE);
         const miss = [];
         // Un fichier change de taille quand on refait l'IA (nouvelles phrases) : on le retélécharge.
-        const same = async (hit, x) => { if (!hit) return false; const n = hit.headers.get('X-N'); if (n) return +n === x.n; if (x.n > 2e6) return true; return (await hit.clone().arrayBuffer()).byteLength === x.n; };
+        const same = async (hit, x) => { if (!hit) return false; if (x.n < 2e6) return (await hit.clone().arrayBuffer()).byteLength === x.n; const n = hit.headers.get('X-N'); return !n || +n === x.n; };
         for (const x of L) if (!(await same(await c.match(BASE + x.f), x))) miss.push(x);
         if (miss.length) {
           st = 'dl'; pct = 0; tell();
