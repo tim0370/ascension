@@ -905,6 +905,10 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 67, items: [
+    'Nouveaux fonds d’écran : une vraie photo de sport en haut de chaque page, qui se fond dans le noir. Une photo différente pour l’accueil, la séance, tes progrès, les défis et ton historique.',
+    'Les photos sont rangées dans l’app : elles marchent sans internet. Tu peux toujours choisir un autre fond ou ta propre photo dans Réglages, Fond d’écran.',
+  ] },
   { v: 66, items: [
     'Les fenêtres redescendent en douceur quand tu les fermes, et les messages repartent vers le haut au lieu de disparaître d’un coup.',
     'Fin de séance : tes records arrivent avec un éclat doré, puis tes exercices un par un.',

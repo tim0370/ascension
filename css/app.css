@@ -1395,3 +1395,18 @@ details[open] > summary ~ * { animation: rise 0.25s cubic-bezier(0.23, 1, 0.32, 
 .sumhead ~ .list > .item:nth-child(3) { animation-delay: 0.45s; } .sumhead ~ .list > .item:nth-child(4) { animation-delay: 0.5s; }
 .sumhead ~ .list > .item:nth-child(5) { animation-delay: 0.55s; } .sumhead ~ .list > .item:nth-child(n+6) { animation-delay: 0.6s; }
 @media (prefers-reduced-motion: reduce) { .sheet.out, .toast.out, .sumrec, .sumrec::after, .sumhead ~ .list > .item, #app.enter .fring svg circle:last-child, details[open] > summary ~ * { animation: none !important; } }
+/* v67 : « Photos de sport » : une vraie photo en haut de chaque page (comme RanKings), qui défile avec la page
+   et se fond dans le fond sombre ; les cartes gardent leur fond plein, tout reste lisible. */
+#hero { position: absolute; top: 0; left: 0; right: 0; height: 440px; z-index: 0; pointer-events: none; overflow: hidden; }
+#hero:empty { display: none; }
+.heroimg { position: absolute; inset: 0; max-width: 640px; margin: 0 auto; background-size: cover; background-position: center 30%; animation: heroin 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+.heroimg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(14, 14, 18, 0.5) 0%, rgba(14, 14, 18, 0.1) 20%, rgba(14, 14, 18, 0.38) 40%, rgba(14, 14, 18, 0.78) 72%, #0E0E12 100%); }
+@keyframes heroin { from { opacity: 0; transform: scale(1.06); } }
+body.has-hero { background: var(--bg); }
+body.has-hero #app { padding-top: calc(env(safe-area-inset-top) + 150px); }
+body.has-hero #app { text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 0, 0, 0.45); }
+body.has-hero #app .glass, body.has-hero #app .tile { text-shadow: none; }
+.bgthumb.heroth { background-size: cover; background-position: center 30%; }
+.bgthumb.heroth::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, #0E0E12 100%); }
+@media (prefers-reduced-motion: reduce) { .heroimg { animation: none; } }
+body.has-hero #app .mut:not(.glass .mut):not(.cta .mut):not(.tile .mut) { color: rgba(255, 255, 255, 0.86); }

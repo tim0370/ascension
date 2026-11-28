@@ -22,6 +22,7 @@ const f1 = (x) => x.toFixed(1);
 
 export const FONDS = [
   ['', 'Aucun', 'Le fond uni habituel'],
+  ['sport', 'Photos de sport', 'Une vraie photo en haut de chaque page, qui se fond dans le noir'],
   ['stade', 'Stade', 'La piste d’athlétisme sous les projecteurs'],
   ['salle', 'Salle', 'Ta station de dips sous un projecteur'],
   ['route', 'Course', 'La route au lever du soleil, comme le dimanche'],
@@ -292,12 +293,30 @@ function photo() { try { return localStorage.getItem(PHOTO_KEY) || ''; } catch (
 export const bgOn = () => !!state.settings.bg && !state.settings.light && FONDS.some((f) => f[0] === state.settings.bg) && (state.settings.bg !== 'photo' || !!photo());
 
 let drawn = '';
+// v67 : « Photos de sport » (idée RanKings) : une vraie photo en haut de la page, qui défile avec elle
+// et se fond dans le fond sombre. Une photo par onglet, rangée dans l'app (img/fonds/, marche hors ligne).
+const HERO = { home: 'home', workout: 'workout', progress: 'progress', defis: 'defis', history: 'history', moi: 'history' };
+let heroNow = '';
+function heroTop(tab) {
+  const h = document.getElementById('hero');
+  if (!h) return;
+  const f = tab ? HERO[tab] || 'home' : '';
+  document.body.classList.toggle('has-hero', !!f);
+  if (f === heroNow) return;
+  heroNow = f;
+  if (!f) { h.innerHTML = ''; return; }
+  h.innerHTML = '<div class="heroimg" style="background-image:url(&quot;img/fonds/' + f + '.jpg&quot;)"></div>';
+}
 // Appelé à chaque affichage.
 export function applyBg(tab) {
   const el = document.getElementById('bg');
   if (!el) return;
   // v63 : le fond est derrière tous les écrans, sauf pendant une séance (l'écran de séance reste uni).
+  // v67 : tout le monde passe une fois aux photos de sport (sauf qui a choisi sa propre photo).
+  if (!state.settings.g67) { state.settings.g67 = true; if (state.settings.bg !== 'photo') state.settings.bg = 'sport'; save(); }
   const k = bgOn() && !(tab === 'workout' && state.active) ? state.settings.bg : '';
+  heroTop(k === 'sport' ? tab : '');
+  if (k === 'sport') { document.body.dataset.bg = ''; if (drawn) { drawn = ''; el.innerHTML = ''; el.removeAttribute('style'); } return; }
   document.body.dataset.bg = k;
   if (k === 'aura') {
     if (drawn !== 'aura') { drawn = 'aura'; el.removeAttribute('style'); el.innerHTML = AURA; }
@@ -316,6 +335,7 @@ export function applyBg(tab) {
 // Aperçu miniature pour le choix dans les réglages.
 export function bgThumb(k) {
   if (!k) return '<span class="bgthumb plain"></span>';
+  if (k === 'sport') return '<span class="bgthumb heroth" style="background-image:url(&quot;img/fonds/home.jpg&quot;)"></span>';
   if (k === 'aura') return '<span class="bgthumb" style="' + auraCols('home').map((c, n) => '--a' + (n + 1) + ':' + c).join(';') + '">' + AURA + '</span>';
   if (k === 'photo') { const p = photo(); return '<span class="bgthumb"' + (p ? ' style="background-image:url(&quot;' + p + '&quot;)"' : '') + '>' + (p ? '' : '<b>+</b>') + '</span>'; }
   return '<span class="bgthumb">' + art(k) + '</span>';
