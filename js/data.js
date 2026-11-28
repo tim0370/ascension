@@ -905,6 +905,12 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 75, items: [
+    'Pour quitter la discussion avec le coach, touche le petit bonhomme. Elle se ferme aussi toute seule quand tu changes d’écran ou que tu lances une séance, un chrono ou une course.',
+    'Le coach suit la conversation : après ta séance du jour, demande « et en plus court ? », « plus dur » ou « sans matériel ». Sous chaque réponse, une ou deux questions pour continuer.',
+    'Demande-lui tes quêtes du jour, ton ombre, ta semaine, ta forme, ton rang ou ton défi de 30 jours : il répond avec la carte, que tu touches pour aller plus loin.',
+    'Sous le coach, ta forme et ta semaine sont maintenant côte à côte. Le soir, c’est le coach qui te conseille la version 10 minutes.',
+  ] },
   { v: 74, items: [
     'Le coach a une petite IA : elle comprend tes questions écrites comme tu parles, avec des fautes ou des abréviations (« jsuis creuvé », « cmb de séances il me reste »). Touche « Rends-moi plus malin » sous le coach pour la télécharger (environ 80 Mo, une seule fois, en Wi-Fi).',
     'Elle reste dans ton téléphone et marche sans internet. Les réponses sont toujours calculées sur tes séances : elle n’invente rien.',

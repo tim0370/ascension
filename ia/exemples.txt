@@ -1451,3 +1451,43 @@ comment ça va le monde
 dis moi un secret
 tu as quel âge
 tu es un garçon ou une fille
+
+# ---------- v75 : nouveaux sujets ----------
+# quests
+mes quêtes du jour
+mes quêtes
+c'est quoi mes quêtes aujourd'hui
+les quêtes du jour
+mes défis du jour
+c'est quoi les défis d'aujourd'hui
+j'ai fait mes quêtes ?
+il me reste quelles quêtes
+quêtes
+mes missions du jour
+comment réussir mes quêtes
+combien de quêtes j'ai réussi
+la quête rare
+je veux faire mes quêtes
+cest quoi mes quetes
+mes defis daujourdhui
+les petits défis du jour
+qu'est-ce qui me rapporte de l'xp aujourd'hui
+comment gagner de l'xp
+
+# boss
+mon ombre
+c'est quoi mon ombre
+le boss de la semaine
+le défi de la semaine
+je dois battre combien pour mon ombre
+comment battre mon ombre
+mon boss
+le boss
+j'ai battu mon ombre ?
+mon ombre c'est quoi cette semaine
+combien de reps pour battre le boss
+je veux combattre mon ombre
+le combat de la semaine
+lombre
+cest quoi le boss
+il reste combien de jours pour le boss

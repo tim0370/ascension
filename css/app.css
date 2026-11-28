@@ -1504,3 +1504,17 @@ body.has-hero #exos-q { background: rgba(14, 14, 18, 0.74); border-color: rgba(2
 .iaok svg { width: 22px; height: 22px; flex: none; color: var(--vert, #4ADE80); }
 .iachip svg { width: 15px; height: 15px; flex: none; }
 #iasheet .card { padding: 14px 16px; }
+
+/* v75 : tuiles forme et semaine sous le coach */
+.hgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hgrid.one { grid-template-columns: 1fr; }
+.htile { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px; text-align: left; min-width: 0; color: inherit; font: inherit; }
+.htile .htv { font-weight: 700; font-size: 15px; line-height: 1.2; min-width: 0; }
+.htile .htn { font-family: var(--display); font-size: 34px; line-height: 1; font-weight: 800; }
+.htile .htn small { font-size: 18px; color: var(--mut, #8E8AA6); font-weight: 700; }
+.wdots { display: flex; gap: 5px; }
+.wdots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.12); }
+.wdots i.on { background: var(--violet, #7C5CF5); }
+.wdots i.today { box-shadow: 0 0 0 2px var(--bg, #0E0E12), 0 0 0 3.5px var(--violet-soft, #B49CFF); }
+/* Questions pour continuer, sous les réponses du coach : en contour, pour ne pas les confondre avec les actions */
+.cbbtns .pill[data-next] { background: transparent; border: 1px solid rgba(124, 92, 245, 0.5); color: var(--violet-soft, #B49CFF); box-shadow: none; }

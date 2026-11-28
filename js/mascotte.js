@@ -6,7 +6,15 @@
 import { answerFor, answerTextAI, qLabel, suggest } from './coach.js';
 import { iaPicked, iaWanted } from './ia.js';
 import { resetCtx } from './cerveau.js';
-import { progCard } from './programme.js';
+import { progCard, todayList } from './programme.js';
+import { weekCard } from './semaine.js';
+import { formeCard } from './forme.js';
+import { p30Card, status as p30Status } from './prog30.js';
+import { bossCard } from './boss.js';
+import { dailyQuests } from './quetes.js';
+import { rankCard } from './progress.js';
+import { rankInfo } from './stats.js';
+import { questRow } from './app.js';
 import { state } from './store.js';
 import { esc, ACTIONS, ICON } from './ui.js';
 
@@ -44,6 +52,8 @@ function context() {
   const done = state.workouts.some((w) => w.start >= t0 && !w.quick && !w.boss);
   if (done) return { line: 'Séance faite aujourd’hui. Bien joué.', happy: true };
   if (!state.workouts.length) return { line: 'Je suis ton coach. Demande-moi par quoi commencer.', happy: false };
+  // Le soir (ancienne carte « Ce soir ») : le coach le dit lui-même.
+  if (new Date().getHours() >= 21 && !state.workouts.some((w) => w.start >= t0)) return { line: 'Il est tard : fais la version 10 minutes, ou repose-toi et fais ta séance demain.', happy: false };
   return { line: 'Qu’est-ce qu’on fait aujourd’hui ?', happy: false };
 }
 const hello = () => { const h = new Date().getHours(); return h < 5 || h >= 18 ? 'Bonsoir' : 'Salut'; };
@@ -159,12 +169,28 @@ function todayAnswer() {
   const text = ['Voici ta séance du jour.'].concat(a.text.filter((t) => !/^Forme/.test(t) && !/^Fais « .* » en entier, environ/.test(t)));
   return { text, card: card + (more.length ? '<div class="mmodes"><span class="small mut">Autres formats</span><div class="row wrap" style="gap:8px">' + more.map(([m, l]) => '<button type="button" class="pill sm glass" data-act="prog-start" data-type="' + type + '" data-mode="' + m + '">' + l + '</button>').join('') + '</div></div>' : '') };
 }
+// v75 : certains sujets arrivent avec leur carte (la même que dans l'app), qu'on touche pour aller plus loin.
+const CARDS = {
+  week: () => weekCard(),
+  forme: () => formeCard(todayList()),
+  p30: () => (p30Status() ? p30Card() : ''),
+  boss: () => (state.workouts.length ? bossCard() : ''),
+  rank: () => (state.workouts.length ? rankCard(rankInfo()) : ''),
+  quests: () => { const L = state.workouts.length ? dailyQuests() : []; return L.length ? '<section class="glass card tap tint t-teal" role="button" tabindex="0" data-act="quests" style="padding:4px 16px">' + L.map(questRow).join('') + '</section>' : ''; },
+};
+function withCard(id, a) {
+  if (!a || a.card || !CARDS[id]) return a;
+  try { const c = CARDS[id](); if (c) a.card = c; } catch (e) { console.error(e); }
+  return a;
+}
+// « Ma séance du jour » garde la carte de la séance, avec les boutons de suite de coach.js.
+function todayFull() { const a = todayAnswer(), b = answerFor('today'); if (!a.btns && !context().happy) a.btns = [].concat(b.btns || []).filter((x) => /data-next/.test(x)); return a; }
 export function homeAsk(id, arg, label) {
   if (['quick', 'prog', 'checkin'].includes(id)) { ACTIONS[id]({ dataset: {} }); return; }
-  respond(label || qLabel(id), () => (id === 'today' ? todayAnswer() : answerFor(id, arg)));
+  respond(label || qLabel(id), () => (id === 'today' ? todayFull() : withCard(id, answerFor(id, arg))));
 }
 function homeText(text) {
-  respond(text, async () => { const a = await answerTextAI(text); return a._id === 'today' ? todayAnswer() : a; });
+  respond(text, async () => { const a = await answerTextAI(text); return a._id === 'today' && !a.fu ? todayFull() : withCard(a._id, a); });
 }
 
 document.addEventListener('submit', (ev) => {
@@ -185,5 +211,18 @@ Object.assign(ACTIONS, {
   'coach-ask': (el) => { if (!$('coachchat') && $('hchat')) { if (el.dataset.pick) iaPicked(el.dataset.q); homeAsk(el.dataset.q, el.dataset.arg, el.dataset.l); } else origAsk(el); },
   'coach-go': (el) => { if (!$('coachchat')) { chat = []; resetCtx(); } origGo(el); },
   hclose: () => { chat = []; resetCtx(); busy = false; const b = $('hchat'); if (b) b.innerHTML = ''; setOn(false); mood(''); window.scrollTo({ top: 0, behavior: 'smooth' }); },
-  'masc-poke': () => { mood('poke'); setTimeout(() => { const m = $('masc'); if (m) m.classList.remove('poke'); }, 900); const q = $('hq'); if (q && !busy) q.focus({ preventScroll: true }); },
+  // Pendant une discussion, toucher le bonhomme la ferme (et remet l'accueil).
+  'masc-poke': () => { if (chatting() || ($('mhero') && $('mhero').classList.contains('on'))) { ACTIONS.hclose(); return; } mood('poke'); setTimeout(() => { const m = $('masc'); if (m) m.classList.remove('poke'); }, 900); const q = $('hq'); if (q && !busy) q.focus({ preventScroll: true }); },
 });
+
+// v75 : la discussion se ferme toute seule quand on quitte l'accueil ou qu'on lance quelque chose depuis une réponse
+// (séance, chrono, course, pompes du jour, bilan du matin…). Les fiches (exercice, forme, semaine…) la laissent ouverte.
+function quietClose() { chat = []; resetCtx(); busy = false; const b = $('hchat'); if (b) b.innerHTML = ''; setOn(false); mood(''); }
+let lastTab = '';
+export function homeTab(tab) { if (lastTab === 'home' && tab !== 'home' && chatting()) quietClose(); lastTab = tab; }
+const LAUNCH = new Set(['prog-start', 'coach-go', 'cooldown', 'chrono2', 'gps', 'quick', 'checkin', 'coach-tab', 'light-on']);
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest && ev.target.closest('#hchat [data-act], #hchat [data-tab]');
+  if (!el || !chatting()) return;
+  if (el.dataset.tab || LAUNCH.has(el.dataset.act)) setTimeout(() => { if (chatting()) quietClose(); }, 0);
+}, true);

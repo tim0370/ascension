@@ -11,8 +11,8 @@ import { beep, wakeAudio, initSound, soundError } from './sound.js';
 import { hint, $, esc, norm, plural, toNum, ui, ACTIONS, ICON, checkDark, rankSvg, emblem, toast, toastUndo, sheet, closeSheet, closeSheet2, closeBtn, copyText, titleOf, VERSION, ring, chartSvg, burst, buzz } from './ui.js';
 import { routinesCard, viewWorkout, usualTime, tick, renderRest, keepAwake, onInput, feelPills } from './seance.js';
 import { progCard, progOn, isBeginner, todayList, nextInfo } from './programme.js';
-import { formeCard, painCard, forme } from './forme.js';
-import { weekCard, lundiBanner } from './semaine.js';
+import { formeCard, painCard, forme, formeRing } from './forme.js';
+import { weekCard, lundiBanner, weekPlan } from './semaine.js';
 import { campNow, checkCamp } from './campagne.js';
 import { monthChCard, paliersCard, duelCard, checkDuels, checkMonth, shareImage } from './defis.js';
 import { dojoView } from './dojo.js';
@@ -37,7 +37,7 @@ import { viewProgress, hevyCard, rankTeaser, checkRankUp, photoDue, loadPhotos, 
 import { routeSvg, runRecords, routesAll, fmtTime } from './course.js';
 import { init3d } from './fig3d.js';
 import { viewExos } from './exos.js';
-import { homeCoach } from './mascotte.js';
+import { homeCoach, homeTab } from './mascotte.js';
 import { iaWarm, iaSend, iaState, iaWanted } from './ia.js';
 
 const DAY = 864e5;
@@ -73,6 +73,21 @@ function momentCard(done) {
   return '<section class="glass card tap tint t-blue row" role="button" tabindex="0" data-act="prog" style="gap:12px;align-items:center"><div class="col grow" style="gap:4px"><span class="label violet">Ce soir</span><span style="font-weight:700">Trop tard pour une grosse séance</span><span class="small mut">Après 21 h, une séance dure gêne le sommeil. Fais la version 10 minutes, ou repose-toi et fais-la demain.</span></div>' + ICON.chev + '</section>';
 }
 
+// v75 : sous le coach, la forme et la semaine côte à côte (deux tuiles), le reste en dessous.
+function formeTile() {
+  const f = forme(todayList()), am = !f.ci && new Date().getHours() < 14;
+  return '<button type="button" class="glass card htile tap tint t-teal" data-act="' + (am ? 'checkin' : 'forme') + '"><span class="label violet">Forme</span>'
+    + '<div class="row" style="gap:10px;align-items:center">' + formeRing(f, 48) + '<span class="htv">' + esc(am ? 'Bilan à faire' : f.word) + '</span></div>'
+    + '<span class="small mut">' + (am ? '1 min 30 le matin' : f.est ? 'Estimée' : 'D’après ton bilan') + '</span></button>';
+}
+function weekTile() {
+  const P = weekPlan(), today = P.days.find((d) => d.today);
+  const line = today.done.length ? 'Aujourd’hui : fait' : today.kind === 'seance' ? 'Aujourd’hui : séance' : today.kind === 'course' ? 'Aujourd’hui : course' : 'Aujourd’hui : repos';
+  return '<button type="button" class="glass card htile tap tint t-blue" data-act="plan"><span class="label violet">Semaine</span>'
+    + '<span class="htn">' + Math.min(P.doneN, P.goal) + '<small> / ' + P.goal + '</small></span>'
+    + '<span class="wdots">' + P.days.map((d) => '<i class="' + (d.done.length ? 'on' : '') + (d.today ? ' today' : '') + '"></i>').join('') + '</span>'
+    + '<span class="small mut">' + line + '</span></button>';
+}
 function weekBlock(wq) {
   return progOn() ? weekCard() : '<section class="glass card col tap tint t-blue" role="button" tabindex="0" data-act="week" style="gap:14px"><div class="row between"><span class="h2">Ta semaine</span><span class="row small mut" style="gap:4px">' + (wq.done ? 'Objectif atteint' : wq.cur + ' sur ' + wq.goal + ' séances') + ICON.chev + '</span></div><div class="week">' + weekDays().map((d) => '<div class="day' + (d.done ? ' done' : '') + (d.today ? ' today' : '') + '"><span class="dot">' + (d.done ? checkDark : '') + '</span><span class="small">' + d.letter + '</span></div>').join('') + '</div></section>';
 }
@@ -123,8 +138,11 @@ function viewHome() {
     const fc = has && progOn() && show('forme');
     // v73 : avec le coach, la séance du jour arrive dans sa réponse (« Ma séance du jour »), plus sur l'accueil.
     h += doneToday && progOn() ? doneCard(doneToday) : progOn() ? (masc ? '' : progCard(true, !!doneToday, fc)) : routinesCard();
-    h += momentCard(!!doneToday);
+    if (!masc) h += momentCard(!!doneToday);
+    const tiles = masc && has ? [fc ? formeTile() : '', show('week') ? weekTile() : ''].filter(Boolean) : [];
+    if (tiles.length) h += '<div class="hgrid' + (tiles.length === 1 ? ' one' : '') + '">' + tiles.join('') + '</div>';
     for (const k of homeOrder()) {
+      if (tiles.length && (k === 'forme' || k === 'week')) continue;
       if (k === 'forme' && fc) h += formeCard(todayList());
       else if (k === 'coach' && has && show('coach') && progOn() && !masc) h += coachCard();
       else if (k === 'week' && has && show('week')) h += weekBlock(wq);
@@ -222,7 +240,7 @@ const GUIDE = [
     ['forme', 'Charge et ce qui te réussit', 'Ta charge des 8 dernières semaines, la semaine légère conseillée quand il faut, et ce qui te fait mieux performer (heure, repos, sommeil).'],
     ['pain', 'Signaler une douleur', 'Épaules, poignets, genoux… pendant 7 jours, tes séances évitent les exercices qui la sollicitent.'],
     ['ia-open', 'La petite IA du coach', 'À télécharger une fois (en Wi-Fi) depuis les Réglages ou le coach : elle aide le coach à comprendre tes questions écrites comme tu parles, avec des fautes ou des abréviations. Elle reste dans ton téléphone et marche sans internet ; les réponses sont toujours calculées sur tes séances. Les questions qu’il ne comprend pas sont envoyées (le texte seul) pour qu’on ajoute des exemples : tu peux le couper.'],
-    ['', 'Le coach de l’accueil', 'Le petit bonhomme violet en haut de l’accueil, c’est ton coach. Écris ta question dans le champ ou touche une question toute prête : il réfléchit, puis écrit sa réponse juste en dessous, avec des boutons pour lancer ta séance (normale, courte, grosse, 10 min, allégée, sans matériel). « Fermer la discussion » remet l’accueil comme avant. Touche le bonhomme pour lui parler.'],
+    ['', 'Le coach de l’accueil', 'Le petit bonhomme violet en haut de l’accueil, c’est ton coach. Écris ta question dans le champ ou touche une question toute prête : il réfléchit, puis écrit sa réponse juste en dessous, avec des boutons pour lancer ta séance (normale, courte, grosse, 10 min, allégée, sans matériel). Il suit la conversation (« et en plus court ? ») et propose des questions pour continuer ; demande-lui tes quêtes, ton ombre, ta semaine, ta forme ou ton rang, il répond avec la carte. Pour fermer la discussion, touche le bonhomme (ou « Fermer la discussion ») : elle se ferme aussi seule quand tu changes d’écran ou lances une séance.'],
     ['coach', 'Coach', 'Écris-lui ta question comme à un ami (« jsuis crevé », « mon record aux dips », « j’ai mal au genou », « j’ai 20 min »). Il lit tes séances, ton bilan du matin et ta balance, dans ton téléphone, sans internet. Point du jour en haut, mot du coach en fin de séance.'],
     ['cap', 'Grand objectif', 'Un but de 12 semaines choisi d’après ton point faible. Ses progrès se calculent depuis tes séances, et la date d’arrivée est estimée.'],
     ['mtest', 'Test du mois', '6 épreuves une fois par mois (pompes, dips, burpees, saut, chaise, course), comparées aux garçons de 16 à 19 ans.'],
@@ -1019,6 +1037,7 @@ export function render() {
   ui.enter = false;
   if (ui.tab === 'repas' || ui.tab === 'aventure') ui.tab = 'defis';
   if (ui.tab === 'moi') ui.tab = 'history';
+  try { homeTab(ui.tab); } catch (e) { /* rien */ }
   let html;
   try { html = (views[ui.tab] || viewHome)(); } catch (e) {
     console.error(e);

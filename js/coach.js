@@ -12,7 +12,8 @@ import { iaGuess, iaNote, iaPicked, iaState } from './ia.js';
 import { weekPlan } from './semaine.js';
 import { bodyStats, ZONES, musclesOf } from './corps.js';
 import { rankInfo, balance, bodyLog } from './stats.js';
-import { streak } from './quetes.js';
+import { streak, dailyQuests } from './quetes.js';
+import { weekBoss } from './boss.js';
 import { status as p30status, dayPlan as p30plan, goalOf } from './prog30.js';
 
 const DAY = 864e5;
@@ -474,6 +475,18 @@ function answer(id, arg) {
   if (id === 'who') return iaState().st === 'ready'
     ? { text: ['Je suis le coach d’Ascension. Une petite IA rangée dans ton téléphone m’aide à comprendre tes questions, même mal écrites, sans internet.', 'Mes réponses, elles, sont calculées sur tes séances, ton bilan du matin et ta balance : je n’invente rien. Plus tu notes, plus elles sont précises.'] }
     : { text: ['Je suis le coach d’Ascension. Je ne suis pas une IA en ligne : je lis tes séances, ton bilan du matin et ta balance, directement dans ton téléphone, et je calcule mes réponses.', 'Rien ne part sur internet. Plus tu notes, plus mes réponses sont précises.'] };
+  if (id === 'quests') {
+    const L = dailyQuests();
+    if (!L.length) return { text: ['Tes quêtes du jour arrivent après ta première séance : trois petits défis calés sur tes records, chaque jour.'] };
+    const n = L.filter((q) => q.done).length, left = L.filter((q) => !q.done);
+    return { text: ['Quêtes du jour : ' + n + ' sur ' + L.length + ' réussie' + (n > 1 ? 's' : '') + '.', left.length ? 'Il te reste : ' + left.map((q) => q.label).join(' ; ') + '.' : 'Tout est fait aujourd’hui. Nouvelles quêtes demain matin.'] };
+  }
+  if (id === 'boss') {
+    const b = weekBoss();
+    const days = Math.max(1, Math.ceil((b.ends - Date.now()) / 864e5));
+    if (b.won) return { text: ['Tu as battu ton ombre cette semaine (« ' + b.name + ' »). Bien joué.', 'Un nouveau défi arrive lundi.'] };
+    return { text: ['Cette semaine, ton ombre : « ' + b.name + ' ». Elle a ta meilleure tentative + 1 : à battre, ' + plural(b.hp, 'répétition', 'répétitions') + (b.w ? ' avec ' + b.w + ' kg' : '') + '.', 'Encore ' + plural(days, 'jour', 'jours') + '. Fais-le en début de séance, frais : une seule tentative bien faite vaut mieux que trois fatiguées.'] };
+  }
   if (id === 'off') return { text: [pick(['Là, je ne peux pas t’aider.', 'Ça, ce n’est pas mon rayon.', 'Je ne sais pas répondre à ça.']) + ' Je suis ton coach : je connais tes séances, ta forme, ta course, ton sommeil et tes repas, rien d’autre.', 'Pose-moi une question là-dessus, je te réponds avec tes chiffres.'], btns: Q.slice(0, 4).map(([k, l]) => btn('coach-ask', l, ' data-q="' + k + '"')).join('') };
   if (id === 'exo') return exoAnswer(arg);
   return { text: ['Je n’ai pas compris.'] };
@@ -552,7 +565,7 @@ function monthTxt(w) {
 const whenTxt2 = (p) => (p.soon ? 'dès ta prochaine séance' : 'vers le ' + dateTxt(p.at));
 
 // Ce que le coach dit quand il ne comprend pas : il propose ce qui s'en approche.
-const LBL = Object.fromEntries([['tomorrow', 'Et demain ?'], ['time', 'J’ai peu de temps'], ['weight', 'Mon poids'], ['pulse', 'Mon pouls'], ['stats', 'Mes chiffres'], ['doms', 'Des courbatures'], ['rest', 'Le repos'], ['warmup', 'L’échauffement'], ['stretch', 'Les étirements'], ['pullup', 'Le dos sans barre'], ['stress', 'Je suis stressé'], ['method', 'Séries et repos'], ['skill', 'Les figures'], ['progress', 'Progresser'], ['exo', 'Un exercice']].concat(Q));
+const LBL = Object.fromEntries([['quests', 'Mes quêtes du jour'], ['boss', 'Mon ombre'], ['p30', 'Mon défi de 30 jours'], ['tomorrow', 'Et demain ?'], ['time', 'J’ai peu de temps'], ['weight', 'Mon poids'], ['pulse', 'Mon pouls'], ['stats', 'Mes chiffres'], ['doms', 'Des courbatures'], ['rest', 'Le repos'], ['warmup', 'L’échauffement'], ['stretch', 'Les étirements'], ['pullup', 'Le dos sans barre'], ['stress', 'Je suis stressé'], ['method', 'Séries et repos'], ['skill', 'Les figures'], ['progress', 'Progresser'], ['exo', 'Un exercice']].concat(Q));
 
 const clockP = (s) => { s = Math.round(s); return Math.floor(s / 60) + "'" + String(s % 60).padStart(2, '0'); };
 
@@ -626,6 +639,10 @@ function reply(a) {
 }
 // Réponse à une question toute faite (utilisée aussi par le coach de l'accueil, mascotte.js).
 export function answerFor(id, arg) {
+  return withNext(id, answerFor0(id, arg));
+}
+function answerFor0(id, arg) {
+  if (id === 'p30') return p30Answer();
   if (id === 'pain' && !arg) return { text: ['Où as-tu mal ? Pendant 7 jours, je retirerai de tes séances les exercices qui sollicitent cette zone.'], btns: Object.keys(PAINS).map((k) => btn('coach-ask', PAINS[k], ' data-q="pain" data-arg="' + k + '" data-l="' + PAINS[k] + '"')).join('') };
   return answer(id, arg);
 }
@@ -708,11 +725,43 @@ function askText(text) {
   draw(true);
   answerTextAI(text).then(reply);
 }
+// ---------- Suites de conversation ----------
+// « et en plus court ? », « plus dur », « sans matériel »… juste après une réponse sur la séance : la même séance, dans ce format.
+let lastTopic = { id: null, at: 0 };
+const FMT = [['court', / plus court| version courte| en court| moins long| moins de temps| plus rapide| plus vite /], ['gros', / plus long| plus dur| plus gros| grosse| plus intense| plus difficile| plus de series/], ['dix', / 10 min| dix min/], ['leger', / plus leger| plus facile| allege| moins dur| plus cool| plus doux/], ['mini', / sans materiel| sans haltere| sans rien| sans gilet| sans equipement/]];
+const SEANCE_IDS = new Set(['today', 'time', 'tired', 'sleep', 'record', 'short', 'light', 'motiv', 'forme']);
+function followUp(text) {
+  const w = clean(text), s = ' ' + w.join(' ') + ' ';
+  if (w.length > 8) return null;
+  const f = FMT.find(([, re]) => re.test(s));
+  if (!f) return null;
+  const recent = lastTopic.id && Date.now() - lastTopic.at < 15 * 60000 && SEANCE_IDS.has(lastTopic.id);
+  if (!recent && !/ seance /.test(s)) return null;
+  const type = testDue() ? (isBeginner() ? 'd-haut' : 'A') : nextType();
+  const L = plan(type, f[0]);
+  const nm = MODE_L.find((m) => m[0] === f[0])[1].toLowerCase();
+  return { text: ['« ' + label(type) + ' » en version ' + nm + ' : environ ' + (f[0] === 'dix' ? 10 : minutes(L, false)) + ' minutes, ' + plural(L.length, 'exercice', 'exercices') + '.', L.slice(0, 4).map((e) => exoName(e.name)).join(', ') + (L.length > 4 ? '…' : '.')], btns: modeBtns(type, f[0]), _id: 'today', fu: true };
+}
+// Sous chaque réponse, une ou deux questions pour continuer (celles qu'on se pose souvent juste après).
+const NEXT = { today: ['tomorrow', 'tired'], tomorrow: ['week', 'today'], week: ['today', 'boss'], time: ['today'], short: ['today'], tired: ['sleep', 'light'], sleep: ['tired', 'today'], motiv: ['today', 'quests'], record: ['stuck', 'today'], stuck: ['method', 'weak'], progress: ['weak', 'method'], weak: ['progress', 'rank'], success: ['week'], rank: ['weak', 'record'], muscle: ['food', 'method'], run: ['week', 'record'], light: ['week', 'tired'], rest: ['stretch', 'week'], doms: ['stretch', 'today'], food: ['weight', 'muscle'], weight: ['food', 'muscle'], forme: ['today', 'sleep'], pulse: ['forme'], stats: ['record', 'rank'], warmup: ['stretch', 'today'], stretch: ['warmup'], pullup: ['muscle'], stress: ['sleep', 'time'], method: ['stuck', 'rest'], skill: ['progress'], hello: ['today', 'quests'], thanks: ['today'], who: ['today', 'week'], exo: ['record', 'stuck'], quests: ['boss', 'today'], boss: ['quests', 'record'], p30: ['today'] };
+export function withNext(id, a) {
+  if (!a || !id) return a;
+  lastTopic = { id, at: Date.now() };
+  const have = String([].concat(a.btns || []).join(''));
+  const more = (NEXT[id] || []).filter((k) => k !== id && LBL[k] && !have.includes('data-q="' + k + '"')).slice(0, 2);
+  if (more.length) a.btns = [].concat(a.btns || []).concat(more.map((k) => btn('coach-ask', LBL[k], ' data-q="' + k + '" data-next="1"')));
+  return a;
+}
+export const resetTopic = () => { lastTopic = { id: null, at: 0 }; };
+
 // Avec la petite IA (si elle est prête) : elle donne le sujet, les mots-clés l'aident quand elle hésite.
 export async function answerTextAI(text) {
+  const fu = followUp(text);
+  if (fu) return withNext('today', fu);
   let ai = null;
   try { ai = await iaGuess(text, scoresOf(text)); } catch (e) { console.error(e); }
-  return answerText(text, ai);
+  const a = answerText(text, ai);
+  return withNext(a._id, a);
 }
 export function answerText(text, ai) {
   const u = understand(text, ai);
@@ -721,7 +770,7 @@ export function answerText(text, ai) {
     const tech = techAnswer(u);
     const w30 = ' ' + u.words.join(' ') + ' ';
     if (tech) a = tech;
-    else if (/ 30 jour| defi | defis | 50 /.test(w30) && (state.p30 || / 30 jour/.test(w30))) a = p30Answer();
+    else if (/ 30 jour/.test(w30) || (/ defi | 50 /.test(w30) && state.p30 && !['quests', 'boss'].includes(u.id))) a = p30Answer();
     else if (u.id === 'p30') a = p30Answer();
     else if (u.id === 'pain') a = u.zone ? answer('pain', u.zone) : { text: ['Où as-tu mal ? Je retirerai de tes séances, pendant 7 jours, les exercices qui sollicitent cette zone.'], btns: Object.keys(PAINS).map((k) => btn('coach-ask', PAINS[k], ' data-q="pain" data-arg="' + k + '" data-l="' + PAINS[k] + '"')).join('') };
     else if (u.id === 'exo' || ((u.id === 'stuck' || u.id === 'record') && u.exo)) a = exoAnswer(u.exo);

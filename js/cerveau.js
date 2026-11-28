@@ -76,6 +76,8 @@ const INTENTS = [
   ['stress', [['stress', 5], ['bac', 4], ['exam', 5], ['controle', 3], ['partiel', 4], ['revision', 4], ['angoiss', 5], ['anxi', 4]]],
   ['method', [['combien de repetition', 5], ['combien de serie', 5], ['temps de repos', 5], ['repos entre', 5], ['surcharge', 5], ['lest', 2], ['gilet', 3], ['echec', 3], ['tempo', 3], ['lentement', 2]]],
   ['skill', [['handstand', 5], ['equilibre', 4], ['poirier', 5], ['l sit', 5], ['planche', 4], ['muscle up', 5], ['figure', 4], ['calisthen', 4], ['corbeau', 5], ['front lever', 5]]],
+  ['quests', [['quete', 6], ['defi du jour', 6], ['defis du jour', 6], ['mission', 4], ['defis', 3]]],
+  ['boss', [['ombre', 6], ['boss', 6], ['defi de la semaine', 6]]],
   ['hello', [['salut', 4], ['bonjour', 4], ['bonsoir', 4], ['hello', 4], ['ca va', 3]]],
   ['thanks', [['merci', 6], ['top', 1], ['parfait', 2], ['nickel', 2], ['genial', 2]]],
   ['who', [['qui es tu', 6], ['t es qui', 6], ['comment tu marche', 5], ['es tu une ia', 6], ['intelligence', 4], ['chatgpt', 6], ['ia', 5], ['robot', 5]]],
