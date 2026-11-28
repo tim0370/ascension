@@ -142,8 +142,8 @@ const FIG = {
   'Bench Press (Dumbbell)': { f: [benchLie({ a1: [100, -84], a2: [96, -88] }), benchLie({ a1: [-90, -90], a2: [-88, -88] })], m: ['chest', 'ua'], eq: [bench(20, 56)], db: 3 },
   'Dumbbell Fly': { f: [benchLie({ a1: [125, 52], a2: [120, 56] }), benchLie({ a1: [-92, -86], a2: [-88, -90] })], m: ['chest'], eq: [bench(20, 56)], db: 3, d: 3 },
   // Épaules
-  'Pike Pushup': { f: [pike([36, 31], [58, G - 0.6], [20, G - 2.4], 18.8), pike([38, 34], [58, G - 0.6], [20, G - 2.4], 9.6)], m: ['shoulder', 'ua'] },
-  'Elevated Pike Push Up': { f: [pike([34, 25], [58, G - 0.6], [18, G - 15], 18.8), pike([36, 28], [58, G - 0.6], [18, G - 15], 9.6)], m: ['shoulder', 'ua'], eq: [bench(4, 26)] },
+  'Pike Pushup': { f: [pike([36, 31], [58, G - 0.6], [20, G - 2.4], 18.8), pike([38, 31], [58, G - 0.6], [20, G - 2.4], 13)], m: ['shoulder', 'ua'] },
+  'Elevated Pike Push Up': { f: [pike([46, 26], [60, G - 0.6], [30, G - 15], 18.8), pike([47, 25], [60, G - 0.6], [30, G - 15], 13)], m: ['shoulder', 'ua'], eq: [bench(14, 34)] },
   'Handstand Hold': { f: HOLD({ h: [46, 21.5], t: 90, a1: { to: [47, G - 0.6] }, l1: [-94, -94], l2: [-96, -96] }, 0.3), m: ['shoulder', 'abs'], eq: [['wall', 40]], sc: 0.84, d: 3.5 },
   'Wall Handstand Push Up': { f: [{ h: [46, 21.5], t: 90, a1: { to: [47, G - 0.6] }, l1: [-94, -94], l2: [-96, -96] }, { h: [46, 30], t: 90, a1: { to: [47, G - 0.6], s: 'back' }, l1: [-94, -94], l2: [-96, -96] }], m: ['shoulder', 'ua'], eq: [['wall', 40]], sc: 0.84 },
   'Wall Handstand Push Up Negative': { f: [{ h: [46, 21.5], t: 90, a1: { to: [47, G - 0.6] }, l1: [-94, -94], l2: [-96, -96] }, { h: [46, 30], t: 90, a1: { to: [47, G - 0.6], s: 'back' }, l1: [-94, -94], l2: [-96, -96] }], m: ['shoulder', 'ua'], eq: [['wall', 40]], sc: 0.84, d: 5, kt: [0, 0.82, 1] },
@@ -155,8 +155,8 @@ const FIG = {
   'Lateral Raise (Dumbbell)': { f: [fr({ a1: [78, 86], a2: [102, 94] }), fr({ a1: [-4, -2], a2: [184, 182] })], m: ['shoulder'], db: 3 },
   'Front Raise (Dumbbell)': { f: [st({ a1: [86, 86], a2: [92, 92] }), st({ a1: [-4, -4], a2: [92, 92] })], m: ['shoulder'], db: 3 },
   // Dos
-  'Bent Over Row (Band)': { f: [hinge(), hinge({ a1: { to: 'hip', off: [10, 2], s: 'up' }, a2: { to: 'hip', off: [9, 3], s: 'up' } })], m: ['back', 'ua'], eq: [['band', 'f1', 'h1']] },
-  'Bent Over Row (Dumbbell)': { f: [hinge(), hinge({ a1: { to: 'hip', off: [10, 2], s: 'up' }, a2: { to: 'hip', off: [9, 3], s: 'up' } })], m: ['back', 'ua'], db: 3 },
+  'Bent Over Row (Band)': { f: [hinge({ h: [42.5, 36] }), hinge({ h: [42.5, 36],  a1: { to: 'hip', off: [10, 2], s: 'up' }, a2: { to: 'hip', off: [9, 3], s: 'up' } })], m: ['back', 'ua'], eq: [['band', 'f1', 'h1']] },
+  'Bent Over Row (Dumbbell)': { f: [hinge({ h: [42.5, 36] }), hinge({ h: [42.5, 36],  a1: { to: 'hip', off: [10, 2], s: 'up' }, a2: { to: 'hip', off: [9, 3], s: 'up' } })], m: ['back', 'ua'], db: 3 },
   'Dumbbell Row': { f: [{ h: [42, 33], t: -4, hd: 10, a1: [90, 90], a2: { to: [70, G - 13.6] }, l1: { to: [44, AY], s: 'fwd' }, l2: [56, 180, 90] }, { h: [42, 33], t: -4, hd: 10, a1: { to: 'hip', off: [9, 1], s: 'up' }, a2: { to: [70, G - 13.6] }, l1: { to: [44, AY], s: 'fwd' }, l2: [56, 180, 90] }], m: ['back', 'ua'], eq: [bench(36, 76)], db: 1 },
   'Inverted Row': { f: [rowLow([22, AY]), rowTop([22, AY])], m: ['back', 'ua'], eq: [BARS] },
   'Inverted Row (Feet Elevated)': { f: [rowLow([20, G - 15]), rowTop([20, G - 15])], m: ['back', 'ua'], eq: [BARS, bench(6, 26)] },
@@ -184,7 +184,7 @@ const FIG = {
   'Lunge': { f: [st(), st({ h: [53, 44], t: -88, l1: { to: [65, AY], s: 'fwd' }, l2: { to: [36, AY - 1.2], s: 'fwd', f: 50 } })], m: ['th', 'glute'] },
   'Reverse Lunge': { f: [st(), st({ h: [46, 44], t: -88, l1: { to: [55, AY], s: 'fwd' }, l2: { to: [28, AY - 1.2], s: 'fwd', f: 50 } })], m: ['th', 'glute'] },
   'Jumping Lunge': { f: [st({ h: [50, 44], t: -88, l1: { to: [61, AY], s: 'fwd' }, l2: { to: [34, AY - 1.2], s: 'fwd', f: 50 } }), st({ h: [50, 30], a1: [70, 60], a2: [110, 100], l1: { to: [54, AY - 6], s: 'fwd', f: 50 }, l2: { to: [44, AY - 6], s: 'fwd', f: 50 } }), st({ h: [50, 44], t: -88, l2: { to: [61, AY], s: 'fwd' }, l1: { to: [34, AY - 1.2], s: 'fwd', f: 50 } }), st({ h: [50, 30], a1: [110, 100], a2: [70, 60], l2: { to: [54, AY - 6], s: 'fwd', f: 50 }, l1: { to: [44, AY - 6], s: 'fwd', f: 50 } })], m: ['th', 'glute'], d: 2.4 },
-  'Bulgarian Split Squat (Dumbbell)': { f: [st({ h: [53, 35], l1: { to: [63, AY], s: 'fwd' }, l2: { to: [31, G - 14.4], s: 'fwd', f: 175 } }), st({ h: [49, 45], t: -86, l1: { to: [63, AY], s: 'fwd' }, l2: { to: [31, G - 14.4], s: 'fwd', f: 175 } })], m: ['th', 'glute'], eq: [bench(12, 34)], db: 3 },
+  'Bulgarian Split Squat (Dumbbell)': { f: [st({ h: [53, 35], l1: { to: [63, AY], s: 'fwd' }, l2: { to: [37, G - 14.4], s: 'fwd', f: 175 } }), st({ h: [49, 45], t: -86, l1: { to: [63, AY], s: 'fwd' }, l2: { to: [37, G - 14.4], s: 'fwd', f: 175 } })], m: ['th', 'glute'], eq: [bench(16, 39)], db: 3 },
   'Assisted Pistol Squats': { f: [st({ l1: { to: [50, AY], s: 'fwd' }, l2: [80, 96], a1: { to: [70, 29], s: 'down' }, a2: [0, 0] }), st({ h: [42, 46.5], t: -58, hd: -72, l1: { to: [50, AY], s: 'fwd' }, l2: [-4, -4], a1: { to: [70, 29], s: 'down' }, a2: [0, 0] })], m: ['th', 'glute'], eq: [['post', 72]] },
   'Pistol Squat': { f: [st({ l1: { to: [50, AY], s: 'fwd' }, l2: [80, 96], a1: [0, 0], a2: [4, 4] }), st({ h: [42, 46.5], t: -58, hd: -72, l1: { to: [50, AY], s: 'fwd' }, l2: [-4, -4], a1: [-4, -4], a2: [0, 0] })], m: ['th', 'glute'], d: 3 },
   'Cossack Squat': { f: [fr({ h: [50, 36], l1: { to: [66, AY], s: 'fwd', f: 0 }, l2: { to: [34, AY], s: 'back', f: 180 }, a1: [60, 120], a2: [120, 60] }), fr({ h: [60, 46], t: -84, l1: { to: [67, AY], s: 'fwd', f: 0 }, l2: { to: [36, AY], s: 'back', f: -90 }, a1: [40, 140], a2: [140, 40] })], m: ['th', 'glute'], d: 3 },
@@ -217,7 +217,7 @@ const FIG = {
   'Lying Neck Extension': { f: [{ h: [36, G - 15.6], t: 0, hd: 38, a1: [110, 40], l1: [180, 180, 270], l2: [178, 178, 270] }, { h: [36, G - 15.6], t: 0, hd: -32, a1: [110, 40], l1: [180, 180, 270], l2: [178, 178, 270] }], m: ['neck'], eq: [bench(6, 52)], d: 3.2 },
   'Lying Neck Side Raise': { f: [LIE({ h: [60, G - 3.4], hd: 178, a1: [8, 4], a2: [176, 180], l1: [0, 0], l2: [2, 2] }), LIE({ h: [60, G - 3.4], hd: 218, a1: [8, 4], a2: [176, 180], l1: [0, 0], l2: [2, 2] })], m: ['neck'], d: 3.2 },
   // Cardio
-  'Burpee': { f: [st({ h: [50, AY - 26], a1: [-96, -96], a2: [-92, -92], l1: { to: [52, AY - 3], s: 'fwd', f: 60 }, l2: { to: [49, AY - 3], s: 'fwd', f: 60 } }), squatLow({ h: [42, 46], t: -20, a1: { to: [58, G - 0.6], s: 'up' }, a2: { to: [56, G - 0.6], s: 'up' }, l1: { to: [48, AY], s: 'fwd' }, l2: { to: [46, AY], s: 'fwd' } }), plank([22, G - 2.4], [58, G - 0.6], 18.8), squatLow({ h: [42, 46], t: -20, a1: { to: [58, G - 0.6], s: 'up' }, a2: { to: [56, G - 0.6], s: 'up' }, l1: { to: [48, AY], s: 'fwd' }, l2: { to: [46, AY], s: 'fwd' } })], m: ['th', 'chest'], d: 2.8, sc: 0.86 },
+  'Burpee': { f: [st({ h: [50, AY - 26], a1: [-96, -96], a2: [-92, -92], l1: { to: [52, AY - 3], s: 'fwd', f: 60 }, l2: { to: [49, AY - 3], s: 'fwd', f: 60 } }), squatLow({ h: [42, 46], t: -20, a1: { to: [58, G - 0.6], s: 'back' }, a2: { to: [56, G - 0.6], s: 'back' }, l1: { to: [48, AY], s: 'fwd' }, l2: { to: [46, AY], s: 'fwd' } }), plank([22, G - 2.4], [58, G - 0.6], 18.8), squatLow({ h: [42, 46], t: -20, a1: { to: [58, G - 0.6], s: 'back' }, a2: { to: [56, G - 0.6], s: 'back' }, l1: { to: [48, AY], s: 'fwd' }, l2: { to: [46, AY], s: 'fwd' } })], m: ['th', 'chest'], d: 2.8, sc: 0.86 },
   'Jumping Jack': { f: [fr({ a1: [82, 88], a2: [98, 92], l1: { to: [52, AY], s: 'fwd', f: 0 }, l2: { to: [48, AY], s: 'back', f: 180 } }), fr({ h: [50, AY - 23.4], a1: [-60, -76], a2: [-120, -104], l1: { to: [61, AY], s: 'fwd', f: 0 }, l2: { to: [39, AY], s: 'back', f: 180 } })], m: ['calf', 'shoulder'], d: 1, sc: 0.88 },
   'High Knees': { f: [st({ a1: [60, -40], a2: [120, 90], l1: [-14, 84], l2: { to: [49, AY], s: 'fwd' } }), st({ a1: [120, 90], a2: [60, -40], l2: [-14, 84], l1: { to: [51, AY], s: 'fwd' } })], m: ['th', 'abs'], d: 0.8 },
   'Tuck Jump': { f: [squatLow({ a1: [130, 130], a2: [126, 126] }), st({ h: [50, 24], t: -84, a1: [0, 60], a2: [4, 64], l1: [-36, 94], l2: [-32, 96] })], m: ['th', 'abs'], d: 1.4, sc: 0.86 },
@@ -419,6 +419,18 @@ function lerpLimb(A, B, u, JA, JB, k) {
   if (Math.abs(rA) < 15) sA = sB; else if (Math.abs(rB) < 15) sB = sA;
   if (sA !== sB) return lerpAbs(asAngles(JA, k), asAngles(JB, k), u);
   const f = tK ? lerpA(ang(JA[eK], JA[tK]), ang(JB[eK], JB[tK]), u) : undefined;
+  if (k[0] === 'a') {
+    // Un bras : la main tourne autour de l'épaule (sans passer à travers le corps), en passant par devant
+    // quand les deux chemins se valent (bras levés puis mains au sol, comme au burpee).
+    const rk = LIMBS[k][0], aA = ang(JA[rk], EA), aB = ang(JB[rk], EB);
+    let dA = norm180(aB - aA);
+    if (Math.abs(dA) > 140) {
+      const front = lerpA(ang(JA.hip, JA.sh), ang(JB.hip, JB.sh), 0.5) + 90, alt = dA - Math.sign(dA) * 360;
+      if (Math.abs(norm180(aA + alt / 2 - front)) < Math.abs(norm180(aA + dA / 2 - front))) dA = alt;
+    }
+    const a = aA + dA * u, r = lerp(dist(JA[rk], EA), dist(JB[rk], EB), u);
+    return { to: rk, off: [Math.cos(a * RAD) * r, Math.sin(a * RAD) * r], s: sA, f };
+  }
   return { to, s: sA, f };
 }
 function lerpPose(p, q, u, JA, JB) {
@@ -639,7 +651,8 @@ export function figure(name, cls) {
 }
 export const hasFigure = (name) => !!FIG[name];
 // Exercices montrés en 3D (fig3d.js remplace leur dessin par le personnage 3D). Essai v69.
-export const F3D = new Set(['Push Up', 'Triceps Dip', 'Burpee']);
+// Essai 3D de la v69 arrêté le 28/11/2026 : tous les exercices restent en bonhommes 2D.
+export const F3D = new Set();
 // Données d'une animation pour la 3D : images (articulations), durée, matériel, muscles, sens du corps.
 export function figData(name) {
   const spec = FIG[name] || IDLE, tl = timeline(spec);

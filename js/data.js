@@ -905,6 +905,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 70, items: [
+    'Retour aux personnages 2D partout : l’essai en 3D des pompes, des dips et du burpee est arrêté.',
+    'Animations corrigées : au burpee, les bras redescendent par devant au lieu de tourner dans le dos, et le coude ne se retourne plus d’un coup.',
+    'Mouvements refaits d’après de vraies photos : pompes piquées (avant-bras qui ne s’écrasent plus au sol), pompes piquées pieds surélevés (corps presque vertical), rowing (genoux légèrement pliés), split squat bulgare (banc plus près, jambe arrière pliée).',
+  ] },
   { v: 69, items: [
     'Essai de personnages en vraie 3D sur trois exercices : pompes, dips et burpee. Dis-moi ce que tu en penses avant qu’on passe tous les exercices en 3D.',
     'Carte du corps refaite, muscle par muscle : en mode Semaine, gris = pas entraîné, violet clair = intermédiaire, violet vif = objectif atteint (10 séries ou plus).',
