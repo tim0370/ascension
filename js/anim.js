@@ -635,8 +635,15 @@ export function figure(name, cls) {
   const label = (EXOS[name] && EXOS[name].fr) || name;
   // Vignette immobile (bandeau de la séance) : la position de départ, sans animation.
   if (cls && cls.split(' ').includes('still')) s = s.replace(/<animate [^>]*\/>/g, '');
-  return (cache[key] = '<svg class="fig' + (cls ? ' ' + cls : '') + '" viewBox="' + vb.join(' ') + '" role="img" aria-label="Animation : ' + label.replace(/"/g, '') + '">' + s + '</svg>');
+  return (cache[key] = '<svg class="fig' + (cls ? ' ' + cls : '') + '"' + (F3D.has(name) ? ' data-f3="' + name.replace(/"/g, '') + '"' : '') + ' viewBox="' + vb.join(' ') + '" role="img" aria-label="Animation : ' + label.replace(/"/g, '') + '">' + s + '</svg>');
 }
 export const hasFigure = (name) => !!FIG[name];
+// Exercices montrés en 3D (fig3d.js remplace leur dessin par le personnage 3D). Essai v69.
+export const F3D = new Set(['Push Up', 'Triceps Dip', 'Burpee']);
+// Données d'une animation pour la 3D : images (articulations), durée, matériel, muscles, sens du corps.
+export function figData(name) {
+  const spec = FIG[name] || IDLE, tl = timeline(spec);
+  return { tl, dur: spec.d || 2.4, eq: spec.eq || [], m: spec.m || [], mir: !!tl.mir, front: !!(tl.S && tl.S.front), sc: spec.sc || 1, G };
+}
 export const FIG_NAMES = Object.keys(FIG);
 export const _check = { FIG, timeline, G };

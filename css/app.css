@@ -1434,3 +1434,10 @@ html.light { --fig-b0: #FFFFFF; --fig-b1: #C9CCD6; --fig-b2: #6E7280; --fig-f1: 
 .exthumb.done i::after { background: var(--vert); }
 .exck { position: absolute; top: 4px; right: 4px; width: 16px; height: 16px; border-radius: 50%; background: var(--vert); color: #0E0E12; display: grid; place-items: center; }
 .exck svg { width: 11px; height: 11px; }
+/* Carte du corps détaillée (v69) */
+.bodysvg .bsil { fill: #24242B; }
+.bodysvg .mz { fill: #5C5C66; stroke: #0B0B10; stroke-width: 0.7; stroke-linejoin: round; transition: fill .5s var(--ease); }
+.bodysvg .mz.on { fill: var(--mc); }
+html.light .bodysvg .bsil { fill: #C9C9D2; }
+html.light .bodysvg .mz { fill: #9A9AA6; stroke: #F4F3F8; }
+html.light .bodysvg .mz.on { fill: var(--mc); }

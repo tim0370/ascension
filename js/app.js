@@ -35,6 +35,7 @@ import { checkGoals, celebrateGoals, goalRow } from './objectifs.js';
 import { enablePush, disablePush, initPush, pushOn, notifHour, resync, KINDS as NKINDS } from './notif.js';
 import { viewProgress, hevyCard, rankTeaser, checkRankUp, photoDue, loadPhotos, onPhotoDate, radarSvg } from './progress.js';
 import { routeSvg, runRecords, routesAll, fmtTime } from './course.js';
+import { init3d } from './fig3d.js';
 
 const DAY = 864e5;
 const local = ['localhost', '127.0.0.1'].includes(location.hostname); // tests sur le PC
@@ -1202,4 +1203,5 @@ Object.assign(ACTIONS, {
 });
 
 // Le démarrage est allé au bout : l'écran de secours de index.html ne s'affichera pas.
+try { init3d(); } catch (e) {}
 window.__ascOk = true;

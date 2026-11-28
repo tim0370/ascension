@@ -905,6 +905,10 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 69, items: [
+    'Essai de personnages en vraie 3D sur trois exercices : pompes, dips et burpee. Dis-moi ce que tu en penses avant qu’on passe tous les exercices en 3D.',
+    'Carte du corps refaite, muscle par muscle : en mode Semaine, gris = pas entraîné, violet clair = intermédiaire, violet vif = objectif atteint (10 séries ou plus).',
+  ] },
   { v: 68, items: [
     'Nouveaux personnages : un mannequin gris en relief, plus grand dans son cadre, avec les muscles travaillés en violet.',
     'Animations corrigées : un coude ou un genou ne se plie plus jamais à l’envers, et les bras et les jambes gardent toujours la même longueur.',

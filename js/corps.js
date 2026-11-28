@@ -119,61 +119,51 @@ export function bodyStats(now = Date.now()) {
 const mirror = (d) => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (m, x, y) => (Math.round((100 - +x) * 10) / 10) + ',' + y);
 // Contour du corps (moitié gauche), mains et pieds compris.
 const SIL = 'M50.6,25 L45,25 Q45.4,29.5 43.5,31 Q36,32 30,33.4 Q23.6,35 23.2,43 Q22.8,50 24.2,55 Q23.2,63 23.8,70.5 Q21.8,80 23.2,90 Q23.6,96 24.2,99 Q23,106 25.4,110.5 Q28,111.5 30,108.5 Q30.6,101 31.2,98 Q35,86 35.2,74 Q36.6,63 36.3,54 L36.8,58 Q35.8,72 36.8,84 Q33.8,92 34.2,101 Q33.6,120 37.8,139.5 Q36.8,144 38.3,148.5 Q36.3,162 39.8,178 Q37.8,183 37.2,187.5 L46.2,187.5 Q46.7,181 46.2,177 Q48.2,162 47.7,148.5 Q48.7,144 48,139.5 Q49.2,121 49.6,105 L50.6,105 Z';
+// Les muscles, découpés finement (moitié gauche, recopiée en miroir). Plusieurs formes par muscle.
 const FRONT = {
-  trapezes: 'M45.2,28.5 Q41,31.6 34,33.2 L41.5,35.2 L46.3,32 Z',
-  epaules: 'M33.6,33.6 Q26.4,34.6 24.6,42 Q24,48 25.8,52.6 Q30,47.6 34.2,45.4 Q37.2,40.6 39.4,36.2 Z',
-  pecs: 'M49.6,36 L40.2,35.6 Q35.4,39.4 35,46.4 Q36.4,53.2 42.2,55.2 Q47,56.2 49.6,54.4 Z',
-  biceps: 'M26.2,53.2 Q30.2,48.4 34.4,46.8 Q36.2,56 34.8,66 Q32.4,70.2 29.2,70.2 Q25.2,66 25.2,58.4 Z',
-  avantbras: 'M24.8,72.4 Q29,70.8 34.2,71 Q35,78.6 32,90 L29.4,97.6 L25.6,97.6 Q22.6,86 24.8,72.4 Z',
-  obliques: 'M37.8,58.4 Q41,56.6 44.2,57.4 L44.2,86.2 Q40,88.4 37.6,84.4 Q35.8,70 37.8,58.4 Z',
-  quadri: 'M36.6,96.4 Q42,93.6 48.8,103 Q49.2,122 47.2,138 Q43,142 39.6,139 Q34.2,118 36.6,96.4 Z',
-  mollets: 'M39.6,148.6 Q43,145.2 46.6,148.6 Q47.2,162 45.6,176 L41.6,176 Q37.6,162 39.6,148.6 Z',
+  trapezes: ['M45.4,27 Q41,30.6 34.6,32.6 L41,34.4 L46,31 Z'],
+  epaules: ['M33.8,33.4 Q26.6,34.4 24.8,41.6 Q24.4,47 25.8,51.6 Q29.4,47.2 33.6,45 Q36.2,40.6 38.6,36 Z'],
+  pecs: ['M49.3,35.6 L40,35.2 Q36.6,38 35.4,42.4 L49.3,44.4 Z', 'M49.3,45.4 L35.2,43.4 Q35.4,49.6 39.8,53.6 Q45,55.8 49.3,53.6 Z'],
+  biceps: ['M26,52.8 Q30,48.6 34.2,47 Q36,55.8 34.6,65.6 Q32.4,69.6 29.2,69.6 Q25.4,65.6 25.2,58.2 Z'],
+  avantbras: ['M24.8,71.8 Q28.8,70.4 34,70.6 Q34.6,76 32.8,82 Q28.4,80.2 24.6,80.2 Z', 'M24.6,81.2 Q28.4,81.2 32.5,83 Q31.6,90 29.4,97 L25.6,97 Q23.6,89 24.6,81.2 Z'],
+  obliques: ['M37.6,55 Q40.8,56 43.6,57.4 L43.8,69.6 Q40,70 37,67.4 Q36.6,61 37.6,55 Z', 'M37,68.8 Q40.2,71.2 43.8,71 L44,85.4 Q40.2,87.4 37.6,83.6 Q36.6,76 37,68.8 Z'],
+  abdos: ['M44.8,57.6 L49.3,57.6 L49.3,64.4 L44.8,64.8 Z', 'M44.8,65.8 L49.3,65.4 L49.3,72.4 L44.9,72.6 Z', 'M44.9,73.6 L49.3,73.4 L49.3,80.4 L45,80.6 Z', 'M45,81.6 L49.3,81.4 L49.3,89.6 Q46.4,88 45.2,85.6 Z'],
+  quadri: ['M36.6,96 Q39.8,99.4 41.4,106 Q41.2,122 40.4,137.4 Q37.4,135.6 36.6,128 Q34.4,112 36.6,96 Z', 'M42.4,104.4 Q46,108.4 46.4,118 Q46,128 43.4,137.6 Q41.8,130 41.9,117 Z', 'M47.2,123.6 Q49.2,130 48.1,138.4 Q45.8,140 44.3,138.6 Q46,131 47.2,123.6 Z', 'M44.4,99.8 Q47.8,101.8 49.3,104.8 Q49,113.6 47.4,120.6 Q45.2,112 44.4,99.8 Z'],
+  mollets: ['M38.8,148 Q41.4,145.4 43.3,147 Q43.4,160 42.2,174 L40.6,174 Q37.4,160 38.8,148 Z', 'M44.4,147 Q46.6,146 47,149 Q47.2,162 45.4,174 L43.6,174 Q44.6,160 44.4,147 Z'],
 };
-const FRONT_MID = { abdos: 'M45.2,57.4 L54.8,57.4 L55.4,86 Q50,92.4 44.6,86 Z' };
 const BACK = {
-  dos: 'M37.6,40.6 L45,43.8 L49.6,60 L49.6,74.6 Q44,76.6 40,72.4 Q35.6,62 35,50.4 Q35,44.4 37.6,40.6 Z',
-  epaules: 'M33.6,33.6 Q26.4,34.6 24.6,42 Q24,48 25.8,52.6 Q30,47.6 34.2,45.4 Q37.2,40.6 39.4,36.2 Z',
-  triceps: 'M26.2,53.2 Q30.2,48.4 34.4,46.8 Q36.2,56 34.8,66 Q32.4,70.2 29.2,70.2 Q25.2,66 25.2,58.4 Z',
-  avantbras: 'M24.8,72.4 Q29,70.8 34.2,71 Q35,78.6 32,90 L29.4,97.6 L25.6,97.6 Q22.6,86 24.8,72.4 Z',
-  fessiers: 'M36,90.4 Q43,87.4 49.6,90.4 L49.6,107 Q43,112 37.6,107 Q34.6,98.4 36,90.4 Z',
-  ischios: 'M37.6,110.4 Q43,114 49,110.6 Q49,126 47.6,139 Q43,142 39.6,139 Q35,124 37.6,110.4 Z',
-  mollets: 'M38.6,146.4 Q42,141.4 47,146.4 Q48.6,157 45.6,170.4 L41,170.4 Q36,158 38.6,146.4 Z',
+  dos: ['M37.4,41.4 L44.4,44 L49.3,58.6 L49.3,73.4 Q44,75.6 40,71.4 Q35.6,61.6 35,50.2 Q35,45 37.4,41.4 Z', 'M34.8,36.4 Q38.4,35.4 43.2,39 L43.6,42.8 L37.2,40.4 Q35.2,39.2 34.8,36.4 Z'],
+  trapezes: ['M50,26.4 L44.4,26.4 L42.4,30.6 Q36.2,32.6 33.2,34.8 L44,41.6 L50,57 Z'],
+  epaules: ['M33.8,33.4 Q26.6,34.4 24.8,41.6 Q24.4,47 25.8,51.6 Q29.4,47.2 33.6,45 Q35.6,41 36.2,37.4 Z'],
+  triceps: ['M26,52.8 Q30,48.6 34.2,47 Q34.8,55.6 32.8,61.6 Q29.4,61.2 26,59.8 Z', 'M25.4,61 Q29.2,62.4 32.5,63 Q32,68 29.2,69.6 Q25.6,67 25.4,61 Z'],
+  avantbras: ['M24.8,71.8 Q28.8,70.4 34,70.6 Q34.6,76 32.8,82 Q28.4,80.2 24.6,80.2 Z', 'M24.6,81.2 Q28.4,81.2 32.5,83 Q31.6,90 29.4,97 L25.6,97 Q23.6,89 24.6,81.2 Z'],
+  lombaires: ['M44.6,75.8 L49.3,75.2 L49.3,89 L43.2,89.4 Z'],
+  fessiers: ['M36,90.6 Q43,87.6 49.3,90.6 L49.3,106.6 Q43,111.6 37.6,106.6 Q34.6,98.4 36,90.6 Z'],
+  ischios: ['M37.6,110.4 Q41,113 43,112.4 Q43,126 42,138.6 Q38.4,136 37.2,126 Q36.4,118 37.6,110.4 Z', 'M44,112.4 Q47,112 49,110.6 Q49,126 47.6,138.6 Q45,140 43.4,139 Q44.4,126 44,112.4 Z'],
+  mollets: ['M38.6,146.4 Q41,142.4 43.2,144.4 L43,163 Q39.4,160 38.4,152 Z', 'M44,144.4 Q46.6,142.4 47.2,146.4 Q48,155 45.6,164 L44,163.6 Z', 'M40.8,164 L45.4,164.6 Q45,170 44.4,174 L41.6,174 Q40.8,169 40.8,164 Z'],
 };
-const BACK_MID = {
-  trapezes: 'M44.4,27.4 L55.6,27.4 L57.6,31.2 Q63.8,33 67,35.2 L56,42 L50,58.4 L44,42 L33,35.2 Q36.2,33 42.4,31.2 Z',
-  lombaires: 'M44,76.4 L56,76.4 L57,90 L43,90 Z',
-};
-
+// Couleur d'un muscle. Semaine : gris = pas entraîné, violet clair = intermédiaire, violet vif = objectif atteint (10 séries ou plus).
+const GOAL = 10;
 function colorOf(mode, d) {
-  if (mode === 'vol') {
-    if (!d.week) return 'transparent';
-    const t = Math.min(1, d.week / 16); // environ 16 séries par semaine = plein
-    return 'rgba(124,92,245,' + (0.35 + t * 0.6).toFixed(2) + ')';
-  }
-  if (!d.last) return 'transparent';
-  if (d.rec >= 90) return 'rgba(63,214,155,0.7)';
-  if (d.rec >= 55) return 'rgba(255,176,59,0.85)';
-  return 'rgba(255,84,104,0.9)';
+  if (mode === 'vol') return !d.week ? '' : d.week >= GOAL ? '#7C5CF5' : '#BCAEFF';
+  if (!d.last) return '';
+  return d.rec >= 90 ? '#3FD69B' : d.rec >= 55 ? '#FFB03B' : '#FF5468';
 }
 
 function figureSvg(side, mode, z) {
-  const [sides, mids] = side === 'front' ? [FRONT, FRONT_MID] : [BACK, BACK_MID];
+  const M = side === 'front' ? FRONT : BACK;
   const both = (d) => '<path d="' + d + '"/><path d="' + mirror(d) + '"/>';
-  // 1. Le corps gris, 2. chaque muscle en relief (gris), 3. la couleur de son état, 4. les traits qui séparent les muscles.
-  const grey = Object.values(sides).map(both).join('') + Object.values(mids).map((d) => '<path d="' + d + '"/>').join('');
   let col = '';
-  for (const [k, d] of Object.entries(sides)) col += '<g class="mz" data-act="muscle" data-z="' + k + '" fill="' + colorOf(mode, z[k]) + '">' + both(d) + '</g>';
-  for (const [k, d] of Object.entries(mids)) col += '<g class="mz" data-act="muscle" data-z="' + k + '" fill="' + colorOf(mode, z[k]) + '"><path d="' + d + '"/></g>';
-  const lines = side === 'front'
-    ? '<path d="M50,57.6 L50,88 M45,66 L55,66 M45,75.4 L55,75.4 M50,36 L50,54" />'
-    : '<path d="M50,44 L50,88 M44,90.6 L56,90.6" />';
+  for (const [k, list] of Object.entries(M)) {
+    const c = colorOf(mode, z[k]);
+    col += '<g class="mz' + (c ? ' on' : '') + '" data-act="muscle" data-z="' + k + '"' + (c ? ' style="--mc:' + c + '"' : '') + '>' + list.map(both).join('') + '</g>';
+  }
+  const lines = side === 'front' ? '<path d="M50,35.6 L50,54" />' : '<path d="M50,58 L50,89" />';
   return '<svg class="bodysvg" viewBox="16 0 68 192">'
-    + '<g class="bsil" fill="url(#fgFar)">' + both(SIL) + '<ellipse cx="50" cy="14.6" rx="7.6" ry="10"/></g>'
-    + '<ellipse cx="50" cy="14.6" rx="7.4" ry="9.8" fill="url(#fgHead)"/>'
-    + '<g fill="url(#fgBody)" stroke="rgba(18,18,26,0.55)" stroke-width="0.55" stroke-linejoin="round">' + grey + '</g>'
+    + '<g class="bsil">' + both(SIL) + '<ellipse cx="50" cy="14.6" rx="7.6" ry="10"/></g>'
     + col
-    + '<g fill="url(#fgShade)" pointer-events="none">' + grey + '</g>'
-    + '<g fill="none" stroke="rgba(18,18,26,0.5)" stroke-width="0.6" stroke-linecap="round" pointer-events="none">' + lines + '</g></svg>';
+    + '<g fill="url(#fgShade)" pointer-events="none" opacity="0.6">' + Object.values(M).flat().map(both).join('') + '</g>'
+    + '<g fill="none" stroke="#0B0B10" stroke-width="0.7" stroke-linecap="round" pointer-events="none">' + lines + '</g></svg>';
 }
 
 export function bodyMap(mode) {
@@ -192,10 +182,10 @@ export function bodyCard() {
   const list = (a) => a.slice(0, 3).join(', ') + (a.length > 3 ? ' et ' + (a.length - 3) + ' autre' + (a.length > 4 ? 's' : '') : '');
   let txt;
   if (mode === 'rec') txt = tired.length || mid.length ? (tired.length ? 'Fatigués : ' + list(tired) + '. ' : '') + (mid.length ? 'Presque prêts : ' + list(mid) + '. ' : '') + 'Le reste est prêt.' : ready.length ? 'Tout ce que tu as travaillé est récupéré : tu peux y aller fort.' : 'Pas d’entraînement récent.';
-  else txt = low.length ? 'Moins travaillé que d’habitude cette semaine : ' + low.slice(0, 3).join(', ') + '.' : 'Séries de la semaine par muscle. Plus c’est violet, plus tu as travaillé. Gris = pas travaillé.';
+  else txt = low.length ? 'Moins travaillé que d’habitude cette semaine : ' + low.slice(0, 3).join(', ') + '.' : 'Objectif atteint = ' + GOAL + ' séries ou plus cette semaine sur ce muscle.';
   const legend = mode === 'rec'
-    ? '<span class="lg"><i style="background:rgba(63,214,155,0.8)"></i>Prêt</span><span class="lg"><i style="background:rgba(255,176,59,0.9)"></i>En cours</span><span class="lg"><i style="background:rgba(255,84,104,0.9)"></i>Fatigué</span>'
-    : '<span class="lg"><i style="background:rgba(124,92,245,0.4)"></i>Un peu</span><span class="lg"><i style="background:rgba(124,92,245,1)"></i>Beaucoup</span>';
+    ? '<span class="lg"><i style="background:#3FD69B"></i>Prêt</span><span class="lg"><i style="background:#FFB03B"></i>En cours</span><span class="lg"><i style="background:#FF5468"></i>Fatigué</span><span class="lg"><i style="background:#5C5C66"></i>Pas travaillé</span>'
+    : '<span class="lg"><i style="background:#5C5C66"></i>Pas entraîné</span><span class="lg"><i style="background:#BCAEFF"></i>Intermédiaire</span><span class="lg"><i style="background:#7C5CF5"></i>Objectif atteint</span>';
   return '<section class="glass card col tint t-teal" style="gap:12px" id="bodycard"><div class="row between" style="flex-wrap:wrap;gap:10px"><span class="h2">Tes muscles</span>'
     + '<div class="seg2"><button type="button" class="' + (mode === 'rec' ? 'on' : '') + '" data-act="body-mode" data-m="rec">Récupération</button><button type="button" class="' + (mode === 'vol' ? 'on' : '') + '" data-act="body-mode" data-m="vol">Semaine</button></div></div>'
     + bodyMap(mode) + '<div class="row center" style="gap:14px;flex-wrap:wrap">' + legend + '</div>'
