@@ -122,9 +122,16 @@ export function findExo(words) {
 const ZONES = { epaul: 'epaules', poignet: 'poignets', coude: 'coudes', genou: 'genoux', dos: 'dos', lombaire: 'dos', rein: 'dos', chevill: 'chevilles' };
 
 // ---------- Comprendre ----------
+// Les points des mots-clés seuls (sans toucher à la suite de conversation) : donnés à la petite IA.
+export function scoresOf(text) {
+  const words = clean(text), sc = [];
+  for (const [id, kws] of INTENTS) { let s = 0; for (const [kw, w] of kws) if (w && hit(words, kw)) s += w; if (s) sc.push([id, s]); }
+  return sc;
+}
 let ctx = { id: null, exo: null };
 export function resetCtx() { ctx = { id: null, exo: null }; }
-export function understand(text) {
+// ai = avis de la petite IA (ia.js) : { id ou null, p, top } ; sans lui, seuls les mots-clés décident.
+export function understand(text, ai) {
   const words = clean(text);
   const out = { words, exo: findExo(words), zone: null, min: null, scores: [] };
   for (const w of words) for (const z of Object.keys(ZONES)) if (w.startsWith(z)) out.zone = ZONES[z];
@@ -138,8 +145,16 @@ export function understand(text) {
   }
   out.scores.sort((a, b) => b[1] - a[1]);
   let id = out.scores.length && out.scores[0][1] >= 3 ? out.scores[0][0] : null;
+  out.kw = id;
+  if (ai) {
+    out.ai = ai;
+    // L'IA est sûre : elle décide. Elle hésite : les mots-clés gardent leur choix s'il fait partie de ses 2 premiers.
+    if (ai.id) id = ai.id;
+    else if (id && !ai.top.slice(0, 2).some((x) => x[0] === id) && ai.p >= 0.3) id = null;
+    if (id === 'off' || id === 'p30') { out.id = id; ctx = { id: null, exo: null }; return out; }
+  }
   // Réglages fins
-  if (id === 'time' && out.min === null && !hit(words, 'pas le temps')) id = out.scores[1] && out.scores[1][1] >= 3 ? out.scores[1][0] : null;
+  if (id === 'time' && out.min === null && !hit(words, 'pas le temps') && !(ai && ai.id === 'time')) id = out.scores[1] && out.scores[1][1] >= 3 ? out.scores[1][0] : null;
   if (out.min !== null && (!id || ['time', 'today', 'tired'].includes(id))) id = 'time';
   if (id === 'pain' && !out.zone && out.exo && !hit(words, 'douleur') && !hit(words, 'bless')) id = 'exo'; // « mal aux dips » rare : on parle de l'exo
   if (id === 'tractions' || (id === 'pullup' && out.exo && out.exo !== 'Pull Up')) id = 'pullup';
@@ -158,4 +173,4 @@ export function understand(text) {
   return out;
 }
 // Les intentions les plus proches, pour proposer « Tu voulais dire… ».
-export const closest = (u) => u.scores.slice(0, 3).map((x) => x[0]);
+export const closest = (u) => (u.ai && u.ai.p >= 0.25 ? u.ai.top.filter((x) => x[1] >= 0.1).map((x) => x[0]) : u.scores.slice(0, 3).map((x) => x[0]));

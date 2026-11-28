@@ -1,0 +1,1453 @@
+# Phrases d'exemple de la petite IA du coach : une ligne = une façon de poser la question.
+# « # id » ouvre un sujet (id = réponse du coach dans coach.js). Après un ajout : node ascension-ia/fabriquer.mjs
+# Écrire comme on parle : abréviations, fautes, sans accents, c'est voulu.
+
+# today
+ma séance du jour
+ma séance du jour stp
+c'est quoi ma séance aujourd'hui
+je fais quoi aujourd'hui
+jfais quoi ajd
+on fait quoi aujourd'hui coach
+qu'est-ce que je dois faire comme séance
+quelle séance aujourd'hui
+quel entrainement aujourd'hui
+c koi le programme du jour
+donne moi ma séance
+lance ma séance
+je veux m'entrainer
+jveux faire une séance
+je vais à la muscu tu me proposes quoi
+je m'entraine maintenant
+on s'entraine ?
+c'est parti pour la séance
+séance du jour svp
+envoie la séance
+quoi faire comme sport aujourd'hui
+j'ai envie de faire du sport, je fais quoi
+c'est quoi le plan pour aujourd'hui
+quel exo je fais aujourd'hui
+je bosse quoi aujourd'hui
+on travaille quoi ce soir
+programme d'aujourd'hui
+seance du jour
+ma seance stp
+jpeux m'entrainer ce soir ?
+c'est jour d'entrainement ?
+est ce que je m'entraine aujourd'hui
+quelle séance je fais ce soir
+je fais haut du corps ou bas du corps aujourd'hui
+je fais full body A ou B
+c'est A ou B aujourd'hui
+prochaine séance
+c'est quoi ma prochaine séance
+
+# tomorrow
+et demain ?
+je fais quoi demain
+c'est quoi la séance de demain
+demain je m'entraine ?
+dmn jfais quoi
+demain c'est repos ?
+programme de demain
+qu'est-ce qui m'attend demain
+demain je cours ou je fais muscu
+la séance d'après-demain
+je fais quoi après demain
+demain c'est quelle séance
+
+# week
+ma semaine
+c'est quoi mon planning de la semaine
+combien de séances cette semaine
+j'en suis où cette semaine
+il me reste combien de séances à faire
+mon objectif de la semaine
+planning de la sem
+je suis à combien de séances cette semaine
+la semaine est réussie ?
+j'ai fait mon objectif de la semaine ?
+quels jours je m'entraine cette semaine
+c'est quoi le plan de la semaine
+il reste quoi à faire cette semaine
+je peux encore valider ma semaine ?
+combien de séance par semaine je dois faire
+je fais combien d'entrainements par semaine
+ma flamme elle est à combien
+je vais perdre ma flamme ?
+ma série de semaines
+comment garder ma flamme
+
+# time
+j'ai que 15 minutes
+j'ai 20 min tu me proposes quoi
+j'ai pas le temps aujourd'hui
+j'ai peu de temps
+séance rapide
+une séance courte stp
+j'ai 10 minutes devant moi
+j'ai une demi heure
+jai 30 min
+je suis pressé
+j'ai pas beaucoup de temps ce soir
+un truc rapide à faire
+je dois partir dans 20 minutes
+une séance express
+pas le temps de faire une j'ai juste un quart d'heure
+je peux faire quoi en 15 min
+séance de 10 min
+j'ai une heure devant moi
+j'ai 45 minutes
+
+# tired
+je suis fatigué
+jsui creuvé
+chui crevé
+je suis claqué
+je suis mort aujourd'hui
+je suis naze
+j'ai pas d'énergie
+je me sens vidé
+je suis épuisé jpeux faire quoi
+j'ai plus de force
+je suis ko
+je me sens lourd aujourd'hui
+je suis fatigué je m'entraine quand même ?
+jsuis hs
+grosse fatigue
+j'ai la flemme physique, je suis à plat
+je suis cuit
+je suis rincé
+j'ai les jambes lourdes
+je suis fatigué de la journée
+journée épuisante, je fais quoi
+j'ai pas la force de faire une séance
+
+# sleep
+j'ai mal dormi
+j'ai pas dormi
+j'ai dormi 4 heures
+nuit pourrie
+j'ai pas fermé l'oeil
+je me suis couché tard
+je me suis couché à 3h
+j'ai fait une nuit blanche
+j'arrive pas à dormir
+comment mieux dormir
+combien d'heures je dois dormir
+le sommeil c'est important pour la muscu ?
+jdors mal en ce moment
+je me réveille la nuit
+j'ai trop peu dormi je m'entraine ?
+insomnie
+je suis réveillé depuis 5h
+
+# motiv
+pas motivé
+j'ai pas envie
+j'ai la flemme
+jai la flemme de m'entrainer
+flemme
+je suis démotivé
+j'ai envie de tout arrêter
+ça sert à rien
+je progresse pas j'abandonne
+motive moi
+donne moi de la motivation
+j'ai plus la motivation
+je veux lâcher
+j'en ai marre
+je suis saoulé
+pourquoi je continuerais
+j'ai envie de rien faire
+aide moi à me motiver
+je trouve pas la motivation
+j'ai perdu l'envie
+c'est dur de s'y mettre
+je repousse ma séance
+
+# record
+mon prochain record
+c'est quoi mon prochain record
+je peux battre un record aujourd'hui ?
+quel record je peux battre
+mes records
+c'est quoi mes meilleurs perf
+mon max
+quand est-ce que je bats mon record
+je vais faire un record ?
+mes records personnels
+ma meilleure performance
+mes pr
+je suis à combien sur mes records
+record à battre
+
+# stuck
+pourquoi je stagne
+je stagne
+je progresse plus
+je suis bloqué
+j'avance pas
+je fais toujours pareil
+plateau
+pas de progrès depuis des semaines
+ça bouge pas
+je suis bloqué au même nombre de reps
+pk jprogresse pas
+j'ai l'impression de pas progresser
+je régresse
+je fais moins qu'avant
+comment débloquer un plateau
+toujours les mêmes chiffres
+je stagne depuis un mois
+
+# progress
+comment progresser
+comment devenir plus fort
+comment m'améliorer
+je veux être plus fort
+comment augmenter mes reps
+comment faire plus de répétitions
+devenir fort
+comment je peux progresser plus vite
+je veux m'améliorer
+c'est quoi le secret pour progresser
+comment évoluer plus vite
+je veux devenir fort dans tout
+
+# weak
+mon point faible
+c'est quoi mon point faible
+où je suis le plus faible
+ma faiblesse
+je suis nul en quoi
+qu'est-ce que je dois travailler en priorité
+sur quoi je suis en retard
+ma plus faible qualité
+il me manque quoi
+qu'est ce que je néglige
+
+# success
+ce qui me réussit
+quand est-ce que je suis le plus fort
+matin ou soir
+c'est mieux de s'entrainer le matin ou le soir
+à quelle heure je m'entraine le mieux
+quelle heure pour la muscu
+ce qui marche le mieux pour moi
+mes meilleures séances c'est quand
+qu'est-ce qui me fait réussir mes séances
+
+# rank
+comment monter de rang
+c'est quoi mon rang
+je suis quel rang
+mon niveau
+je suis quel niveau
+comment passer au rang suivant
+comment je passe avancé
+il me manque quoi pour le rang d'après
+mes qualités
+ma note en force
+c'est quoi les 5 qualités
+mon étoile
+comment monter ma note d'endurance
+monter de niveau
+je suis intermédiaire ?
+
+# muscle
+prendre du muscle
+comment prendre de la masse
+je veux grossir
+comment avoir des gros bras
+comment avoir des pecs
+je veux être plus musclé
+prise de masse
+comment gonfler
+hypertrophie
+je suis trop maigre je veux prendre du muscle
+comment avoir des épaules larges
+comment prendre du volume
+je veux un physique
+je veux être sec et musclé
+comment avoir des abdos visibles
+grossir des bras
+
+# run
+courir plus vite
+comment courir plus vite
+ma course
+comment améliorer mon endurance
+je veux courir 10 km
+mon allure
+c'est quoi ma vma
+comment faire un meilleur 5 km
+je suis essoufflé quand je cours
+footing
+je cours dimanche quoi faire
+comment progresser en course
+fractionné
+combien de km je dois courir
+je veux améliorer mon cardio
+jogging
+ma dernière course
+courir sans se fatiguer
+comment avoir plus de souffle
+
+# light
+dois-je lever le pied
+je m'entraine trop ?
+est-ce que j'en fais trop
+surentrainement
+semaine légère
+je devrais faire une pause ?
+je peux faire une semaine de repos
+je suis peut-être en surentrainement
+je dois ralentir ?
+semaine de décharge
+je force trop
+c'est grave si je fais une pause d'une semaine
+
+# rest
+le repos
+jour de repos
+je fais quoi un jour off
+je peux m'entrainer tous les jours ?
+deux séances par jour c'est bien ?
+c'est grave de m'entrainer chaque jour
+repos actif
+combien de jours de repos par semaine
+je dois me reposer combien de temps
+je peux enchainer deux jours ?
+s'entrainer 7 jours sur 7
+
+# pain
+j'ai mal quelque part
+j'ai mal à l'épaule
+j'ai mal au dos
+j'ai mal au genou
+j'ai mal aux poignets
+mon coude me fait mal
+je me suis blessé
+douleur à l'épaule
+j'ai une douleur au genou
+je crois que je me suis fait une tendinite
+ça tire dans l'épaule
+j'ai mal au bas du dos
+mon poignet craque et fait mal
+je me suis tordu la cheville
+j'ai mal quand je fais des dips
+blessure
+mal aux genoux en courant
+jai mal a lepaule depuis hier
+j'ai une élongation
+ça me lance dans le coude
+
+# doms
+des courbatures
+j'ai des courbatures
+je suis courbaturé
+j'ai des courbatures partout
+j'ai mal aux muscles depuis la séance
+je suis tout raide
+je peux m'entrainer avec des courbatures ?
+courbatures aux jambes
+j'ai mal aux pecs depuis hier
+comment faire passer les courbatures
+j'arrive plus à marcher depuis la séance jambes
+
+# food
+quoi manger
+je mange quoi ce soir
+qu'est-ce que je mange
+quoi manger pour prendre du muscle
+combien de protéines par jour
+je mange assez ?
+idée de repas
+quoi manger avant la séance
+quoi manger après le sport
+petit déj pour la muscu
+j'ai faim
+combien de calories je dois manger
+un bon goûter
+je mange quoi à midi
+c'est quoi un bon dîner
+les protéines c'est où
+il faut manger quoi pour grossir
+je mange mal
+régime
+quoi manger le soir
+une recette facile
+la liste de courses
+
+# weight
+mon poids
+combien je pèse
+je dois peser combien
+mon poids idéal
+j'ai pris du poids ?
+j'ai grossi ?
+j'ai maigri
+comment prendre 5 kilos
+je veux atteindre 70 kg
+me peser
+ma balance
+je pèse combien maintenant
+mon évolution de poids
+
+# forme
+pourquoi ce score de forme
+ma forme
+c'est quoi mon score de forme
+je suis en forme ?
+pourquoi mon score est bas
+pourquoi je suis à 60 %
+le score du matin
+mon bilan du matin
+corps prêt à combien
+pourquoi je suis pas prêt
+comment augmenter mon score de forme
+je suis prêt pour m'entrainer ?
+
+# pulse
+mon pouls
+mon rythme cardiaque
+mon pouls au repos
+combien de bpm
+mon coeur bat vite
+c'est quoi un bon pouls
+mesurer mon pouls
+mon temps de réaction
+battement de coeur
+
+# stats
+mes chiffres
+combien de pompes j'ai fait
+combien de séances j'ai fait
+mes stats
+mes statistiques
+combien de km j'ai couru
+combien de séances ce mois
+mon total de pompes
+depuis le début j'ai fait combien
+le bilan du mois
+combien de dips au total
+mes chiffres du mois dernier
+combien d'heures de sport
+combien de tonnes j'ai soulevé
+
+# warmup
+l'échauffement
+comment s'échauffer
+je dois m'échauffer ?
+échauffement avant la séance
+c'est quoi un bon échauffement
+combien de temps d'échauffement
+je m'échauffe comment
+avant la muscu je fais quoi
+
+# stretch
+les étirements
+comment s'étirer
+je dois m'étirer ?
+étirements après la séance
+retour au calme
+comment devenir souple
+mobilité
+je suis pas souple
+étirement des ischios
+comment toucher mes pieds
+je m'étire avant ou après
+
+# pullup
+le dos sans barre
+comment travailler le dos sans barre de traction
+j'ai pas de barre de traction
+remplacer les tractions
+tractions
+comment faire des tractions
+le dos large
+travailler le dos chez soi
+exercice pour le dos
+je veux faire des tractions
+comment avoir un dos en V
+
+# stress
+je suis stressé
+stress
+j'ai un contrôle demain
+c'est le bac blanc
+je révise je m'entraine quand même ?
+je suis angoissé
+j'ai trop de devoirs
+période d'examens
+je suis anxieux
+comment gérer le stress
+le sport aide pour le stress ?
+je suis sous pression
+
+# method
+séries et repos
+combien de séries
+combien de répétitions par série
+combien de temps de repos entre les séries
+repos entre les séries
+c'est quoi la surcharge progressive
+quand ajouter du poids
+quand mettre le gilet lesté
+je mets du lest quand
+aller jusqu'à l'échec ?
+c'est quoi le tempo
+faire lentement ou vite
+combien de reps pour prendre du muscle
+comment marche le programme
+pourquoi 3 séries
+c'est quoi les étapes du programme
+comment je monte d'étape
+
+# skill
+les figures
+comment faire le poirier
+handstand
+comment tenir en équilibre sur les mains
+l sit
+le corbeau
+comment faire une planche
+muscle up
+front lever
+la calisthénie
+apprendre une figure
+comment faire le drapeau
+
+# hello
+salut
+bonjour
+coucou
+yo
+wesh
+slt
+bonsoir
+hello
+salut ça va ?
+cc coach
+hey
+bjr
+ça va ?
+quoi de neuf
+
+# thanks
+merci
+merci beaucoup
+mercii
+top merci
+parfait
+nickel
+génial
+super merci
+ok merci
+t'es le meilleur
+trop bien
+c'est cool merci
+d'accord merci
+
+# who
+qui es-tu
+t'es qui
+tu es une ia ?
+t'es chatgpt ?
+comment tu marches
+t'es un robot ?
+tu sais faire quoi
+qu'est-ce que tu peux faire
+à quoi tu sers
+tu comprends ce que je dis ?
+t'es intelligent ?
+comment tu sais tout ça
+
+# exo
+mon record aux dips
+comment progresser aux pompes
+c'est quoi le pistol squat
+comment on fait les fentes bulgares
+mes dips
+combien de pompes je fais
+explique moi le rowing
+le développé militaire
+comment faire des pike push up
+mes pompes déclinées
+je suis à combien aux dips
+comment progresser au pistol
+le hollow rock ça sert à quoi
+le curl marteau
+mon meilleur aux squats
+la fiche des burpees
+les mollets
+comment je fais les pompes
+les pompes diamant
+mes dips lestés
+
+# p30
+le défi des 30 jours
+défi 30 jours
+pourquoi j'ai que 20 pompes dans le défi
+mon défi de 30 jours
+c'est quoi le programme de 30 jours
+où j'en suis dans le défi
+pourquoi ces chiffres dans le défi
+le défi pompes
+jour de repos dans le défi
+je peux faire le défi en plus de mes séances
+
+# off
+quelle est la capitale de la france
+raconte moi une blague
+c'est qui le président
+tu peux faire mes devoirs
+quel temps il fait
+qui va gagner le match ce soir
+écris moi une dissertation
+c'est quoi la meilleure série netflix
+calcule 25 fois 4
+traduis en anglais
+parle moi de foot
+quel jeu vidéo acheter
+aide moi pour mon cv
+c'est quoi l'actualité
+recommande moi de la musique
+
+# ---------- Deuxième série (plus de façons de dire, fautes et abréviations) ----------
+# today
+c quoi ma seance
+cest quoi ma séance d'aujourd'hui
+cest quoi lentrainement du jour
+je m'entraine quoi ojd
+koi faire ajd
+on bosse quoi ajd
+séance ?
+une séance stp
+envoie moi une séance
+fais moi une séance
+fais moi un programme pour aujourd'hui
+tu me fais une séance
+j'ai envie de m'entrainer tu me donnes quoi
+je suis chaud pour une séance
+go séance
+allez on s'y met
+je suis prêt pour la séance
+qu'est-ce qu'on fait comme exo aujourd'hui
+je travaille quels muscles aujourd'hui
+c'est quoi les exos du jour
+liste des exercices d'aujourd'hui
+je commence ma séance
+commencer l'entrainement
+séance normale aujourd'hui
+quel entrainement je fais maintenant
+je fais ma séance maintenant ou ce soir
+j'ai le temps pour une séance normale
+quoi comme séance ce matin
+la séance de ce soir
+séance de muscu
+je veux faire ma muscu
+entraine moi
+je veux travailler aujourd'hui
+dis moi quoi faire
+dis moi ce que je fais aujourd'hui
+c'est quoi le programme
+on attaque quoi
+
+# tomorrow
+dmn c quoi
+la séance de demain matin
+je m'entraine demain ou pas
+qu'est-ce que je ferai demain
+demain je fais haut ou bas
+c'est quoi le programme demain
+demain je peux faire une séance ?
+demain c'est jour off ?
+et pour demain
+la prochaine fois je fais quoi
+je prévois quoi pour demain
+demain je fais A ou B
+
+# week
+c quoi mon planning
+mon programme de la semaine
+le planning de cette semaine
+je me suis entrainé combien de fois cette semaine
+combien il m'en reste
+il me reste combien d'entrainements
+j'ai fait combien de séances depuis lundi
+ma semaine est validée ?
+je suis dans les temps cette semaine
+mon objectif hebdo
+objectif de séances par semaine
+quels jours je dois m'entrainer
+je m'entraine quels jours
+répartition de la semaine
+ma semaine en cours
+j'ai raté des séances cette semaine
+je suis en retard sur ma semaine
+la flamme
+ma flamme va s'éteindre ?
+combien de semaines d'affilée
+mes boucliers de flamme
+
+# time
+jai pas le temps
+jai que 15 min
+j'ai 5 minutes
+j'ai que 20 minutes
+séance de 15 min stp
+un entrainement rapide
+une séance éclair
+un petit truc rapide
+j'ai très peu de temps
+je suis à la bourre
+pas trop de temps ce soir
+j'ai un créneau de 20 minutes
+séance courte
+version courte de ma séance
+une séance de 30 minutes
+faire vite fait une séance
+j'ai peu de temps mais je veux m'entrainer
+qu'est-ce que je fais en 10 minutes
+j'ai une heure et demie
+j'ai 1h
+séance d'une heure
+grosse séance
+
+# tired
+chui fatigué
+jsuis fatigué
+je suis fatiguée
+trop fatigué
+je suis vraiment fatigué
+je suis lessivé
+je suis à bout
+je tiens plus debout
+j'ai zéro énergie
+pas d'énergie aujourd'hui
+je suis éclaté
+je suis défoncé de fatigue
+je suis exténué
+je me sens faible aujourd'hui
+je me sens mou
+gros coup de barre
+je suis fatigué depuis plusieurs jours
+je suis fatigué mais je veux m'entrainer
+je suis crevé de ma journée de cours
+je suis fatigué je fais une séance légère ?
+je suis épuisé après les cours
+j'ai la tête dans le gaz
+je suis vidé après le boulot
+je suis pas en forme physiquement
+
+# sleep
+jai mal dormi
+j'ai très mal dormi
+jai pas dormi de la nuit
+j'ai dormi que 5h
+j'ai dormi 2 heures
+nuit courte
+petite nuit
+grosse nuit blanche
+je me suis couché trop tard
+j'ai veillé tard
+j'étais sur mon tel toute la nuit
+je dors pas assez
+je dors mal
+je fais des insomnies
+je me réveille fatigué
+je suis réveillé trop tôt
+à quelle heure je dois me coucher
+c'est grave de pas dormir avant une séance
+comment récupérer d'une mauvaise nuit
+le sommeil
+mon sommeil
+
+# motiv
+jai pas envie
+jai la flem
+j'ai trop la flemme
+j'ai grave la flemme
+la flemme de faire ma séance
+je suis pas motivé
+pas motivée
+je suis démotivée
+zéro motivation
+j'ai pas le courage
+j'ai pas le mental aujourd'hui
+je veux pas m'entrainer
+j'ai pas envie de m'entrainer
+j'ai envie d'abandonner
+je veux arrêter le sport
+ça sert à quoi tout ça
+je vois pas de résultats j'en ai marre
+je suis découragé
+donne moi la force
+motivation
+booste moi
+un mot pour me motiver
+pourquoi je fais ça
+je sais pas si je vais continuer
+j'arrive pas à me motiver
+j'ai la flemme mais je sais que je dois
+
+# record
+je peux battre mon record ?
+mon record
+mes records aux dips
+quels sont mes records
+c'est quoi mon meilleur score
+mon record de pompes
+nouveau record possible ?
+je suis proche d'un record ?
+quel record je bats aujourd'hui
+mes meilleurs chiffres
+record personnel
+ma meilleure série
+mon maximum
+mes perfs
+
+# stuck
+je stagne depuis longtemps
+pourquoi je stagne aux pompes
+ça fait longtemps que je progresse pas
+je fais le même nombre de reps depuis des semaines
+je bloque à 10 dips
+je suis coincé
+j'arrive pas à faire plus
+mes chiffres bougent plus
+je progresse pas du tout
+je stagne grave
+je régresse aux dips
+j'ai perdu de la force
+je fais moins de pompes qu'avant
+pourquoi je suis moins fort
+plus aucun progrès
+je plafonne
+
+# progress
+comment faire pour progresser
+je veux progresser
+comment être plus fort
+comment gagner en force
+comment devenir plus puissant
+comment faire plus de pompes
+comment faire plus de dips
+comment augmenter ma force
+je veux être fort
+des conseils pour progresser
+comment évoluer
+comment aller plus loin
+je veux passer au niveau supérieur
+
+# weak
+mon point faible c'est quoi
+mes points faibles
+ma qualité la plus faible
+dans quoi je suis le moins bon
+je suis mauvais en quoi
+je dois améliorer quoi
+quoi améliorer en premier
+qu'est-ce qui me manque le plus
+ma priorité
+qu'est-ce que je devrais travailler
+mon défaut
+
+# success
+quand est ce que je suis le plus performant
+je suis plus fort le matin ou le soir
+quel moment de la journée pour s'entrainer
+à quelle heure faire du sport
+le meilleur moment pour m'entrainer
+qu'est ce qui marche pour moi
+ce qui m'aide à réussir
+mes meilleures conditions
+je réussis mieux quand
+
+# rank
+mon rang
+cest quoi mon rang
+quel est mon rang
+je suis à quel rang
+mon niveau actuel
+je suis quel niveau en muscu
+comment monter au rang supérieur
+qu'est-ce qu'il faut pour monter de rang
+monter en rang
+je veux passer avancé
+je veux être élite
+ma note
+mes notes de qualité
+c'est quoi l'explosivité
+c'est quoi la maîtrise du corps
+mon endurance est à combien
+ma force est à combien
+pourquoi ma vitesse est basse
+
+# muscle
+comment prendre du muscle
+je veux prendre du muscle
+je veux prendre du volume
+je veux grossir des pecs
+comment avoir des gros pectoraux
+comment avoir des gros biceps
+comment avoir des triceps
+comment avoir de gros bras
+comment élargir mes épaules
+comment avoir un gros torse
+je veux être massif
+comment se muscler
+je suis trop fin
+je suis maigre comment grossir en muscle
+comment prendre de la masse sans salle
+prise de muscle
+comment avoir des abdos
+comment avoir des tablettes
+je veux des abdos en béton
+comment avoir des cuisses musclées
+comment avoir des mollets
+
+# run
+comment courir mieux
+comment courir plus longtemps
+courir plus vite
+je veux améliorer mon temps au 5 km
+mon temps de course
+mon allure de course
+quelle allure courir
+je cours trop lentement
+j'ai un point de côté en courant
+je suis vite essoufflé
+la course de dimanche
+combien de km dimanche
+je veux faire un semi marathon
+comment faire 10 km
+préparer une course
+cardio
+endurance
+mes courses
+mon dernier footing
+fractionné ou footing
+
+# light
+je fais trop de séances ?
+est ce que je dois me reposer
+je pense que j'en fais trop
+je devrais lever le pied ?
+une semaine plus légère
+j'ai besoin d'une pause
+je suis surentrainé ?
+je dois baisser l'intensité ?
+faut il ralentir
+semaine de repos
+je fais une coupure ?
+
+# rest
+je peux faire du sport tous les jours ?
+c'est bien de s'entrainer tous les jours
+combien de repos entre deux séances
+je peux m'entrainer deux jours de suite
+le jour de repos je fais quoi
+jour off
+pendant mon jour de repos
+c'est grave de faire 2 séances par jour
+il faut combien de jours de repos
+la récupération
+comment bien récupérer
+je récupère mal
+
+# pain
+jai mal a lepaule
+jai mal au dos
+jai mal au genou
+j'ai mal aux épaules
+j'ai mal aux coudes
+j'ai mal à la cheville
+j'ai mal au poignet gauche
+j'ai mal au cou
+j'ai mal aux lombaires
+mal au bas du dos
+mal à l'épaule
+mal au coude
+douleur au poignet
+douleur au dos
+mon épaule craque
+mon genou craque et fait mal
+je me suis fait mal
+je me suis fait mal pendant la séance
+je me suis claqué un muscle
+j'ai une tendinite au coude
+j'ai une douleur bizarre
+ça me fait mal quand je pousse
+douleur aiguë
+je boite
+je me suis fait une entorse
+j'ai mal en faisant des pompes
+mon épaule me lance
+
+# doms
+jai des courbatures
+trop de courbatures
+courbatures de malade
+je suis courbaturé de partout
+j'ai les bras courbaturés
+j'ai mal aux abdos depuis hier
+j'ai mal aux cuisses depuis la séance
+mes muscles me font mal
+je suis raide de partout
+j'ai les jambes en compote
+je peux faire ma séance si j'ai encore mal aux muscles
+c'est normal d'avoir des courbatures
+pourquoi j'ai des courbatures
+les courbatures
+
+# food
+je mange koi
+quoi manger ce soir
+qu'est ce que je mange à midi
+qu'est-ce que je mange avant le sport
+je mange quoi après ma séance
+je dois manger combien
+combien je dois manger par jour
+combien de calories par jour
+combien de protéines
+ou trouver des protéines
+quels aliments pour prendre du muscle
+je veux manger mieux
+j'ai faim
+j'ai la dalle
+un repas pour prendre du poids
+un bon petit déjeuner
+le goûter
+quoi manger le matin
+manger avant de dormir
+c'est quoi un repas équilibré
+je mange trop peu
+la bouffe
+idée de dîner
+quoi cuisiner
+nutrition
+manger pour grossir
+
+# weight
+mon poids actuel
+je fais combien de kilos
+je pèse combien
+je dois peser combien pour ma taille
+combien de kilos j'ai pris
+j'ai perdu du poids
+je maigris
+j'arrive pas à prendre du poids
+comment grossir
+je veux prendre du poids
+je veux prendre 10 kilos
+ma courbe de poids
+mon poids a bougé ?
+je me pèse quand
+
+# forme
+mon score de forme
+ma forme du jour
+je suis en forme aujourd'hui
+je suis prêt à combien
+pourquoi je suis à 50
+pourquoi mon score de forme a baissé
+c'est quoi le score de forme
+comment est calculé mon score
+mon bilan
+faire mon bilan du matin
+ma récupération est à combien
+mon corps est prêt ?
+
+# pulse
+mon rythme cardiaque au repos
+c'est quoi un bon rythme cardiaque
+combien de battements par minute
+mon cœur
+mon pouls est haut
+mon pouls est bas c'est grave
+mesurer mes bpm
+mon test de réaction
+le pouls avec la caméra
+
+# stats
+mes stats
+mes chiffres du mois
+mes chiffres de la semaine
+combien de pompes cette semaine
+combien de pompes au total
+combien de dips j'ai fait
+combien de séries
+combien de séances au total
+combien d'entrainements depuis le début
+combien de kilomètres au total
+mes kilomètres
+mon total
+le résumé du mois
+mon bilan du mois
+combien de temps je me suis entrainé
+combien de kilos j'ai soulevé
+ma carrière
+
+# warmup
+échauffement
+je m'échauffe comment
+je dois m'échauffer avant ?
+c'est obligatoire l'échauffement
+comment bien s'échauffer
+quel échauffement avant les dips
+quel échauffement avant de courir
+préparer mes articulations
+je saute l'échauffement c'est grave ?
+
+# stretch
+étirements
+je m'étire comment
+s'étirer après le sport
+comment être souple
+gagner en souplesse
+la souplesse
+mobilité des hanches
+je suis raide des ischios
+des étirements pour le dos
+m'étirer avant de dormir
+retour au calme après la séance
+étirement des épaules
+
+# pullup
+travailler le dos sans traction
+le dos
+le dos sans matériel
+comment muscler mon dos
+exercices dos
+pas de barre comment faire le dos
+remplacer la barre de traction
+je peux faire des tractions sans barre ?
+dos en v
+avoir un dos large
+le tirage
+
+# stress
+jsuis stressé
+je suis stressée
+trop de stress
+je stresse pour le bac
+le bac arrive
+j'ai des exams
+j'ai un contrôle
+je dois réviser
+je révise beaucoup
+je suis débordé par les cours
+je suis angoissé par les examens
+je me sens oppressé
+j'ai la pression
+le stress m'empêche de m'entrainer
+le sport contre le stress
+
+# method
+combien de séries par exercice
+combien de reps
+combien de répétitions
+combien de temps je me repose
+le temps de repos
+le repos entre deux séries
+c'est quoi une bonne fourchette de répétitions
+la surcharge progressive
+quand augmenter le poids
+quand est-ce que je mets du poids
+quand rajouter du lest
+mettre du lest
+le gilet lesté
+quand monter d'étape
+c'est quoi une étape
+comment fonctionne le programme
+c'est quoi la méthode
+aller à l'échec c'est bien ?
+la vitesse des répétitions
+le tempo des répétitions
+pourquoi tant de séries
+séries et répétitions
+
+# skill
+le handstand
+comment faire l'équilibre sur les mains
+le poirier contre le mur
+le l-sit
+la planche en calisthénie
+comment faire le corbeau
+le crow pose
+le muscle up
+le front lever
+le back lever
+les figures de street workout
+le street workout
+je veux faire des figures
+comment apprendre le handstand
+
+# hello
+salut toi
+yo coach
+wesh coach
+bonjour coach
+coucou toi
+slt ça va
+hey coach
+salut c'est moi
+bonsoir coach
+hello coach
+re
+rebonjour
+
+# thanks
+merci coach
+merci bien
+merci à toi
+mercii coach
+c'est gentil
+super
+top
+ok
+d'accord
+ça marche
+cool
+parfait merci
+trop fort
+bien vu
+t'es fort
+
+# who
+t'es qui toi
+tu es qui
+c'est quoi toi
+tu es un humain ?
+t'es une intelligence artificielle ?
+tu es chatgpt
+tu marches comment
+comment tu fonctionnes
+tu peux faire quoi
+tu sers à quoi coach
+qu'est-ce que tu sais faire
+tu es vraiment intelligent ?
+tu comprends tout ?
+tu réfléchis vraiment ?
+tu es connecté à internet ?
+
+# exo
+mon record aux pompes
+mes pompes
+les dips
+mon pistol squat
+comment faire le pistol
+les fentes
+les fentes bulgares
+le squat bulgare
+le rowing haltère
+le rowing élastique
+le développé militaire assis
+les pike push up
+les pompes déclinées
+les pompes surélevées
+le hollow rock
+le russian twist
+le superman
+les burpees
+le gainage
+la planche gainage
+le curl haltères
+les élévations latérales
+mes squats
+le squat
+les mollets debout
+les tractions australiennes
+les pompes à une main
+les pompes diamant
+les dips lestés
+je fais combien de dips en moyenne
+comment je m'en sors aux pompes
+mon évolution aux dips
+mon évolution aux pompes
+ça sert à quoi les dips
+quels muscles travaillent les pompes
+la fiche du pistol squat
+explique moi les fentes
+comment bien faire les pompes
+technique des dips
+
+# p30
+mon défi
+le défi
+défi des 30 jours
+le défi pompes de 30 jours
+le défi dips
+je suis à quel jour du défi
+il reste combien de jours au défi
+pourquoi le défi me fait faire si peu
+c'est quoi les chiffres du défi
+le test du défi
+comment marche le défi de 30 jours
+je commence un défi
+
+# off
+quelle heure est il
+quel jour on est
+raconte une histoire
+fais moi rire
+c'est quoi la capitale de l'espagne
+qui a gagné la coupe du monde
+tu connais ronaldo
+qui est le meilleur joueur du monde
+résous cette équation
+fais mon exposé
+c'est quoi la photosynthèse
+quel film regarder
+donne moi un prénom pour mon chat
+écris un poème
+comment draguer une fille
+je m'ennuie
+tu aimes quoi comme musique
+c'est quoi bitcoin
+la météo de demain
+comment gagner de l'argent
+quel téléphone acheter
+aide moi en anglais
+explique moi la révolution française
+
+# ---------- Troisième série (cas qui se mélangeaient) ----------
+# today
+j'ai beaucoup de temps aujourd'hui
+grosse séance
+je veux une grosse séance
+une séance bien dure
+# motiv
+la flemme ce soir
+j'ai la flemme ajd
+aujourd'hui j'ai pas envie
+ce soir j'ai pas envie de faire ma séance
+j'ai la flemme d'y aller
+pas envie de m'entrainer ce soir
+j'ai la flemme de commencer
+je veux sauter ma séance
+je peux sauter la séance aujourd'hui ?
+grosse flemme aujourd'hui
+
+# tired
+je suis claquée
+je suis crevée
+je suis morte
+je suis épuisée
+fatigue
+trop de fatigue
+je suis fatigué depuis ce matin
+je suis claqué de la journée
+
+# doms
+j'ai mal partout depuis hier
+j'ai mal partout depuis l'entrainement
+mal aux muscles
+mes jambes me font mal depuis la séance
+j'ai encore mal de la dernière séance
+j'ai des douleurs musculaires après le sport
+mal aux bras après les pompes d'hier
+
+# pain
+douleur vive
+j'ai mal à un endroit précis
+ça fait mal dans l'articulation
+une douleur qui dure depuis une semaine
+j'ai mal au tendon
+mon genou gonfle
+
+# weight
+je pèse combien en ce moment
+c'est quoi mon poids
+mon poids aujourd'hui
+je fais combien sur la balance
+combien je fais de kilos
+je dois perdre du poids ?
+je suis trop maigre pour ma taille
+
+# stress
+le bac blanc c'est demain
+j'ai un examen demain
+j'ai une interro demain je suis stressé
+demain j'ai un contrôle important
+grosse semaine de contrôles
+j'ai des partiels
+
+# tomorrow
+qu'est ce que je fais demain comme séance
+demain je fais quel entrainement
+l'entrainement de demain
+
+# run
+j'ai pas d'endurance
+je manque d'endurance
+je tiens pas longtemps en courant
+je m'essouffle vite
+mon cardio est nul
+comment avoir plus d'endurance en course
+je cours 20 minutes et je suis mort
+
+# method
+quand est-ce que j'augmente le poids
+quand est-ce que je rajoute du lest
+je rajoute du poids quand
+quand est-ce que je mets plus lourd
+je dois mettre combien de kilos de lest
+le lest c'est quand
+combien de séries pour progresser
+c'est quoi le bon nombre de séries
+
+# skill
+apprendre le muscle up
+je veux réussir le handstand
+je veux faire un l-sit
+apprendre les figures
+je veux faire la planche
+comment débloquer le front lever
+
+# stuck
+pourquoi je fais plus de progrès
+pourquoi je progresse moins vite
+je progresse plus comme avant
+ça progresse plus
+
+# exo
+mon record aux dips c'est quoi
+mon record aux pompes c'est combien
+comment je progresse aux pompes
+comment progresser aux dips
+je fais combien de pompes maintenant
+comment améliorer mon pistol
+ça travaille quoi les dips
+quels muscles pour le pistol squat
+les pompes ça muscle quoi
+
+# p30
+où j'en suis dans le défi
+le défi de 30 jours j'en suis où
+mon avancée dans le défi
+je suis au jour combien du défi
+combien de jours il reste au défi
+
+# off
+quel temps fera-t-il demain
+il va pleuvoir demain ?
+qui est le meilleur rappeur
+qui est le meilleur chanteur
+tu connais messi
+tu connais mbappé
+c'est qui le plus fort au foot
+quel est ton film préféré
+tu aimes le rap ?
+aide moi pour mes maths
+aide moi en français
+fais mon devoir
+qui a inventé internet
+combien font 12 fois 12
+comment ça va le monde
+dis moi un secret
+tu as quel âge
+tu es un garçon ou une fille

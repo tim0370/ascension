@@ -38,6 +38,7 @@ import { routeSvg, runRecords, routesAll, fmtTime } from './course.js';
 import { init3d } from './fig3d.js';
 import { viewExos } from './exos.js';
 import { homeCoach } from './mascotte.js';
+import { iaWarm, iaSend, iaState, iaWanted } from './ia.js';
 
 const DAY = 864e5;
 const local = ['localhost', '127.0.0.1'].includes(location.hostname); // tests sur le PC
@@ -220,6 +221,7 @@ const GUIDE = [
     ['checkin', 'Bilan du matin et forme', 'Environ 1 min 30 le matin : heures de sommeil, courbatures, énergie, stress, pouls au repos (le doigt sur la caméra de derrière, 60 s) et test de réaction (20 s). Après 7 matins, tout est comparé à ta propre moyenne, et le score apprend tout seul ce qui annonce tes bonnes séances (fiabilité affichée).'],
     ['forme', 'Charge et ce qui te réussit', 'Ta charge des 8 dernières semaines, la semaine légère conseillée quand il faut, et ce qui te fait mieux performer (heure, repos, sommeil).'],
     ['pain', 'Signaler une douleur', 'Épaules, poignets, genoux… pendant 7 jours, tes séances évitent les exercices qui la sollicitent.'],
+    ['ia-open', 'La petite IA du coach', 'À télécharger une fois (en Wi-Fi) depuis les Réglages ou le coach : elle aide le coach à comprendre tes questions écrites comme tu parles, avec des fautes ou des abréviations. Elle reste dans ton téléphone et marche sans internet ; les réponses sont toujours calculées sur tes séances. Les questions qu’il ne comprend pas sont envoyées (le texte seul) pour qu’on ajoute des exemples : tu peux le couper.'],
     ['', 'Le coach de l’accueil', 'Le petit bonhomme violet en haut de l’accueil, c’est ton coach. Écris ta question dans le champ ou touche une question toute prête : il réfléchit, puis écrit sa réponse juste en dessous, avec des boutons pour lancer ta séance (normale, courte, grosse, 10 min, allégée, sans matériel). « Fermer la discussion » remet l’accueil comme avant. Touche le bonhomme pour lui parler.'],
     ['coach', 'Coach', 'Écris-lui ta question comme à un ami (« jsuis crevé », « mon record aux dips », « j’ai mal au genou », « j’ai 20 min »). Il lit tes séances, ton bilan du matin et ta balance, dans ton téléphone, sans internet. Point du jour en haut, mot du coach en fin de séance.'],
     ['cap', 'Grand objectif', 'Un but de 12 semaines choisi d’après ton point faible. Ses progrès se calculent depuis tes séances, et la date d’arrivée est estimée.'],
@@ -534,6 +536,7 @@ function sheetSettings() {
     srow('set-sub', 'dumbbell', 'Façon de t’entraîner', esc({ full: 'Programme complet', debutant: 'Débutant', libre: 'Sans programme' }[modeNow()]), ' data-k="mode"'),
     srow('set-sub', 'calendar', 'Objectif par semaine', plural(weekGoal(), 'séance', 'séances'), ' data-k="goal"'),
     srow('set-sub', 'timer', 'Repos par défaut', clock(rest), ' data-k="rest"'),
+    srow('ia-open', 'bolt', 'Petite IA du coach', { ready: 'prête', dl: iaState().pct + ' %', load: '…', error: 'à refaire' }[iaState().st] || (iaWanted() ? 'activée' : 'à télécharger'), ' data-l2="1"'),
     srow('home-edit', 'home', 'Cartes de l’accueil'),
     srow('set-sub', 'star', 'Fond d’écran', esc((FONDS.find((f) => f[0] === (state.settings.bg || '')) || FONDS[0])[1]), ' data-k="bg"'),
     stog('toggle-textbig', 'book', 'Texte plus grand', !!state.settings.textBig, 'Tous les textes un peu plus gros'),
@@ -1215,4 +1218,6 @@ Object.assign(ACTIONS, {
 
 // Le démarrage est allé au bout : l'écran de secours de index.html ne s'affichera pas.
 try { init3d(); } catch (e) {}
+// Petite IA du coach : chargée en fond si elle a été téléchargée ; envoi du carnet des questions mal comprises.
+try { iaWarm(); setTimeout(() => iaSend(true), 4000); document.addEventListener('visibilitychange', () => { if (!document.hidden) iaSend(true); }); } catch (e) { console.error(e); }
 window.__ascOk = true;

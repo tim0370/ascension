@@ -1,0 +1,8 @@
+Petite IA du coach d'Ascension (comprend les questions, hors ligne).
+
+- modele.*.bin : paraphrase-multilingual-MiniLM-L12-v2 (sentence-transformers, licence Apache 2.0),
+  version ONNX quantifiée de Xenova, vocabulaire réduit à l'alphabet latin (ascension-ia/retaille.mjs).
+- vocab.bin : son vocabulaire, au même format réduit (lu par tok.js).
+- ort.wasm.min.mjs, ort-wasm-simd-threaded.* : onnxruntime-web (Microsoft, licence MIT).
+- exemples.txt : les phrases d'exemple par sujet. Après un ajout, depuis ascension-ia : node fabriquer.mjs
+  (refait sujets.bin et liste.json), puis node fabriquer.mjs --test pour mesurer.

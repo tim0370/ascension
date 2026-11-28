@@ -7,7 +7,8 @@ import { esc, plural, ui, ACTIONS, ICON, sheet, $ } from './ui.js';
 import { TYPES, nextType, plan, testDue, minutes, weekIdx, weakQuality, isBeginner, STEPS, stepReady, stepStall, curStep, nextStep } from './programme.js';
 import { forme, charge, lightAdvice, lightWeek, activePains, PAINS, predictions, predLine, reussites, baseOf } from './forme.js';
 import { tally } from './bilan.js';
-import { understand, closest, resetCtx, clean } from './cerveau.js';
+import { understand, closest, resetCtx, clean, scoresOf } from './cerveau.js';
+import { iaGuess, iaNote, iaPicked, iaState } from './ia.js';
 import { weekPlan } from './semaine.js';
 import { bodyStats, ZONES, musclesOf } from './corps.js';
 import { rankInfo, balance, bodyLog } from './stats.js';
@@ -470,7 +471,10 @@ function answer(id, arg) {
     return { text: [(h < 12 ? 'Salut. ' : h < 18 ? 'Salut. ' : 'Bonsoir. ') + 'Forme ' + forme().score + ' % aujourd’hui.' + (doneToday ? ' Ta séance est faite.' : ' Au programme : « ' + name + ' ».'), 'Pose-moi n’importe quelle question : séance, fatigue, figures, records, course, un exercice précis…'] };
   }
   if (id === 'thanks') return { text: [pick(['Avec plaisir. Continue comme ça.', 'De rien. On se retrouve après ta séance.', 'Quand tu veux.'])] };
-  if (id === 'who') return { text: ['Je suis le coach d’Ascension. Je ne suis pas une IA en ligne : je lis tes séances, ton bilan du matin et ta balance, directement dans ton téléphone, et je calcule mes réponses.', 'Rien ne part sur internet. Plus tu notes, plus mes réponses sont précises.'] };
+  if (id === 'who') return iaState().st === 'ready'
+    ? { text: ['Je suis le coach d’Ascension. Une petite IA rangée dans ton téléphone m’aide à comprendre tes questions, même mal écrites, sans internet.', 'Mes réponses, elles, sont calculées sur tes séances, ton bilan du matin et ta balance : je n’invente rien. Plus tu notes, plus elles sont précises.'] }
+    : { text: ['Je suis le coach d’Ascension. Je ne suis pas une IA en ligne : je lis tes séances, ton bilan du matin et ta balance, directement dans ton téléphone, et je calcule mes réponses.', 'Rien ne part sur internet. Plus tu notes, plus mes réponses sont précises.'] };
+  if (id === 'off') return { text: [pick(['Là, je ne peux pas t’aider.', 'Ça, ce n’est pas mon rayon.', 'Je ne sais pas répondre à ça.']) + ' Je suis ton coach : je connais tes séances, ta forme, ta course, ton sommeil et tes repas, rien d’autre.', 'Pose-moi une question là-dessus, je te réponds avec tes chiffres.'], btns: Q.slice(0, 4).map(([k, l]) => btn('coach-ask', l, ' data-q="' + k + '"')).join('') };
   if (id === 'exo') return exoAnswer(arg);
   return { text: ['Je n’ai pas compris.'] };
 }
@@ -701,16 +705,24 @@ function p30Answer() {
 // Question écrite librement.
 function askText(text) {
   chat.push({ me: true, text });
-  reply(answerText(text));
+  draw(true);
+  answerTextAI(text).then(reply);
 }
-export function answerText(text) {
-  const u = understand(text);
-  let a;
+// Avec la petite IA (si elle est prête) : elle donne le sujet, les mots-clés l'aident quand elle hésite.
+export async function answerTextAI(text) {
+  let ai = null;
+  try { ai = await iaGuess(text, scoresOf(text)); } catch (e) { console.error(e); }
+  return answerText(text, ai);
+}
+export function answerText(text, ai) {
+  const u = understand(text, ai);
+  let a, missed = false;
   try {
     const tech = techAnswer(u);
     const w30 = ' ' + u.words.join(' ') + ' ';
     if (tech) a = tech;
     else if (/ 30 jour| defi | defis | 50 /.test(w30) && (state.p30 || / 30 jour/.test(w30))) a = p30Answer();
+    else if (u.id === 'p30') a = p30Answer();
     else if (u.id === 'pain') a = u.zone ? answer('pain', u.zone) : { text: ['Où as-tu mal ? Je retirerai de tes séances, pendant 7 jours, les exercices qui sollicitent cette zone.'], btns: Object.keys(PAINS).map((k) => btn('coach-ask', PAINS[k], ' data-q="pain" data-arg="' + k + '" data-l="' + PAINS[k] + '"')).join('') };
     else if (u.id === 'exo' || ((u.id === 'stuck' || u.id === 'record') && u.exo)) a = exoAnswer(u.exo);
     else if (u.id === 'progress') a = answer('stuck');
@@ -718,18 +730,23 @@ export function answerText(text) {
     else if (u.id === 'food') a = answer('food', u.words);
     else if (u.id === 'forme' || u.id === 'tired' || u.id === 'sleep' || u.id) a = answer(u.id, u.words);
     else {
+      missed = true;
       const near = closest(u).filter((x) => LBL[x]);
       a = { text: [pick(['Je n’ai pas bien compris.', 'Je ne suis pas sûr de comprendre.', 'Hmm, je n’ai pas saisi.']) + (near.length ? ' Tu voulais parler de ça ?' : ' Essaie avec d’autres mots : « je suis fatigué », « mon record aux dips », « quoi manger ce soir », « j’ai 20 minutes »…')],
-        btns: near.length ? near.map((x) => btn('coach-ask', LBL[x], ' data-q="' + x + '"')).join('') : Q.slice(0, 4).map(([k, l]) => btn('coach-ask', l, ' data-q="' + k + '"')).join('') };
+        btns: (near.length ? near.map((x) => btn('coach-ask', LBL[x], ' data-q="' + x + '" data-pick="1"')).join('') : Q.slice(0, 4).map(([k, l]) => btn('coach-ask', l, ' data-q="' + k + '"')).join('')) + (iaState().st === 'ready' || state.settings.ia ? '' : btn('ia-open', 'Me rendre plus malin')) };
     }
   } catch (e) { console.error(e); a = { text: ['Je n’ai pas réussi à calculer ça. Pose ta question autrement ?'] }; }
-  if (a.text[0] === 'Je n’ai pas compris.') a = exoAnswer(u.exo || null);
+  if (a.text[0] === 'Je n’ai pas compris.') { a = exoAnswer(u.exo || null); if (!u.exo) missed = true; }
+  // Carnet : ce que le coach n'a pas compris, ou compris en hésitant (l'IA peu sûre ou en désaccord avec les mots-clés).
+  const doubt = ai && (!ai.id || (u.kw && u.kw !== ai.id && ai.p < 0.8));
+  if (missed || doubt) iaNote({ q: text, ia: ai ? ai.top : [], mot: u.kw || '', dit: missed ? '' : (u.id || '') });
+  a._id = missed ? null : u.id;
   return a;
 }
 
 Object.assign(ACTIONS, {
   coach: () => { chat = []; resetCtx(); draw(false); },
   'coach-tab': (el) => { ui.tab = el.dataset.tab; ui.enter = true; import('./app.js').then((a) => { a.render(); }); document.getElementById('sheet').innerHTML = ''; document.body.classList.remove('locked'); },
-  'coach-ask': (el) => ask(el.dataset.q, el.dataset.arg, el.dataset.l),
+  'coach-ask': (el) => { if (el.dataset.pick) iaPicked(el.dataset.q); ask(el.dataset.q, el.dataset.arg, el.dataset.l); },
   'coach-go': (el) => { ACTIONS['prog-start'](el); },
 });

@@ -905,6 +905,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 74, items: [
+    'Le coach a une petite IA : elle comprend tes questions écrites comme tu parles, avec des fautes ou des abréviations (« jsuis creuvé », « cmb de séances il me reste »). Touche « Rends-moi plus malin » sous le coach pour la télécharger (environ 80 Mo, une seule fois, en Wi-Fi).',
+    'Elle reste dans ton téléphone et marche sans internet. Les réponses sont toujours calculées sur tes séances : elle n’invente rien.',
+    'Les questions qu’il ne comprend pas sont envoyées (le texte seul) pour qu’on lui apprenne de nouvelles phrases. Tu peux le couper dans Réglages, Petite IA du coach.',
+  ] },
   { v: 73, items: [
     'Demande « Ma séance du jour » au coach : il t’envoie la carte de ta séance, avec Courte, Commencer et les autres formats (grosse, 10 min, allégée, sans matériel). La carte n’est plus sur l’accueil.',
   ] },

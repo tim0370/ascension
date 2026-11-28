@@ -1499,3 +1499,8 @@ body.has-hero #exos-q { background: rgba(14, 14, 18, 0.74); border-color: rgba(2
 .mcard { display: flex; flex-direction: column; gap: 10px; width: 100%; }
 .mcard.appear { animation: cbin 0.35s ease-out both; }
 .mmodes { display: flex; flex-direction: column; gap: 8px; padding: 0 2px; }
+
+/* v74 : petite IA du coach */
+.iaok svg { width: 22px; height: 22px; flex: none; color: var(--vert, #4ADE80); }
+.iachip svg { width: 15px; height: 15px; flex: none; }
+#iasheet .card { padding: 14px 16px; }

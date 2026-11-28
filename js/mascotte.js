@@ -1,10 +1,11 @@
 // Le coach de l'accueil : un petit bonhomme (tête violette, bandeau de sport) toujours en haut de l'accueil.
 // On peut lui poser une question (écrite ou toute prête) : la discussion s'affiche sous lui, dans l'accueil,
-// et les cartes de l'accueil reviennent avec « Fermer ». Les réponses viennent du coach (coach.js), sans IA ni internet.
+// et les cartes de l'accueil reviennent avec « Fermer ». Les réponses viennent du coach (coach.js), sans internet ; la petite IA (ia.js), si elle est téléchargée, aide seulement à comprendre la question.
 // États du bonhomme (classe sur .masc) : repos (il flotte, cligne, regarde autour), think (il réfléchit),
 // talk (il écrit sa réponse), happy (séance faite, ou on le touche).
-import { answerFor, answerText, qLabel, suggest } from './coach.js';
-import { resetCtx, understand } from './cerveau.js';
+import { answerFor, answerTextAI, qLabel, suggest } from './coach.js';
+import { iaPicked, iaWanted } from './ia.js';
+import { resetCtx } from './cerveau.js';
 import { progCard } from './programme.js';
 import { state } from './store.js';
 import { esc, ACTIONS, ICON } from './ui.js';
@@ -65,7 +66,8 @@ export function homeCoach(rest) {
     + '<div class="chat hchat" id="hchat" aria-live="polite">' + chat.map(bubbleHtml).join('') + '</div>'
     + '<form class="askrow mask" id="hform"><input class="textin" id="hq" placeholder="Pose-moi une question…" aria-label="Pose une question au coach" autocomplete="off" enterkeyhint="send">'
     + '<button type="submit" class="pill gold-btn" aria-label="Envoyer">' + ICON.up + '</button></form>'
-    + '<div class="mchips">' + sg.map((k) => '<button type="button" class="pill sm sugq" data-act="hask" data-q="' + k + '">' + esc(qLabel(k)) + '</button>').join('') + '</div>'
+    + '<div class="mchips">' + sg.map((k) => '<button type="button" class="pill sm sugq" data-act="hask" data-q="' + k + '">' + esc(qLabel(k)) + '</button>').join('')
+    + (iaWanted() ? '' : '<button type="button" class="pill sm sugq iachip" data-act="ia-open">' + ICON.bolt + ' Rends-moi plus malin</button>') + '</div>'
     + '<button type="button" class="pill glass mclose" data-act="hclose">Fermer la discussion</button>'
     + '</section><div id="homerest"' + (on ? ' hidden' : '') + '>' + rest + '</div>';
 }
@@ -131,15 +133,17 @@ function respond(meText, compute) {
   if (box) { box.insertAdjacentHTML('beforeend', bubbleHtml(chat[chat.length - 1]) + '<div class="cb typing mtyping"><i></i><i></i><i></i></div>'); }
   mood('think');
   scrollEnd();
-  let a;
-  try { a = compute(); } catch (e) { console.error(e); a = { text: ['Je n’ai pas réussi à calculer ça. Pose ta question autrement ?'] }; }
-  chat.push(a);
-  const wait = 650 + Math.min(650, a.text.join(' ').length * 1.5);
-  setTimeout(() => {
-    const t = document.querySelector('#hchat .mtyping');
-    if (t) t.remove();
-    write(a);
-  }, wait);
+  const t0 = Date.now();
+  Promise.resolve().then(compute).catch((e) => { console.error(e); return null; }).then((a) => {
+    if (!a || !a.text) a = { text: ['Je n’ai pas réussi à calculer ça. Pose ta question autrement ?'] };
+    chat.push(a);
+    const wait = Math.max(0, 650 + Math.min(650, a.text.join(' ').length * 1.5) - (Date.now() - t0));
+    setTimeout(() => {
+      const t = document.querySelector('#hchat .mtyping');
+      if (t) t.remove();
+      write(a);
+    }, wait);
+  });
 }
 
 // « Ma séance du jour » : le coach envoie la carte de la séance (celle qui était sur l'accueil), avec tous les formats.
@@ -160,9 +164,7 @@ export function homeAsk(id, arg, label) {
   respond(label || qLabel(id), () => (id === 'today' ? todayAnswer() : answerFor(id, arg)));
 }
 function homeText(text) {
-  let today = false;
-  try { today = understand(text).id === 'today'; } catch (e) { /* rien */ }
-  respond(text, () => (today ? todayAnswer() : answerText(text)));
+  respond(text, async () => { const a = await answerTextAI(text); return a._id === 'today' ? todayAnswer() : a; });
 }
 
 document.addEventListener('submit', (ev) => {
@@ -180,7 +182,7 @@ const origAsk = ACTIONS['coach-ask'], origGo = ACTIONS['coach-go'], origStart = 
 Object.assign(ACTIONS, {
   'prog-start': (el) => { if (!$('coachchat') && chatting() && !state.active) { chat = []; resetCtx(); busy = false; } origStart(el); },
   hask: (el) => homeAsk(el.dataset.q, el.dataset.arg, el.dataset.l),
-  'coach-ask': (el) => (!$('coachchat') && $('hchat') ? homeAsk(el.dataset.q, el.dataset.arg, el.dataset.l) : origAsk(el)),
+  'coach-ask': (el) => { if (!$('coachchat') && $('hchat')) { if (el.dataset.pick) iaPicked(el.dataset.q); homeAsk(el.dataset.q, el.dataset.arg, el.dataset.l); } else origAsk(el); },
   'coach-go': (el) => { if (!$('coachchat')) { chat = []; resetCtx(); } origGo(el); },
   hclose: () => { chat = []; resetCtx(); busy = false; const b = $('hchat'); if (b) b.innerHTML = ''; setOn(false); mood(''); window.scrollTo({ top: 0, behavior: 'smooth' }); },
   'masc-poke': () => { mood('poke'); setTimeout(() => { const m = $('masc'); if (m) m.classList.remove('poke'); }, 900); const q = $('hq'); if (q && !busy) q.focus({ preventScroll: true }); },
