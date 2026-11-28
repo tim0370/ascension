@@ -255,6 +255,17 @@ function viewList(a) {
 }
 
 // Un exercice en grand : gros chiffres, plus et moins, un seul bouton pour valider.
+// Bandeau des exercices de la séance : une vignette par exercice, toucher = y aller.
+function exStrip(a) {
+  if (a.exercises.length < 2) return '';
+  const h = a.exercises.map((x, k) => {
+    const n = x.sets.length, d = x.sets.filter((z) => z.done).length;
+    return '<button type="button" class="exthumb' + (k === a.idx ? ' cur' : '') + (n && d === n ? ' done' : '') + '" data-act="goto" data-i="' + k + '" aria-label="' + esc(exoName(x.name)) + ', ' + d + ' séries sur ' + n + (k === a.idx ? ', en cours' : '') + '">'
+      + figure(x.name, 'still') + (n && d === n ? '<span class="exck">' + ICON.check + '</span>' : '') + '<i style="--p:' + (n ? Math.round((d / n) * 100) : 0) + '%"></i></button>';
+  }).join('');
+  setTimeout(() => { const st = document.querySelector('.exstrip'), c = st && st.querySelector('.cur'); if (c) st.scrollLeft = c.offsetLeft - st.clientWidth / 2 + c.clientWidth / 2; }, 0);
+  return '<div class="exstrip" role="navigation" aria-label="Exercices de la séance">' + h + '</div>';
+}
 function viewFocus(a) {
   const ex = a.exercises[a.idx];
   const n = a.exercises.length;
@@ -266,6 +277,7 @@ function viewFocus(a) {
   let h = '<div class="row between"><button type="button" class="pill sm glass" data-act="list">' + ICON.back + 'Séance</button>'
     + '<span class="num" id="elapsed" style="font-size:20px;color:var(--soft)">' + clock((Date.now() - a.start) / 1000) + '</span>'
     + '<button type="button" class="iconbtn" data-act="ex-menu" data-i="' + a.idx + '" aria-label="Options de l’exercice">' + ICON.more + '</button></div>';
+  h += exStrip(a);
   h += feelCard(a);
   h += '<div class="row" style="align-items:flex-start;gap:12px"><div class="col grow" style="gap:4px"><span class="label violet">Exercice ' + (a.idx + 1) + ' sur ' + n + '</span><h1 class="h1" style="font-size:30px">' + esc(exoName(ex.name)) + '</h1>'
     + '<span class="small mut">' + (ex.prev ? 'Dernière fois : ' + esc(ex.prev) : 'Première fois sur cet exercice') + (ex.step && !ex.max ? '<span style="color:var(--soft)"> · vise ' + ex.lo + ' à ' + ex.hi + (time ? ' s' : '') + '</span>' : '') + '</span>'

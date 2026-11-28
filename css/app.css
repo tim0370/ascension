@@ -42,6 +42,7 @@
   --fig-eq2: #8C82B4;
   --fig-band: #A68DFF;
   --fig-floor: rgba(139, 108, 246, 0.35);
+  --fig-b0: #F1F2F6; --fig-b1: #D3D6DE; --fig-b2: #7E828E; --fig-f1: #7D818C; --fig-f2: #4A4D57; --fig-m1: #A99BFF; --fig-m2: #6A4CF0;
 }
 
 /* touch-action évite le zoom quand on tape vite deux fois sur un bouton (plus et moins, valider). */
@@ -1410,3 +1411,26 @@ body.has-hero #app .glass, body.has-hero #app .tile { text-shadow: none; }
 .bgthumb.heroth::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, #0E0E12 100%); }
 @media (prefers-reduced-motion: reduce) { .heroimg { animation: none; } }
 body.has-hero #app .mut:not(.glass .mut):not(.cta .mut):not(.tile .mut) { color: rgba(255, 255, 255, 0.86); }
+
+/* ---------- v68 : mannequin gris en relief (anim.js), muscles travaillés en violet ---------- */
+.bgfig.me .fb, .bgfig.me .fh { fill: #C9B8FF; }
+.bgfig.me .ff { fill: #7C5CF5; }
+.bgfig.me .fm { fill: #F1D08A; }
+.bgfig.shadow .fb, .bgfig.shadow .fh { fill: #5A1222; }
+.bgfig.shadow .ff { fill: #3A0A16; }
+.bgfig.shadow .fm { fill: #FF3B57; }
+html.light { --fig-b0: #FFFFFF; --fig-b1: #C9CCD6; --fig-b2: #6E7280; --fig-f1: #8C909C; --fig-f2: #545864; }
+.cta .fm { fill: #FFFFFF; opacity: 0.92; }
+/* Bandeau des exercices (écran d'un exercice) */
+.exstrip { display: flex; gap: 8px; overflow-x: auto; margin: 10px -16px 2px; padding: 4px 16px 6px; scrollbar-width: none; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+.exstrip::-webkit-scrollbar { display: none; }
+.exthumb { position: relative; flex: none; width: 62px; height: 52px; padding: 0; border-radius: 14px; border: 1px solid var(--line); background: var(--surf2); overflow: hidden; transition: transform .16s cubic-bezier(.23, 1, .32, 1), border-color .2s; }
+.exthumb:active { transform: scale(.94); }
+.exthumb .fig { width: 100%; height: 100%; border: 0; border-radius: 0; background: none; display: block; }
+.exthumb.cur { border-color: var(--violet); box-shadow: 0 0 0 1px var(--violet), 0 6px 18px rgba(124, 92, 245, .35); }
+.exthumb.done .fig { opacity: .45; }
+.exthumb i { position: absolute; left: 6px; right: 6px; bottom: 4px; height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.exthumb i::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--p); background: var(--violet); border-radius: 2px; }
+.exthumb.done i::after { background: var(--vert); }
+.exck { position: absolute; top: 4px; right: 4px; width: 16px; height: 16px; border-radius: 50%; background: var(--vert); color: #0E0E12; display: grid; place-items: center; }
+.exck svg { width: 11px; height: 11px; }

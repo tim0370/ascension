@@ -198,6 +198,7 @@ const GUIDE = [
     ['quick', 'Pompes du jour', 'Note une série en une touche, n’importe quand, pour viser 100 pompes dans la journée.'],
     ['chrono2', 'Chrono', 'Tabata, EMOM, AMRAP et intervalles, avec voix.'],
     ['cooldown', 'Retour au calme', '6 étirements guidés en 3 minutes.'],
+    ['', 'Bandeau d’exercices', 'Sur l’écran d’un exercice, en haut : une vignette par exercice de la séance. Touche-la pour y aller ; la barre dessous montre les séries faites.'],
     ['gps', 'Course GPS', 'Distance, allure, lièvre, voix à chaque kilomètre et tracé de la course.'],
   ]],
   ['Défis', [

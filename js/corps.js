@@ -114,67 +114,66 @@ export function bodyStats(now = Date.now()) {
   return z;
 }
 
-// ---------- Le dessin : un corps de face et de dos, muscles séparés par de fins espaces ----------
-// Chaque forme est donnée pour le côté gauche de l'image ; on la recopie en miroir pour l'autre côté.
-const mirror = (d) => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (m, x, y) => (100 - +x) + ',' + y);
+// ---------- Le dessin : un corps gris en relief, de face et de dos ; les muscles prennent la couleur de leur état ----------
+// Chaque forme est donnée pour la moitié gauche de l'image ; on la recopie en miroir pour l'autre moitié.
+const mirror = (d) => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (m, x, y) => (Math.round((100 - +x) * 10) / 10) + ',' + y);
+// Contour du corps (moitié gauche), mains et pieds compris.
+const SIL = 'M50.6,25 L45,25 Q45.4,29.5 43.5,31 Q36,32 30,33.4 Q23.6,35 23.2,43 Q22.8,50 24.2,55 Q23.2,63 23.8,70.5 Q21.8,80 23.2,90 Q23.6,96 24.2,99 Q23,106 25.4,110.5 Q28,111.5 30,108.5 Q30.6,101 31.2,98 Q35,86 35.2,74 Q36.6,63 36.3,54 L36.8,58 Q35.8,72 36.8,84 Q33.8,92 34.2,101 Q33.6,120 37.8,139.5 Q36.8,144 38.3,148.5 Q36.3,162 39.8,178 Q37.8,183 37.2,187.5 L46.2,187.5 Q46.7,181 46.2,177 Q48.2,162 47.7,148.5 Q48.7,144 48,139.5 Q49.2,121 49.6,105 L50.6,105 Z';
 const FRONT = {
-  epaules: 'M29,35 Q34,31 40,34 L38,45 Q33,49 28,50 Q25,42 29,35 Z',
-  pecs: 'M49,36 L42,35 Q39,38 39,46 Q41,53 49,53 Z',
-  biceps: 'M27,52 Q32,50 36,52 Q36,62 33,71 L28,71 Q25,62 27,52 Z',
-  avantbras: 'M27.5,73.5 L33,73.5 Q33,86 30.5,97 L26.5,97 Q24.5,85 27.5,73.5 Z',
-  obliques: 'M38.5,56 L43,56 L43.5,86 L40,87 Q37,72 38.5,56 Z',
-  quadri: 'M38.5,100 Q43,98 49,101 L48,138 Q43,141 39,138 Q35,119 38.5,100 Z',
-  mollets: 'M39,146 Q42,143 46,146 Q47,160 45,177 L41,177 Q37,161 39,146 Z',
+  trapezes: 'M45.2,28.5 Q41,31.6 34,33.2 L41.5,35.2 L46.3,32 Z',
+  epaules: 'M33.6,33.6 Q26.4,34.6 24.6,42 Q24,48 25.8,52.6 Q30,47.6 34.2,45.4 Q37.2,40.6 39.4,36.2 Z',
+  pecs: 'M49.6,36 L40.2,35.6 Q35.4,39.4 35,46.4 Q36.4,53.2 42.2,55.2 Q47,56.2 49.6,54.4 Z',
+  biceps: 'M26.2,53.2 Q30.2,48.4 34.4,46.8 Q36.2,56 34.8,66 Q32.4,70.2 29.2,70.2 Q25.2,66 25.2,58.4 Z',
+  avantbras: 'M24.8,72.4 Q29,70.8 34.2,71 Q35,78.6 32,90 L29.4,97.6 L25.6,97.6 Q22.6,86 24.8,72.4 Z',
+  obliques: 'M37.8,58.4 Q41,56.6 44.2,57.4 L44.2,86.2 Q40,88.4 37.6,84.4 Q35.8,70 37.8,58.4 Z',
+  quadri: 'M36.6,96.4 Q42,93.6 48.8,103 Q49.2,122 47.2,138 Q43,142 39.6,139 Q34.2,118 36.6,96.4 Z',
+  mollets: 'M39.6,148.6 Q43,145.2 46.6,148.6 Q47.2,162 45.6,176 L41.6,176 Q37.6,162 39.6,148.6 Z',
 };
-const FRONT_MID = {
-  abdos: 'M44.5,55.5 L55.5,55.5 L55,85 Q50,91 45,85 Z',
-};
+const FRONT_MID = { abdos: 'M45.2,57.4 L54.8,57.4 L55.4,86 Q50,92.4 44.6,86 Z' };
 const BACK = {
-  epaules: 'M29,35 Q34,31 40,34 L39,43 Q33,48 28,50 Q25,42 29,35 Z',
-  triceps: 'M27,52 Q32,50 36,52 Q36,62 33,71 L28,71 Q25,62 27,52 Z',
-  avantbras: 'M27.5,73.5 L33,73.5 Q33,86 30.5,97 L26.5,97 Q24.5,85 27.5,73.5 Z',
-  dos: 'M40.5,45 L49,47 L49,72 Q43,74 41,70 Q37,58 40.5,45 Z',
-  fessiers: 'M39,91 Q44,89 49,91 L49,106 Q43,111 39,106 Q37,98 39,91 Z',
-  ischios: 'M39,109 Q44,113 48.5,110 L48,138 Q43,141 39,138 Q36,123 39,109 Z',
-  mollets: 'M38.5,145 Q42,141 46.5,145 Q48,156 45,170 L41,170 Q36,157 38.5,145 Z',
+  dos: 'M37.6,40.6 L45,43.8 L49.6,60 L49.6,74.6 Q44,76.6 40,72.4 Q35.6,62 35,50.4 Q35,44.4 37.6,40.6 Z',
+  epaules: 'M33.6,33.6 Q26.4,34.6 24.6,42 Q24,48 25.8,52.6 Q30,47.6 34.2,45.4 Q37.2,40.6 39.4,36.2 Z',
+  triceps: 'M26.2,53.2 Q30.2,48.4 34.4,46.8 Q36.2,56 34.8,66 Q32.4,70.2 29.2,70.2 Q25.2,66 25.2,58.4 Z',
+  avantbras: 'M24.8,72.4 Q29,70.8 34.2,71 Q35,78.6 32,90 L29.4,97.6 L25.6,97.6 Q22.6,86 24.8,72.4 Z',
+  fessiers: 'M36,90.4 Q43,87.4 49.6,90.4 L49.6,107 Q43,112 37.6,107 Q34.6,98.4 36,90.4 Z',
+  ischios: 'M37.6,110.4 Q43,114 49,110.6 Q49,126 47.6,139 Q43,142 39.6,139 Q35,124 37.6,110.4 Z',
+  mollets: 'M38.6,146.4 Q42,141.4 47,146.4 Q48.6,157 45.6,170.4 L41,170.4 Q36,158 38.6,146.4 Z',
 };
 const BACK_MID = {
-  trapezes: 'M43,29 L57,29 L61.5,35 L50,44 L38.5,35 Z',
-  lombaires: 'M43,75 L57,75 L57.5,88 L42.5,88 Z',
+  trapezes: 'M44.4,27.4 L55.6,27.4 L57.6,31.2 Q63.8,33 67,35.2 L56,42 L50,58.4 L44,42 L33,35.2 Q36.2,33 42.4,31.2 Z',
+  lombaires: 'M44,76.4 L56,76.4 L57,90 L43,90 Z',
 };
-// La silhouette de fond (tête, cou, mains, bassin, genoux, pieds)
-const BASE = '<ellipse cx="50" cy="15" rx="8.5" ry="10.5"/><path d="M45.5,24 L54.5,24 L55,31 L45,31 Z"/>'
-  + '<ellipse cx="28.5" cy="101.5" rx="3.3" ry="4.2"/><ellipse cx="71.5" cy="101.5" rx="3.3" ry="4.2"/>'
-  + '<path d="M40,89 L60,89 L62,99 L50,102 L38,99 Z"/><ellipse cx="43.5" cy="142" rx="4" ry="3"/><ellipse cx="56.5" cy="142" rx="4" ry="3"/>'
-  + '<path d="M40,180 L46,180 L47,186 L38,186 Z"/><path d="M60,180 L54,180 L53,186 L62,186 Z"/>';
 
 function colorOf(mode, d) {
   if (mode === 'vol') {
-    if (!d.week) return 'rgba(255,255,255,0.07)';
+    if (!d.week) return 'transparent';
     const t = Math.min(1, d.week / 16); // environ 16 séries par semaine = plein
-    return 'rgba(139,108,246,' + (0.22 + t * 0.78).toFixed(2) + ')';
+    return 'rgba(124,92,245,' + (0.35 + t * 0.6).toFixed(2) + ')';
   }
-  if (d.rec >= 90) return d.last ? 'rgba(58,214,140,0.55)' : 'rgba(255,255,255,0.07)';
-  if (d.rec >= 55) return 'rgba(255,176,59,0.75)';
-  return 'rgba(255,84,104,0.85)';
+  if (!d.last) return 'transparent';
+  if (d.rec >= 90) return 'rgba(63,214,155,0.7)';
+  if (d.rec >= 55) return 'rgba(255,176,59,0.85)';
+  return 'rgba(255,84,104,0.9)';
 }
 
 function figureSvg(side, mode, z) {
-  const shapes = side === 'front' ? [FRONT, FRONT_MID] : [BACK, BACK_MID];
-  let p = '';
-  for (const k of Object.keys(shapes[0])) {
-    const c = colorOf(mode, z[k]);
-    p += '<g class="mz" data-act="muscle" data-z="' + k + '" fill="' + c + '"><path d="' + shapes[0][k] + '"/><path d="' + mirror(shapes[0][k]) + '"/></g>';
-  }
-  for (const k of Object.keys(shapes[1])) {
-    p += '<g class="mz" data-act="muscle" data-z="' + k + '" fill="' + colorOf(mode, z[k]) + '"><path d="' + shapes[1][k] + '"/></g>';
-  }
-  // Lignes des abdos, pour le relief
-  const lines = side === 'front' ? '<path d="M50,56 L50,88 M45,65 L55,65 M45,74.5 L55,74.5" stroke="rgba(10,8,20,0.55)" stroke-width="0.8" fill="none"/>' : '<path d="M50,47 L50,73" stroke="rgba(10,8,20,0.55)" stroke-width="0.8" fill="none"/>';
-  // Un reflet doux sur chaque muscle (clair en haut, sombre en bas) : du relief au lieu d'aplats.
-  const all = Object.values(shapes[0]).map((d) => '<path d="' + d + '"/><path d="' + mirror(d) + '"/>').join('') + Object.values(shapes[1]).map((d) => '<path d="' + d + '"/>').join('');
-  const sh = '<defs><linearGradient id="bsh-' + side + '" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.22"/><stop offset="0.45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.22"/></linearGradient></defs>';
-  return '<svg class="bodysvg" viewBox="18 0 64 190" aria-hidden="false">' + sh + '<g fill="rgba(255,255,255,0.06)">' + BASE + '</g>' + p + '<g fill="url(#bsh-' + side + ')" stroke="rgba(10,8,20,0.45)" stroke-width="0.5" pointer-events="none">' + all + '</g>' + lines + '</svg>';
+  const [sides, mids] = side === 'front' ? [FRONT, FRONT_MID] : [BACK, BACK_MID];
+  const both = (d) => '<path d="' + d + '"/><path d="' + mirror(d) + '"/>';
+  // 1. Le corps gris, 2. chaque muscle en relief (gris), 3. la couleur de son état, 4. les traits qui séparent les muscles.
+  const grey = Object.values(sides).map(both).join('') + Object.values(mids).map((d) => '<path d="' + d + '"/>').join('');
+  let col = '';
+  for (const [k, d] of Object.entries(sides)) col += '<g class="mz" data-act="muscle" data-z="' + k + '" fill="' + colorOf(mode, z[k]) + '">' + both(d) + '</g>';
+  for (const [k, d] of Object.entries(mids)) col += '<g class="mz" data-act="muscle" data-z="' + k + '" fill="' + colorOf(mode, z[k]) + '"><path d="' + d + '"/></g>';
+  const lines = side === 'front'
+    ? '<path d="M50,57.6 L50,88 M45,66 L55,66 M45,75.4 L55,75.4 M50,36 L50,54" />'
+    : '<path d="M50,44 L50,88 M44,90.6 L56,90.6" />';
+  return '<svg class="bodysvg" viewBox="16 0 68 192">'
+    + '<g class="bsil" fill="url(#fgFar)">' + both(SIL) + '<ellipse cx="50" cy="14.6" rx="7.6" ry="10"/></g>'
+    + '<ellipse cx="50" cy="14.6" rx="7.4" ry="9.8" fill="url(#fgHead)"/>'
+    + '<g fill="url(#fgBody)" stroke="rgba(18,18,26,0.55)" stroke-width="0.55" stroke-linejoin="round">' + grey + '</g>'
+    + col
+    + '<g fill="url(#fgShade)" pointer-events="none">' + grey + '</g>'
+    + '<g fill="none" stroke="rgba(18,18,26,0.5)" stroke-width="0.6" stroke-linecap="round" pointer-events="none">' + lines + '</g></svg>';
 }
 
 export function bodyMap(mode) {
@@ -193,10 +192,10 @@ export function bodyCard() {
   const list = (a) => a.slice(0, 3).join(', ') + (a.length > 3 ? ' et ' + (a.length - 3) + ' autre' + (a.length > 4 ? 's' : '') : '');
   let txt;
   if (mode === 'rec') txt = tired.length || mid.length ? (tired.length ? 'Fatigués : ' + list(tired) + '. ' : '') + (mid.length ? 'Presque prêts : ' + list(mid) + '. ' : '') + 'Le reste est prêt.' : ready.length ? 'Tout ce que tu as travaillé est récupéré : tu peux y aller fort.' : 'Pas d’entraînement récent.';
-  else txt = low.length ? 'Moins travaillé que d’habitude cette semaine : ' + low.slice(0, 3).join(', ') + '.' : 'Séries de la semaine par muscle. Plus c’est violet, plus tu as travaillé.';
+  else txt = low.length ? 'Moins travaillé que d’habitude cette semaine : ' + low.slice(0, 3).join(', ') + '.' : 'Séries de la semaine par muscle. Plus c’est violet, plus tu as travaillé. Gris = pas travaillé.';
   const legend = mode === 'rec'
-    ? '<span class="lg"><i style="background:rgba(58,214,140,0.8)"></i>Prêt</span><span class="lg"><i style="background:rgba(255,176,59,0.9)"></i>En cours</span><span class="lg"><i style="background:rgba(255,84,104,0.9)"></i>Fatigué</span>'
-    : '<span class="lg"><i style="background:rgba(139,108,246,0.3)"></i>Un peu</span><span class="lg"><i style="background:rgba(139,108,246,1)"></i>Beaucoup</span>';
+    ? '<span class="lg"><i style="background:rgba(63,214,155,0.8)"></i>Prêt</span><span class="lg"><i style="background:rgba(255,176,59,0.9)"></i>En cours</span><span class="lg"><i style="background:rgba(255,84,104,0.9)"></i>Fatigué</span>'
+    : '<span class="lg"><i style="background:rgba(124,92,245,0.4)"></i>Un peu</span><span class="lg"><i style="background:rgba(124,92,245,1)"></i>Beaucoup</span>';
   return '<section class="glass card col tint t-teal" style="gap:12px" id="bodycard"><div class="row between" style="flex-wrap:wrap;gap:10px"><span class="h2">Tes muscles</span>'
     + '<div class="seg2"><button type="button" class="' + (mode === 'rec' ? 'on' : '') + '" data-act="body-mode" data-m="rec">Récupération</button><button type="button" class="' + (mode === 'vol' ? 'on' : '') + '" data-act="body-mode" data-m="vol">Semaine</button></div></div>'
     + bodyMap(mode) + '<div class="row center" style="gap:14px;flex-wrap:wrap">' + legend + '</div>'

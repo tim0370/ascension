@@ -905,6 +905,12 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 68, items: [
+    'Nouveaux personnages : un mannequin gris en relief, plus grand dans son cadre, avec les muscles travaillés en violet.',
+    'Animations corrigées : un coude ou un genou ne se plie plus jamais à l’envers, et les bras et les jambes gardent toujours la même longueur.',
+    'En séance, un bandeau en haut montre tous les exercices : touche une vignette pour passer à un autre. Une coche verte quand un exercice est fini.',
+    'Carte du corps refaite (Progrès, Corps) : un corps en relief, de face et de dos, chaque muscle coloré selon sa récupération ou ton travail de la semaine.',
+  ] },
   { v: 67, items: [
     'Nouveaux fonds d’écran : une vraie photo de sport en haut de chaque page, qui se fond dans le noir. Une photo différente pour l’accueil, la séance, tes progrès, les défis et ton historique.',
     'Les photos sont rangées dans l’app : elles marchent sans internet. Tu peux toujours choisir un autre fond ou ta propre photo dans Réglages, Fond d’écran.',

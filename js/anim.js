@@ -57,7 +57,7 @@ function joints(p) {
 const STAND = { h: [50, AY - 24], t: -90, a1: [93, 90], a2: [87, 90], l1: { to: [52, AY], s: 'fwd' }, l2: { to: [48.5, AY], s: 'fwd' } };
 const st = (o) => Object.assign({}, STAND, o);
 // Face (vue de devant) : les pieds partent chacun de son côté.
-const FRONT = { h: [50, AY - 24], t: -90, a1: [80, 88], a2: [100, 92], l1: { to: [54, AY], s: 'fwd', f: 0 }, l2: { to: [46, AY], s: 'back', f: 180 } };
+const FRONT = { v: 'face', h: [50, AY - 24], t: -90, a1: [80, 88], a2: [100, 92], l1: { to: [54, AY], s: 'fwd', f: 0 }, l2: { to: [46, AY], s: 'back', f: 180 } };
 const fr = (o) => Object.assign({}, FRONT, o);
 
 // Planche : pieds (ou genoux) en F, mains en H, r = distance épaule-main (19 = bras tendu).
@@ -126,7 +126,7 @@ const FIG = {
   'Explosive Push Up': { f: [pu(9.4), plank(PU_F, [51, G - 5], 18.8)], m: ['chest', 'ua'], d: 1.5 },
   'Clap Push Up': { f: [pu(9.4), plank(PU_F, [51, G - 6], 18.8, { p: { a1: [112, 30], a2: [108, 34] } })], m: ['chest', 'ua'], d: 1.5 },
   'Pseudo Planche Push Up': { f: [line(PU_F, [56, 38], [44, G - 0.6]), line(PU_F, [58, 48.5], [44, G - 0.6])], m: ['shoulder', 'chest', 'abs'] },
-  'Spiderman Push Up': { f: [pu(18.8), pu(9.6, { p: { l1: [-22, 140] } }), pu(18.8), pu(9.6, { p: { l2: [-22, 140] } })], m: ['chest', 'abs'], d: 4 },
+  'Spiderman Push Up': { f: [pu(18.8), pu(9.6, { p: { l1: { to: [31, G - 2.4], s: 'fwd' }, l2: { to: PU_F, s: 'fwd' } } }), pu(18.8), pu(9.6, { p: { l2: { to: [31, G - 2.4], s: 'fwd' } } })], m: ['chest', 'abs'], d: 4 },
   'Hindu Push Up': { f: [pike([34, 31], [58, G - 0.6], [18, G - 2.4], 18.8), plank([18, G - 2.4], [58, G - 0.6], 10), line([18, G - 2.4], [58, 46], [58, G - 0.6], { p: { t: -42, hd: -60 } })], m: ['chest', 'shoulder'], d: 3.4 },
   'Deficit Push Up': { f: [plank(PU_F, [50, G - 4], 18.8), plank(PU_F, [50, G - 4], 7.8)], m: ['chest', 'ua'], eq: [['db', 50, G - 2.3]] },
   // Dips
@@ -373,18 +373,6 @@ const IDLE = { f: HOLD(st(), 0.4), m: [], d: 3.5 };
 const f2 = (n) => Math.round(n * 10) / 10;
 const pt2 = (p) => f2(p[0]) + ' ' + f2(p[1]);
 const seg = (a, b, u0, u1) => 'M' + pt2([a[0] + (b[0] - a[0]) * u0, a[1] + (b[1] - a[1]) * u0]) + 'L' + pt2([a[0] + (b[0] - a[0]) * u1, a[1] + (b[1] - a[1]) * u1]);
-const MUSCLE = {
-  chest: (J) => seg(J.hip, J.sh, 0.6, 0.96),
-  abs: (J) => seg(J.hip, J.sh, 0.08, 0.58),
-  back: (J) => seg(J.hip, J.sh, 0.12, 0.92),
-  glute: (J) => seg(J.sh, J.hip, 0.8, 1) + seg(J.hip, J.k1, 0, 0.35),
-  shoulder: (J) => seg(J.sh, J.e1, 0, 0.42),
-  ua: (J) => seg(J.sh, J.e1, 0.18, 0.9),
-  fa: (J) => seg(J.e1, J.h1, 0.1, 0.8),
-  th: (J) => seg(J.hip, J.k1, 0.12, 0.9),
-  calf: (J) => seg(J.k1, J.f1, 0.25, 0.85),
-  neck: (J) => seg(J.sh, J.neck, -0.2, 1.1),
-};
 
 // ---------- Mouvement ----------
 // Entre deux positions clés, on ne fait pas glisser les points en ligne droite (les membres rétréciraient) :
@@ -445,9 +433,59 @@ function framesOf(spec) {
   return spec.f;
 }
 const STEPS = 8;
-// Entre deux positions, rien ne passe sous le sol.
-function floorClamp(J) {
-  for (const k of ['e1', 'h1', 'e2', 'h2', 'k1', 'f1', 't1', 'k2', 'f2', 't2']) if (J[k][1] > G - 0.3) J[k] = [J[k][0], G - 0.3];
+// ---------- Garde-fous ----------
+// Un coude ou un genou ne se plie jamais à l'envers, un membre ne s'allonge ni ne rétrécit, rien ne passe sous le sol.
+// sg = sens normal du pli quand la silhouette regarde vers la droite (genou vers l'avant, coude vers l'arrière).
+const LIMB3 = { a1: ['sh', 'e1', 'h1', -1, L.ua, L.fa], a2: ['sh', 'e2', 'h2', -1, L.ua, L.fa], l1: ['hip', 'k1', 'f1', 1, L.th, L.sh], l2: ['hip', 'k2', 'f2', 1, L.th, L.sh] };
+const bendOf = (J, r, m, e) => norm180(ang(J[m], J[e]) - ang(J[r], J[m]));
+function mirrorPt(p, a, b) {
+  const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy || 1e-6;
+  const t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2, x = a[0] + t * dx, y = a[1] + t * dy;
+  return [2 * x - p[0], 2 * y - p[1]];
+}
+// Sens de chaque membre, décidé une fois pour tout l'exercice d'après ses positions clés :
+// vue de profil = les jambes suivent le sens du corps ;
+// vue de face (positions faites avec fr()) = chaque membre garde le sens qu'il a le plus souvent.
+function sidesOf(KJ, F) {
+  const front = F.some((p) => p.v === 'face');
+  const vote = {};
+  for (const [k, [r, m, e, sg]] of Object.entries(LIMB3)) {
+    vote[k] = 0;
+    for (const J of KJ) { const b = bendOf(J, r, m, e); if (Math.abs(b) > 8 && Math.abs(b) < 150) vote[k] += Math.sign(b) * sg * Math.min(Math.abs(b), 60); }
+  }
+  const out = { front };
+  if (front) { for (const k in LIMB3) out[k] = vote[k] > 0 ? LIMB3[k][3] : vote[k] < 0 ? -LIMB3[k][3] : 0; return out; }
+  // Les genoux nettement pliés décident du sens du corps (retourné quand il est couché sur le dos, tête à droite).
+  // Les bras de profil ne sont pas corrigés : un coude écarté vu de côté peut sembler plié dans l'autre sens.
+  const legs = vote.l1 + vote.l2, c = legs < -100 ? -1 : 1;
+  out.mir = c < 0;
+  out.l1 = out.l2 = c; out.a1 = out.a2 = 0;
+  return out;
+}
+function fixJ(J, S) {
+  J = Object.assign({}, J);
+  const low = G - 0.3;
+  for (const [k, [r, m, e, , l1, l2]] of Object.entries(LIMB3)) {
+    const want = S[k];
+    const okSide = (M, E) => !want || Math.sign(norm180(ang(M, E) - ang(J[r], M))) !== -want;
+    // Main ou pied sous le sol : on le pose sur le sol en repliant le membre, sans changer sa longueur.
+    if (J[e][1] > low) {
+      const T = [J[e][0], low], old = J[e];
+      const A = meet(J[r], l1, T, l2, false), B = meet(J[r], l1, T, l2, true);
+      const M = okSide(A, T) ? A : B, E = P(M, ang(M, T), l2);
+      J[m] = M; J[e] = E;
+      const t = k[0] === 'l' ? 't' + k[1] : null;
+      if (t) J[t] = [J[t][0] + E[0] - old[0], J[t][1] + E[1] - old[1]];
+    }
+    // Pli à l'envers : le coude ou le genou passe de l'autre côté de la ligne épaule-main (ou hanche-pied).
+    const b = bendOf(J, r, m, e);
+    if (want && Math.sign(b) === -want && Math.abs(b) > 10 && Math.abs(b) < 140) J[m] = mirrorPt(J[m], J[r], J[e]);
+  }
+  for (const [f, t, k] of [['f1', 't1', 'k1'], ['f2', 't2', 'k2']]) {
+    // Silhouette retournée : les pointes de pied regardent de l'autre côté.
+    if (S.mir && norm180(ang(J[f], J[t]) - ang(J[k], J[f])) < -30) J[t] = mirrorPt(J[t], J[k], J[f]);
+    if (J[t][1] > low) { const dy = low - J[f][1], dx = Math.sqrt(Math.max(0, L.foot * L.foot - dy * dy)); J[t] = [J[f][0] + (J[t][0] >= J[f][0] ? dx : -dx), low]; }
+  }
   return J;
 }
 // Toute la boucle en petites images : { J: articulations, k: instant de 0 à 1 }
@@ -455,17 +493,18 @@ function timeline(spec) {
   const F = framesOf(spec), n = F.length;
   let kt = spec.kt && spec.kt.length === n + 1 ? spec.kt : null;
   if (!kt) kt = spec.hold && n === 3 ? [0, 0.4, 0.6, 1] : F.map((_, i) => i / n).concat([1]);
-  const KJ = F.map(joints);
+  const RJ = F.map(joints), S = sidesOf(RJ, F), KJ = RJ.map((J) => fixJ(J, S));
   const out = [];
   for (let i = 0; i < n; i++) {
     const j = (i + 1) % n;
     const same = JSON.stringify(F[i]) === JSON.stringify(F[j]);
     for (let s = 0; s < (same ? 1 : STEPS); s++) {
       const u = s / STEPS, e = 0.5 - 0.5 * Math.cos(Math.PI * u);
-      out.push({ J: s ? floorClamp(joints(lerpPose(F[i], F[j], e, KJ[i], KJ[j]))) : KJ[i], k: f2((kt[i] + (kt[i + 1] - kt[i]) * u) * 1000) / 1000 });
+      out.push({ J: s ? fixJ(joints(lerpPose(F[i], F[j], e, KJ[i], KJ[j])), S) : KJ[i], k: f2((kt[i] + (kt[i + 1] - kt[i]) * u) * 1000) / 1000 });
     }
   }
   out.push({ J: KJ[0], k: 1 });
+  out.mir = !!S.mir; out.S = S;
   return out;
 }
 function animate(attr, vals, tl, dur) {
@@ -486,50 +525,97 @@ function staticEq(e) {
 }
 
 const cache = {};
-// Un personnage habillé : peau, t-shirt violet, short sombre, baskets claires, cheveux.
-// Le côté lointain est plus sombre, une ombre suit le corps au sol, les muscles travaillés sont en orange.
-const W = { tor: 7, neck: 3.2, th: 5.4, sh: 4.2, foot: 2.8, ua: 3.8, fa: 3.1 };
-const MW = { neck: 3.4, chest: 5.2, abs: 4.4, back: 5, glute: 4.6, shoulder: 3.6, ua: 3, fa: 2.4, th: 4.2, calf: 3.1 };
+// ---------- Dessin du mannequin ----------
+// Un corps gris en relief (lumière venant d'en haut à gauche), sans visage ni vêtements ; les muscles travaillés en couleur.
+// Les dégradés sont définis une fois dans index.html (#figdefs) ; une page peut changer les couleurs avec les classes fb, ff, fh, fm.
+const nrm = (a, b) => { const d = dist(a, b) || 1e-3; return [-(b[1] - a[1]) / d, (b[0] - a[0]) / d]; };
+// Membre en forme de fuseau : rond au bout, plus épais du côté de rA.
+function capsule(A, B, rA, rB) {
+  const n = nrm(A, B);
+  const a1 = [A[0] + n[0] * rA, A[1] + n[1] * rA], a2 = [A[0] - n[0] * rA, A[1] - n[1] * rA];
+  const b1 = [B[0] + n[0] * rB, B[1] + n[1] * rB], b2 = [B[0] - n[0] * rB, B[1] - n[1] * rB];
+  return 'M' + pt2(a1) + 'L' + pt2(b1) + 'A' + rB + ' ' + rB + ' 0 0 0 ' + pt2(b2) + 'L' + pt2(a2) + 'A' + rA + ' ' + rA + ' 0 0 0 ' + pt2(a1) + 'Z';
+}
+const along = (A, B, u) => [A[0] + (B[0] - A[0]) * u, A[1] + (B[1] - A[1]) * u];
+// Point du buste : u de la hanche (0) aux épaules (1), o = décalage vers l'avant (+) ou le dos (-).
+function torsoPt(J, u, o, fs) {
+  const n = nrm(J.hip, J.sh), p = along(J.hip, J.sh, u);
+  return [p[0] + n[0] * o * fs, p[1] + n[1] * o * fs];
+}
+// Contour lisse passant près de chaque point (courbes entre les milieux).
+function smooth(pts) {
+  const m = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  let d = 'M' + pt2(m(pts[pts.length - 1], pts[0]));
+  for (let i = 0; i < pts.length; i++) d += 'Q' + pt2(pts[i]) + ' ' + pt2(m(pts[i], pts[(i + 1) % pts.length]));
+  return d + 'Z';
+}
+// Profil du buste vu de côté (avant +, dos -) et vu de face (symétrique).
+const SIDE = [[0, -3.7], [0.1, -4], [0.32, -2.8], [0.62, -3.5], [0.9, -3.3], [1.05, -2], [1.05, 1.8], [0.86, 3.6], [0.7, 3.9], [0.48, 2.7], [0.18, 2.8], [-0.02, 2.7]];
+const FACE = [[0, -4.4], [0.4, -3.6], [0.78, -4.9], [0.98, -5.6], [1.05, -3], [1.05, 3], [0.98, 5.6], [0.78, 4.9], [0.4, 3.6], [0, 4.4], [-0.08, 2], [-0.08, -2]];
+const torsoPath = (J, fs, face) => smooth((face ? FACE : SIDE).map(([u, o]) => torsoPt(J, u, o, fs)));
+// Muscles mis en couleur, dessinés par-dessus le corps.
+const MUS = {
+  chest: (J, fs) => capsule(torsoPt(J, 0.62, 1.7, fs), torsoPt(J, 0.9, 1.4, fs), 1.9, 1.7),
+  abs: (J, fs) => capsule(torsoPt(J, 0.1, 1.2, fs), torsoPt(J, 0.52, 1.1, fs), 1.4, 1.5),
+  back: (J, fs) => capsule(torsoPt(J, 0.3, -1.3, fs), torsoPt(J, 0.86, -1.5, fs), 1.5, 1.9),
+  glute: (J, fs) => capsule(torsoPt(J, 0.02, -1.7, fs), torsoPt(J, 0.14, -1.9, fs), 2, 1.8),
+  shoulder: (J) => capsule(J.sh, along(J.sh, J.e1, 0.32), 2.3, 1.7),
+  ua: (J) => capsule(along(J.sh, J.e1, 0.22), along(J.sh, J.e1, 0.84), 1.6, 1.25),
+  fa: (J) => capsule(along(J.e1, J.h1, 0.12), along(J.e1, J.h1, 0.66), 1.35, 1),
+  th: (J) => capsule(along(J.hip, J.k1, 0.14), along(J.hip, J.k1, 0.86), 2.5, 1.7),
+  calf: (J) => capsule(along(J.k1, J.f1, 0.16), along(J.k1, J.f1, 0.62), 1.75, 1.3),
+  neck: (J) => capsule(J.sh, J.neck, 1.4, 1.2),
+};
+const R = { ua: [2.45, 1.7], fa: [1.85, 1.2], hand: 1.45, th: [3.6, 2.25], sh: [2.35, 1.3], foot: [1.3, 0.8], neck: 1.7, head: 2.75 };
+// Cadre de l'image : resserré sur le mouvement et le matériel, pour que le personnage soit grand.
+function frameOf(spec, tl) {
+  const sc = spec.sc || 1, X = (x) => 50 + (x - 50) * sc, Y = (y) => G + (y - G) * sc;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9;
+  const take = (x, y) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); };
+  for (const f of tl) for (const [k, p] of Object.entries(f.J)) { const r = k === 'head' ? R.head + 1 : 3; take(X(p[0] - r), Y(p[1] - r)); take(X(p[0] + r), Y(p[1] + r)); }
+  for (const e of spec.eq || []) {
+    if (e[0] === 'bars' || e[0] === 'bench' || e[0] === 'box') { take(e[1] - 1, G - (e[0] === 'box' ? e[3] : 0)); take(e[2] + 1, e[0] === 'box' ? G - e[3] : e[3]); }
+    else if (e[0] === 'bar') { take(e[1] - 14, e[2] - 1); take(e[1] + 14, e[2]); }
+    else if (e[0] === 'wall' || e[0] === 'post') take(e[1], G - 30);
+    else if (e[0] === 'bag') { take(e[1] - 6, 6); take(e[1] + 6, 30); }
+    else if (e[0] === 'cable') take(e[1][0], e[1][1] - 3);
+    else if (e[0] === 'db') take(e[1], e[2] - 3);
+  }
+  const y1 = G + 3;
+  let w = Math.max(x1 - x0 + 6, (y1 - y0 + 3) / 0.64, 50), h = w * 0.64;
+  const cx = (x0 + x1) / 2;
+  return [f2(cx - w / 2), f2(y1 - h), f2(w), f2(h)];
+}
 export function figure(name, cls) {
   const key = name + '|' + (cls || '');
   if (cache[key]) return cache[key];
   const spec = FIG[name] || IDLE;
   const tl = timeline(spec), dur = spec.d || 2.4;
-  const cap = 'fill="none" stroke-linecap="round" stroke-linejoin="round"';
+  const fs = tl.mir ? -1 : 1, face = !!(tl.S && tl.S.front);
   const pth = (fn, attrs) => { const v = tl.map((x) => fn(x.J)); return '<path ' + attrs + ' d="' + v[0] + '">' + animate('d', v, tl, dur) + '</path>'; };
   const dot = (fn, attrs) => { const v = tl.map((x) => fn(x.J)); return '<circle ' + attrs + ' cx="' + f2(v[0][0]) + '" cy="' + f2(v[0][1]) + '">' + animate('cx', v.map((p) => f2(p[0])), tl, dur) + animate('cy', v.map((p) => f2(p[1])), tl, dur) + '</circle>'; };
-  const part = (a, b, w, col, u0, u1) => pth((J) => seg(J[a], J[b], u0 || 0, u1 === undefined ? 1 : u1), cap + ' stroke="var(' + col + ')" stroke-width="' + w + '"');
-  const leg = (k, f, t, far) => {
-    const x = far ? '2' : '';
-    return part('hip', k, W.th, '--fig-skin' + x) + part(k, f, W.sh, '--fig-skin' + x) + part(f, t, W.foot, '--fig-shoe' + x, -0.15, 1)
-      + part('hip', k, W.th + 0.5, '--fig-shorts' + x, 0, 0.58);
-  };
-  const arm = (e, h, far) => {
-    const x = far ? '2' : '';
-    return part('sh', e, W.ua, '--fig-skin' + x) + part(e, h, W.fa, '--fig-skin' + x) + part('sh', e, W.ua + 0.5, '--fig-shirt' + x, 0, 0.4)
-      + dot((J) => J[h], 'r="' + (far ? 1.6 : 1.8) + '" fill="var(--fig-skin' + x + ')"');
-  };
-  const muscle = (m) => (MUSCLE[m] ? pth(MUSCLE[m], cap + ' stroke="var(--fig-gold)" stroke-width="' + MW[m] + '" opacity="0.85"') : '');
-  let s = '<line x1="2" y1="' + (G + 0.6) + '" x2="98" y2="' + (G + 0.6) + '" stroke="var(--fig-floor)" stroke-width="1.2"/>';
+  const body = (far) => 'class="' + (far ? 'ff' : 'fb') + '" fill="url(#' + (far ? 'fgFar' : 'fgBody') + ')"';
+  const cap = (a, b, r, far) => pth((J) => capsule(J[a], J[b], r[0], r[1]), body(far));
+  const leg = (k, f, t, far) => cap(k, f, R.sh, far) + cap(f, t, R.foot, far) + cap('hip', k, R.th, far);
+  const arm = (e, h, far) => cap('sh', e, R.ua, far) + cap(e, h, R.fa, far) + dot((J) => J[h], 'r="' + R.hand + '" ' + body(far));
+  const mus = (m) => (MUS[m] ? pth((J) => MUS[m](J, fs), 'class="fm" fill="url(#fgMus)"') : '');
+  const vb = frameOf(spec, tl);
+  let s = '<line x1="' + vb[0] + '" y1="' + (G + 0.6) + '" x2="' + f2(vb[0] + vb[2]) + '" y2="' + (G + 0.6) + '" stroke="var(--fig-floor)" stroke-width="0.8"/>';
   const sc = spec.sc || 1;
   s += '<g' + (sc !== 1 ? ' transform="translate(50 ' + G + ') scale(' + sc + ') translate(-50 -' + G + ')"' : '') + '>';
   const shx = tl.map((x) => f2((x.J.hip[0] + x.J.sh[0]) / 2));
-  const op = tl.map((x) => f2(Math.max(0.12, 0.5 - (G - Math.max(x.J.hip[1], x.J.sh[1])) / 70)));
-  s += '<ellipse cx="' + shx[0] + '" cy="' + (G + 0.4) + '" rx="15" ry="1.8" fill="var(--fig-shadow)" opacity="' + op[0] + '">' + animate('cx', shx, tl, dur) + animate('opacity', op, tl, dur) + '</ellipse>';
+  const op = tl.map((x) => f2(Math.max(0.12, 0.55 - (G - Math.max(x.J.hip[1], x.J.sh[1])) / 70)));
+  s += '<ellipse cx="' + shx[0] + '" cy="' + (G + 0.5) + '" rx="14" ry="1.6" fill="var(--fig-shadow)" opacity="' + op[0] + '">' + animate('cx', shx, tl, dur) + animate('opacity', op, tl, dur) + '</ellipse>';
   for (const e of spec.eq || []) s += staticEq(e);
   s += leg('k2', 'f2', 't2', true) + arm('e2', 'h2', true);
-  s += part('sh', 'neck', W.neck, '--fig-skin');
-  s += part('hip', 'sh', W.tor, '--fig-shirt');
-  s += pth((J) => seg(J.hip, J.sh, 0.55, 0.92), cap + ' stroke="var(--fig-shirt)" stroke-width="8.6"');
-  s += part('hip', 'sh', W.tor + 0.6, '--fig-shorts', 0, 0.16);
-  // Tête : les cheveux sont un cercle décalé vers l'arrière du crâne, la peau passe devant.
-  const dirOf = (J) => { const d = dist(J.neck, J.head) || 1; return [(J.head[0] - J.neck[0]) / d, (J.head[1] - J.neck[1]) / d]; };
-  s += dot((J) => { const [dx, dy] = dirOf(J); return [J.head[0] + dx * 0.7 + dy * 0.8, J.head[1] + dy * 0.7 - dx * 0.8]; }, 'r="' + (L.head + 0.3) + '" fill="var(--fig-hair)"');
-  s += dot((J) => { const [dx, dy] = dirOf(J); return [J.head[0] - dy * 0.35, J.head[1] + dx * 0.35]; }, 'r="' + (L.head + 0.1) + '" fill="var(--fig-skin)"');
+  s += pth((J) => capsule(J.sh, J.neck, R.neck, R.neck - 0.15), body());
+  s += pth((J) => torsoPath(J, fs, face), body());
+  // Tête en forme d'œuf, dans l'axe du cou.
+  s += pth((J) => { const d = dist(J.neck, J.head) || 1, u = [(J.head[0] - J.neck[0]) / d, (J.head[1] - J.neck[1]) / d]; return capsule([J.head[0] - u[0] * 1.1, J.head[1] - u[1] * 1.1], [J.head[0] + u[0] * 0.7, J.head[1] + u[1] * 0.7], R.head - 0.5, R.head); }, 'class="fh" fill="url(#fgHead)"');
   s += leg('k1', 'f1', 't1', false);
-  for (const m of spec.m || []) if (!['shoulder', 'ua', 'fa'].includes(m)) s += muscle(m);
+  for (const m of spec.m || []) if (!['shoulder', 'ua', 'fa'].includes(m)) s += mus(m);
   s += arm('e1', 'h1', false);
-  for (const m of spec.m || []) if (['shoulder', 'ua', 'fa'].includes(m)) s += muscle(m);
+  for (const m of spec.m || []) if (['shoulder', 'ua', 'fa'].includes(m)) s += mus(m);
   for (const e of spec.eq || []) {
     if (e[0] === 'cable') {
       s += '<circle cx="' + e[1][0] + '" cy="' + e[1][1] + '" r="2" fill="none" stroke="var(--fig-eq)" stroke-width="1.2"/>';
@@ -538,16 +624,18 @@ export function figure(name, cls) {
     }
     if (e[0] !== 'band') continue;
     const end = (k) => (J) => (typeof k === 'string' ? J[k] : k);
-    s += pth((J) => 'M' + pt2(end(e[1])(J)) + 'L' + pt2(end(e[2])(J)), 'fill="none" stroke="var(--fig-band)" stroke-width="1.5" stroke-linecap="round"');
+    s += pth((J) => 'M' + pt2(end(e[1])(J)) + 'L' + pt2(end(e[2])(J)), 'fill="none" stroke="var(--fig-band)" stroke-width="1.3" stroke-linecap="round"');
   }
-  const dbAt = (k) => dot((J) => J[k], 'r="2.6" fill="var(--fig-db)" stroke="var(--fig-eq2)" stroke-width="1.2"');
+  const dbAt = (k) => dot((J) => J[k], 'r="2.5" fill="var(--fig-db)" stroke="var(--fig-eq2)" stroke-width="1.1"');
   if (spec.db & 2) s += dbAt('h2');
   if (spec.db & 1) s += dbAt('h1');
   // Barre vue de profil : le disque au bout de la barre, dans la main.
-  if (spec.bb) s += dot((J) => J.h1, 'r="4.4" fill="var(--fig-db)" stroke="var(--fig-eq2)" stroke-width="1.4"') + dot((J) => J.h1, 'r="1" fill="var(--fig-eq2)"');
+  if (spec.bb) s += dot((J) => J.h1, 'r="4.4" fill="var(--fig-db)" stroke="var(--fig-eq2)" stroke-width="1.3"') + dot((J) => J.h1, 'r="1" fill="var(--fig-eq2)"');
   s += '</g>';
   const label = (EXOS[name] && EXOS[name].fr) || name;
-  return (cache[key] = '<svg class="fig' + (cls ? ' ' + cls : '') + '" viewBox="0 0 100 64" role="img" aria-label="Animation : ' + label.replace(/"/g, '') + '">' + s + '</svg>');
+  // Vignette immobile (bandeau de la séance) : la position de départ, sans animation.
+  if (cls && cls.split(' ').includes('still')) s = s.replace(/<animate [^>]*\/>/g, '');
+  return (cache[key] = '<svg class="fig' + (cls ? ' ' + cls : '') + '" viewBox="' + vb.join(' ') + '" role="img" aria-label="Animation : ' + label.replace(/"/g, '') + '">' + s + '</svg>');
 }
 export const hasFigure = (name) => !!FIG[name];
 export const FIG_NAMES = Object.keys(FIG);
