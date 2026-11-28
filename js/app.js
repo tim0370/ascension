@@ -37,6 +37,7 @@ import { viewProgress, hevyCard, rankTeaser, checkRankUp, photoDue, loadPhotos, 
 import { routeSvg, runRecords, routesAll, fmtTime } from './course.js';
 import { init3d } from './fig3d.js';
 import { viewExos } from './exos.js';
+import { homeCoach } from './mascotte.js';
 
 const DAY = 864e5;
 const local = ['localhost', '127.0.0.1'].includes(location.hostname); // tests sur le PC
@@ -97,7 +98,11 @@ function viewHome() {
     + '<button type="button" class="who tap" data-act="level"><span class="label violet">' + (title ? esc(title) : 'Rang ' + info.rank.letter + ' · ' + esc(info.rank.name)) + '</span>'
     + '<span class="h2">Niveau ' + lv.level + '</span><div class="bar thin" style="width:100%"><div style="width:' + Math.round((lv.into / lv.need) * 100) + '%"></div></div></button>'
     + flamePill(st) + '</div>';
-  { const d = new Date(); const wd = d.toLocaleDateString('fr-FR', { weekday: 'long' }); h = '<header class="homehead">' + h + '<div class="today">' + wd + ' ' + d.getDate() + '<small>' + d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) + '</small></div></header>'; }
+  // v72 : avec le programme, le coach (petit bonhomme) remplace la date en haut ; les cartes viennent dessous.
+  const masc = progOn();
+  if (masc) h = '<header class="homehead mhead">' + h + '</header>';
+  else { const d = new Date(); const wd = d.toLocaleDateString('fr-FR', { weekday: 'long' }); h = '<header class="homehead">' + h + '<div class="today">' + wd + ' ' + d.getDate() + '<small>' + d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) + '</small></div></header>'; }
+  const top = h; h = '';
 
 
   // Le bloc principal : la séance en cours, ou celle du programme
@@ -119,7 +124,7 @@ function viewHome() {
     h += momentCard(!!doneToday);
     for (const k of homeOrder()) {
       if (k === 'forme' && fc) h += formeCard(todayList());
-      else if (k === 'coach' && has && show('coach') && progOn()) h += coachCard();
+      else if (k === 'coach' && has && show('coach') && progOn() && !masc) h += coachCard();
       else if (k === 'week' && has && show('week')) h += weekBlock(wq);
       else if (k === 'p30' && has && show('p30') && p30Status()) h += p30Card();
       else if (k === 'prog' && has && show('prog')) h += progressCard();
@@ -143,7 +148,8 @@ function viewHome() {
 
   // Rappel de sauvegarde : toutes les deux semaines, tant que rien n'a été exporté.
   if (!state.installed) { state.installed = Date.now(); save(); }
-  return h;
+  if (masc) { try { return top + homeCoach(h); } catch (e) { console.error(e); } }
+  return top + h;
 }
 
 // ---------- Défis : tout ce qui se joue, rangé par rythme ----------
@@ -213,6 +219,7 @@ const GUIDE = [
     ['checkin', 'Bilan du matin et forme', 'Environ 1 min 30 le matin : heures de sommeil, courbatures, énergie, stress, pouls au repos (le doigt sur la caméra de derrière, 60 s) et test de réaction (20 s). Après 7 matins, tout est comparé à ta propre moyenne, et le score apprend tout seul ce qui annonce tes bonnes séances (fiabilité affichée).'],
     ['forme', 'Charge et ce qui te réussit', 'Ta charge des 8 dernières semaines, la semaine légère conseillée quand il faut, et ce qui te fait mieux performer (heure, repos, sommeil).'],
     ['pain', 'Signaler une douleur', 'Épaules, poignets, genoux… pendant 7 jours, tes séances évitent les exercices qui la sollicitent.'],
+    ['', 'Le coach de l’accueil', 'Le petit bonhomme violet en haut de l’accueil, c’est ton coach. Écris ta question dans le champ ou touche une question toute prête : il réfléchit, puis écrit sa réponse juste en dessous, avec des boutons pour lancer ta séance (normale, courte, grosse, 10 min, allégée, sans matériel). « Fermer la discussion » remet l’accueil comme avant. Touche le bonhomme pour lui parler.'],
     ['coach', 'Coach', 'Écris-lui ta question comme à un ami (« jsuis crevé », « mon record aux dips », « j’ai mal au genou », « j’ai 20 min »). Il lit tes séances, ton bilan du matin et ta balance, dans ton téléphone, sans internet. Point du jour en haut, mot du coach en fin de séance.'],
     ['cap', 'Grand objectif', 'Un but de 12 semaines choisi d’après ton point faible. Ses progrès se calculent depuis tes séances, et la date d’arrivée est estimée.'],
     ['mtest', 'Test du mois', '6 épreuves une fois par mois (pompes, dips, burpees, saut, chaise, course), comparées aux garçons de 16 à 19 ans.'],

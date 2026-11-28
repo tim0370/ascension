@@ -314,7 +314,8 @@ export function applyBg(tab) {
   // v63 : le fond est derrière tous les écrans, sauf pendant une séance (l'écran de séance reste uni).
   // v67 : tout le monde passe une fois aux photos de sport (sauf qui a choisi sa propre photo).
   if (!state.settings.g67) { state.settings.g67 = true; if (state.settings.bg !== 'photo') state.settings.bg = 'sport'; save(); }
-  const k = bgOn() && !(tab === 'workout' && state.active) ? state.settings.bg : '';
+  // v72 : l'accueil a un fond sombre uni, pour que le coach (petit bonhomme) ressorte.
+  const k = bgOn() && tab !== 'home' && !(tab === 'workout' && state.active) ? state.settings.bg : '';
   heroTop(k === 'sport' ? tab : '');
   if (k === 'sport') { document.body.dataset.bg = ''; if (drawn) { drawn = ''; el.innerHTML = ''; el.removeAttribute('style'); } return; }
   document.body.dataset.bg = k;

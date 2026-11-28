@@ -905,6 +905,11 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 72, items: [
+    'Nouvel accueil : ton coach est un petit bonhomme, en haut. Pose-lui une question (« ma séance du jour », « je suis fatigué », « j’ai 20 minutes »…) ou touche une question toute prête : il réfléchit, puis t’écrit sa réponse juste en dessous.',
+    'Quand tu lui demandes ta séance, tu choisis directement le format dans sa réponse : normale, courte, grosse, 10 min, allégée ou sans matériel.',
+    'Tes cartes (séance du jour, forme, semaine…) sont toujours là, sous le coach. « Fermer la discussion » les fait revenir.',
+  ] },
   { v: 71, items: [
     'Nouveau dans le menu : Exercices. Tous les exercices de l’app avec leur animation, rangés par famille, tes exercices en premier. Cherche un nom ou touche un exercice pour voir sa fiche (comment le faire, erreurs, tes records).',
     'Les chronos (Tabata, EMOM…) restent dans l’onglet Séance et dans la recherche du menu.',

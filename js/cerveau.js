@@ -46,7 +46,7 @@ function hit(words, kw) {
 
 // Intentions : [id, [[mot-clé, poids]…]]. Les ids sont les réponses du coach (coach.js).
 const INTENTS = [
-  ['today', [['aujourd hui', 2], ['faire quoi', 3], ['je fais quoi', 3], ['quoi faire', 3], ['quelle seance', 3], ['programme du jour', 3], ['seance du jour', 3], ['maintenant', 1], ['ce soir', 1]]],
+  ['today', [['aujourd hui', 2], ['faire quoi', 3], ['je fais quoi', 3], ['quoi faire', 3], ['quelle seance', 3], ['programme du jour', 3], ['seance du jour', 3], ['que faire', 3], ['on fait quoi', 3], ['qu est ce qu on fait', 3], ['ma seance', 2], ['entrainement du jour', 3], ['entrainement d aujourd', 3], ['maintenant', 1], ['ce soir', 1]]],
   ['tomorrow', [['demain', 4], ['apres demain', 2]]],
   ['week', [['semaine', 3], ['planning', 3], ['cette semaine', 2], ['combien de seance', 2], ['objectif de la semaine', 3]]],
   ['time', [['min', 3], ['heure', 2], ['temps', 2], ['rapide', 2], ['pas le temps', 4], ['vite', 1]]],

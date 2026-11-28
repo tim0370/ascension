@@ -245,6 +245,9 @@ const Q = [
 
 const btn = (act, lab, extra, gold) => '<button type="button" class="pill sm ' + (gold ? 'gold-btn' : 'glass') + '" data-act="' + act + '"' + (extra || '') + '>' + lab + '</button>';
 const startBtn = (type, mode, lab, gold) => btn('coach-go', lab, ' data-type="' + type + '" data-mode="' + (mode || '') + '"', gold);
+// Tous les formats de la séance, le conseillé en premier (doré).
+const MODE_L = [['', 'Normale'], ['court', 'Courte'], ['gros', 'Grosse'], ['dix', '10 min'], ['leger', 'Allégée'], ['mini', 'Sans matériel']];
+const modeBtns = (type, best) => (type === 'test' ? [startBtn(type, '', 'Commencer', true)] : [startBtn(type, best, 'Commencer' + (best ? ' · ' + MODE_L.find((m) => m[0] === best)[1].toLowerCase() : ''), true)].concat(MODE_L.filter(([m]) => m !== best).map(([m, l]) => startBtn(type, m, l))));
 const PAIN_ON = { epaules: 'tes épaules', poignets: 'tes poignets', coudes: 'tes coudes', genoux: 'tes genoux', dos: 'ton bas du dos', chevilles: 'tes chevilles' };
 
 function answer(id, arg) {
@@ -262,9 +265,9 @@ function answer(id, arg) {
     const pl = weekPlan().days.find((d) => d.today);
     const pre = (f.est ? 'Forme estimée à ' : 'Forme ') + f.score + ' % (' + f.word.toLowerCase() + ').';
     if (pl && pl.kind === 'repos' && f.score < 60) return { text: [pre, 'Ton plan de la semaine prévoit du repos aujourd’hui, et c’est le bon choix. ' + (restOk ? 'Ta flamme ne risque rien.' : 'Attention, ta flamme est juste : une séance courte demain.'), 'Si tu as envie de bouger : 3 minutes d’étirements ou une marche.'], btns: [btn('cooldown', 'Étirements', '', true), btn('plan', 'Ma semaine')] };
-    if (f.mode === 'record') return { text: [pre + ' Tout est au vert.', 'Fais « ' + name + ' » en entier et attaque un record sur le premier exercice principal, quand tu es le plus frais.'].concat(predictions().slice(0, 1).map((p) => 'D’après ta courbe : ' + predLine(p) + '.')), btns: [startBtn(type, '', 'Commencer', true), btn('coach-ask', 'Mes records prévus', ' data-q="record"')] };
-    if (f.mode === 'leger') return { text: [pre + (f.muscles.tired.length ? ' Encore fatigués : ' + f.muscles.tired.slice(0, 2).join(' et ') + '.' : ''), 'Fais « ' + name + ' » en version allégée : une série de moins partout. Tu gardes le rythme sans creuser la fatigue.', restOk ? 'Ou repose-toi : ta flamme tient.' : 'Ta flamme est juste : la version allégée la garde.'], btns: [startBtn(type, 'leger', 'Version allégée', true), btn('gps', 'Course facile')] };
-    return { text: [pre, 'Fais « ' + name + ' » en entier, environ ' + minutes(plan(type, ''), type === 'test') + ' minutes.', 'Vise une répétition de plus que la dernière fois sur les exercices principaux.'], btns: [startBtn(type, '', 'Commencer', true), startBtn(type, 'court', 'Version courte')] };
+    if (f.mode === 'record') return { text: [pre + ' Tout est au vert.', 'Fais « ' + name + ' » en entier et attaque un record sur le premier exercice principal, quand tu es le plus frais.'].concat(predictions().slice(0, 1).map((p) => 'D’après ta courbe : ' + predLine(p) + '.')), btns: modeBtns(type, '').concat([btn('coach-ask', 'Mes records prévus', ' data-q="record"')]) };
+    if (f.mode === 'leger') return { text: [pre + (f.muscles.tired.length ? ' Encore fatigués : ' + f.muscles.tired.slice(0, 2).join(' et ') + '.' : ''), 'Fais « ' + name + ' » en version allégée : une série de moins partout. Tu gardes le rythme sans creuser la fatigue.', restOk ? 'Ou repose-toi : ta flamme tient.' : 'Ta flamme est juste : la version allégée la garde.'], btns: modeBtns(type, 'leger').concat([btn('gps', 'Course facile')]) };
+    return { text: [pre, 'Fais « ' + name + ' » en entier, environ ' + minutes(plan(type, ''), type === 'test') + ' minutes.', 'Vise une répétition de plus que la dernière fois sur les exercices principaux.'], btns: modeBtns(type, '') };
   }
   if (id === 'forme') {
     const t = [(f.est ? 'Score estimé : ' : 'Ton score : ') + f.score + ' sur 100, ' + f.word.toLowerCase() + '.'];
@@ -617,12 +620,17 @@ function reply(a) {
   draw(true);
   setTimeout(() => { if (!$('coachchat')) return; chat.push(a); draw(false); }, 450 + Math.min(700, a.text.join(' ').length * 2));
 }
+// Réponse à une question toute faite (utilisée aussi par le coach de l'accueil, mascotte.js).
+export function answerFor(id, arg) {
+  if (id === 'pain' && !arg) return { text: ['Où as-tu mal ? Pendant 7 jours, je retirerai de tes séances les exercices qui sollicitent cette zone.'], btns: Object.keys(PAINS).map((k) => btn('coach-ask', PAINS[k], ' data-q="pain" data-arg="' + k + '" data-l="' + PAINS[k] + '"')).join('') };
+  return answer(id, arg);
+}
+export const qLabel = (id) => LBL[id] || '';
+export { suggest };
 function ask(id, arg, label) {
   if (['quick', 'prog', 'checkin'].includes(id)) { ACTIONS[id]({ dataset: {} }); return; }
   chat.push({ me: true, text: label || LBL[id] || '' });
-  let a = answer(id, arg);
-  if (id === 'pain' && !arg) a = { text: ['Où as-tu mal ? Pendant 7 jours, je retirerai de tes séances les exercices qui sollicitent cette zone.'], btns: Object.keys(PAINS).map((k) => btn('coach-ask', PAINS[k], ' data-q="pain" data-arg="' + k + '" data-l="' + PAINS[k] + '"')).join('') };
-  reply(a);
+  reply(answerFor(id, arg));
 }
 // ---------- Questions de technique précises ----------
 // Chaque fiche : l'exercice concerné (débuts de mots, ou vide = n'importe lequel) et les mots du problème.
@@ -693,6 +701,9 @@ function p30Answer() {
 // Question écrite librement.
 function askText(text) {
   chat.push({ me: true, text });
+  reply(answerText(text));
+}
+export function answerText(text) {
   const u = understand(text);
   let a;
   try {
@@ -713,7 +724,7 @@ function askText(text) {
     }
   } catch (e) { console.error(e); a = { text: ['Je n’ai pas réussi à calculer ça. Pose ta question autrement ?'] }; }
   if (a.text[0] === 'Je n’ai pas compris.') a = exoAnswer(u.exo || null);
-  reply(a);
+  return a;
 }
 
 Object.assign(ACTIONS, {

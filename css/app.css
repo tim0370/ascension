@@ -1444,3 +1444,53 @@ html.light .bodysvg .mz.on { fill: var(--mc); }
 
 /* v71 : écran Exercices, champ de recherche lisible sur la photo du haut */
 body.has-hero #exos-q { background: rgba(14, 14, 18, 0.74); border-color: rgba(255, 255, 255, 0.14); }
+
+/* v72 : le coach de l'accueil (petit bonhomme violet au bandeau, mascotte.js) */
+#homerest { display: flex; flex-direction: column; gap: 14px; }
+#homerest[hidden] { display: none; }
+.mhero { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 4px 0 6px; text-align: center; background: radial-gradient(ellipse 62% 42% at 50% 24%, rgba(124, 92, 245, 0.26), rgba(124, 92, 245, 0) 70%); }
+.masc { width: 150px; height: 142px; padding: 0; border: 0; background: none; color: inherit; -webkit-tap-highlight-color: transparent; transition: width 0.35s var(--ease), height 0.35s var(--ease); }
+.mhero.on .masc { width: 92px; height: 87px; }
+.mascsvg { display: block; width: 100%; height: 100%; overflow: visible; }
+.mbody { animation: mfloat 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes mfloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.mshadow { fill: rgba(0, 0, 0, 0.5); animation: mshadow 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes mshadow { 50% { transform: scaleX(0.8); opacity: 0.55; } }
+.mtails { animation: mtail 1.9s ease-in-out infinite; transform-box: fill-box; transform-origin: 0% 25%; }
+@keyframes mtail { 50% { transform: rotate(9deg); } }
+.meyes { animation: mlook 9s ease-in-out infinite; transition: transform 0.3s var(--ease); }
+@keyframes mlook { 0%, 40%, 100% { transform: translate(0, 0); } 47%, 58% { transform: translate(-4px, 1px); } 66%, 78% { transform: translate(4px, -1px); } }
+.meye { fill: #fff; animation: mblink 4.6s infinite; transform-box: fill-box; transform-origin: center; transition: opacity 0.2s; }
+@keyframes mblink { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(0.08); } }
+.mhappy { fill: none; stroke: #fff; stroke-width: 4.5; stroke-linecap: round; opacity: 0; transition: opacity 0.2s; }
+.masc.happy .meye, .masc.poke .meye { opacity: 0; }
+.masc.happy .mhappy, .masc.poke .mhappy { opacity: 1; }
+.masc.think .meye, .masc.talk .meye { opacity: 1; }
+.masc.think .mhappy, .masc.talk .mhappy { opacity: 0; }
+.mdots circle { fill: #B6A4FF; opacity: 0; }
+.masc.think .mdots circle { animation: mdot 1.2s ease-in-out infinite; }
+.masc.think .mdots circle:nth-child(2) { animation-delay: 0.2s; }
+.masc.think .mdots circle:nth-child(3) { animation-delay: 0.4s; }
+@keyframes mdot { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
+.masc.think .meyes { animation: none; transform: translate(4px, -5px); }
+.masc.think .mbody { animation: mthink 1.6s ease-in-out infinite; }
+@keyframes mthink { 50% { transform: rotate(-4deg) translateY(-3px); } }
+.masc.talk .mbody { animation: mtalk 0.42s ease-in-out infinite; }
+@keyframes mtalk { 50% { transform: translateY(-3px) scaleY(1.02); } }
+.masc.poke .mbody { animation: mpoke 0.7s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes mpoke { 30% { transform: scale(1.08, 0.92); } 60% { transform: scale(0.96, 1.05); } }
+.mgreet { display: flex; flex-direction: column; gap: 6px; }
+.mhi { font-family: var(--display); font-weight: 800; font-size: 34px; line-height: 1; text-transform: uppercase; color: var(--txt); }
+.msub { color: var(--soft, #ccc); font-size: 16px; line-height: 1.35; }
+.mhero.on .mgreet, .mhero.on .mchips { display: none; }
+.hchat { width: 100%; text-align: left; }
+.hchat:empty { display: none; }
+.hchat .cb { animation: cbin 0.25s ease-out both; }
+.mask { width: 100%; }
+.mchips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.mclose { display: none; }
+.mhero.on .mclose { display: inline-flex; }
+.cbbtns { gap: 8px; margin-top: 10px; }
+.cbbtns.appear { animation: cbin 0.3s ease-out both; }
+@keyframes cbin { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .mbody, .mshadow, .mtails, .meyes, .meye, .masc.think .mbody, .masc.talk .mbody { animation: none !important; } }
