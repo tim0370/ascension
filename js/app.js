@@ -120,7 +120,8 @@ function viewHome() {
     if (!state.settings.modeSet && state.workouts.length < 30) h += modeCard();
     h += painCard();
     const fc = has && progOn() && show('forme');
-    h += doneToday && progOn() ? doneCard(doneToday) : progOn() ? progCard(true, !!doneToday, fc) : routinesCard();
+    // v73 : avec le coach, la séance du jour arrive dans sa réponse (« Ma séance du jour »), plus sur l'accueil.
+    h += doneToday && progOn() ? doneCard(doneToday) : progOn() ? (masc ? '' : progCard(true, !!doneToday, fc)) : routinesCard();
     h += momentCard(!!doneToday);
     for (const k of homeOrder()) {
       if (k === 'forme' && fc) h += formeCard(todayList());

@@ -1494,3 +1494,8 @@ body.has-hero #exos-q { background: rgba(14, 14, 18, 0.74); border-color: rgba(2
 .cbbtns.appear { animation: cbin 0.3s ease-out both; }
 @keyframes cbin { from { opacity: 0; transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) { .mbody, .mshadow, .mtails, .meyes, .meye, .masc.think .mbody, .masc.talk .mbody { animation: none !important; } }
+
+/* v73 : la carte de la séance du jour dans la réponse du coach */
+.mcard { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.mcard.appear { animation: cbin 0.35s ease-out both; }
+.mmodes { display: flex; flex-direction: column; gap: 8px; padding: 0 2px; }

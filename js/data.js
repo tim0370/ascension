@@ -905,6 +905,9 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 73, items: [
+    'Demande « Ma séance du jour » au coach : il t’envoie la carte de ta séance, avec Courte, Commencer et les autres formats (grosse, 10 min, allégée, sans matériel). La carte n’est plus sur l’accueil.',
+  ] },
   { v: 72, items: [
     'Nouvel accueil : ton coach est un petit bonhomme, en haut. Pose-lui une question (« ma séance du jour », « je suis fatigué », « j’ai 20 minutes »…) ou touche une question toute prête : il réfléchit, puis t’écrit sa réponse juste en dessous.',
     'Quand tu lui demandes ta séance, tu choisis directement le format dans sa réponse : normale, courte, grosse, 10 min, allégée ou sans matériel.',

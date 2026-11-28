@@ -224,7 +224,7 @@ export function coachCard() {
 
 // ---------- Les réponses aux questions ----------
 const Q = [
-  ['today', 'Que faire aujourd’hui ?'],
+  ['today', 'Ma séance du jour'],
   ['forme', 'Pourquoi ce score de forme ?'],
   ['short', 'J’ai seulement 15 minutes'],
   ['tired', 'Je suis fatigué'],

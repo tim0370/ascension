@@ -4,7 +4,8 @@
 // États du bonhomme (classe sur .masc) : repos (il flotte, cligne, regarde autour), think (il réfléchit),
 // talk (il écrit sa réponse), happy (séance faite, ou on le touche).
 import { answerFor, answerText, qLabel, suggest } from './coach.js';
-import { resetCtx } from './cerveau.js';
+import { resetCtx, understand } from './cerveau.js';
+import { progCard } from './programme.js';
 import { state } from './store.js';
 import { esc, ACTIONS, ICON } from './ui.js';
 
@@ -49,7 +50,7 @@ const hello = () => { const h = new Date().getHours(); return h < 5 || h >= 18 ?
 function bubbleHtml(m) {
   if (m.me) return '<div class="cb me">' + esc(m.text) + '</div>';
   const b = m.btns ? [].concat(m.btns).join('') : '';
-  return '<div class="cb mcb">' + m.text.map((p) => '<p>' + esc(p) + '</p>').join('') + (b ? '<div class="row wrap cbbtns">' + b + '</div>' : '') + '</div>';
+  return '<div class="cb mcb">' + m.text.map((p) => '<p>' + esc(p) + '</p>').join('') + (b ? '<div class="row wrap cbbtns">' + b + '</div>' : '') + '</div>' + (m.card ? '<div class="mcard">' + m.card + '</div>' : '');
 }
 
 // Le bloc du haut de l'accueil. rest = le HTML des cartes, caché pendant la discussion.
@@ -105,6 +106,7 @@ function write(a) {
     show(full.length);
     const b = a.btns ? [].concat(a.btns).join('') : '';
     if (b) el.insertAdjacentHTML('beforeend', '<div class="row wrap cbbtns appear">' + b + '</div>');
+    if (a.card) el.insertAdjacentHTML('afterend', '<div class="mcard appear">' + a.card + '</div>');
     el.onclick = null;
     mood('');
     busy = false;
@@ -140,11 +142,28 @@ function respond(meText, compute) {
   }, wait);
 }
 
+// « Ma séance du jour » : le coach envoie la carte de la séance (celle qui était sur l'accueil), avec tous les formats.
+const MORE_MODES = [['court', 'Courte'], ['gros', 'Grosse'], ['dix', '10 min'], ['leger', 'Allégée'], ['mini', 'Sans matériel']];
+function todayAnswer() {
+  if (state.active) return { text: ['Ta séance « ' + (state.active.label || state.active.title || '') + ' » est déjà en cours. On la reprend ?'], btns: ['<button type="button" class="pill sm gold-btn" data-tab="workout">Reprendre ma séance</button>'] };
+  const a = answerFor('today');
+  if (context().happy) return a; // déjà entraîné aujourd'hui : le coach parle de récupération
+  const card = progCard(true, false, false);
+  const type = (card.match(/data-act="prog-start" data-type="([^"]*)"/) || [])[1];
+  const inCard = new Set([...card.matchAll(/data-act="prog-start" data-type="[^"]*" data-mode="([^"]*)"/g)].map((m) => m[1]));
+  const more = type && type !== 'test' ? MORE_MODES.filter(([m]) => !inCard.has(m)) : [];
+  const text = ['Voici ta séance du jour.'].concat(a.text.filter((t) => !/^Forme/.test(t) && !/^Fais « .* » en entier, environ/.test(t)));
+  return { text, card: card + (more.length ? '<div class="mmodes"><span class="small mut">Autres formats</span><div class="row wrap" style="gap:8px">' + more.map(([m, l]) => '<button type="button" class="pill sm glass" data-act="prog-start" data-type="' + type + '" data-mode="' + m + '">' + l + '</button>').join('') + '</div></div>' : '') };
+}
 export function homeAsk(id, arg, label) {
   if (['quick', 'prog', 'checkin'].includes(id)) { ACTIONS[id]({ dataset: {} }); return; }
-  respond(label || qLabel(id), () => answerFor(id, arg));
+  respond(label || qLabel(id), () => (id === 'today' ? todayAnswer() : answerFor(id, arg)));
 }
-function homeText(text) { respond(text, () => answerText(text)); }
+function homeText(text) {
+  let today = false;
+  try { today = understand(text).id === 'today'; } catch (e) { /* rien */ }
+  respond(text, () => (today ? todayAnswer() : answerText(text)));
+}
 
 document.addEventListener('submit', (ev) => {
   if (ev.target.id !== 'hform') return;
@@ -157,8 +176,9 @@ document.addEventListener('submit', (ev) => {
 });
 
 // Les boutons des réponses du coach (« coach-ask ») parlent à la discussion ouverte : la fenêtre du coach, ou l'accueil.
-const origAsk = ACTIONS['coach-ask'], origGo = ACTIONS['coach-go'];
+const origAsk = ACTIONS['coach-ask'], origGo = ACTIONS['coach-go'], origStart = ACTIONS['prog-start'];
 Object.assign(ACTIONS, {
+  'prog-start': (el) => { if (!$('coachchat') && chatting() && !state.active) { chat = []; resetCtx(); busy = false; } origStart(el); },
   hask: (el) => homeAsk(el.dataset.q, el.dataset.arg, el.dataset.l),
   'coach-ask': (el) => (!$('coachchat') && $('hchat') ? homeAsk(el.dataset.q, el.dataset.arg, el.dataset.l) : origAsk(el)),
   'coach-go': (el) => { if (!$('coachchat')) { chat = []; resetCtx(); } origGo(el); },
