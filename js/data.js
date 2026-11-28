@@ -905,6 +905,9 @@ export const WARMUP = [
 // Nouveautés affichées une fois après chaque mise à jour (la plus récente en premier).
 // À chaque version : augmenter VERSION dans ui.js et dans sw.js, puis ajouter un bloc ici.
 export const NEWS = [
+  { v: 76, items: [
+    'La petite IA du coach se met à jour toute seule quand elle apprend de nouvelles phrases (seul un petit fichier est retéléchargé).',
+  ] },
   { v: 75, items: [
     'Pour quitter la discussion avec le coach, touche le petit bonhomme. Elle se ferme aussi toute seule quand tu changes d’écran ou que tu lances une séance, un chrono ou une course.',
     'Le coach suit la conversation : après ta séance du jour, demande « et en plus court ? », « plus dur » ou « sans matériel ». Sous chaque réponse, une ou deux questions pour continuer.',

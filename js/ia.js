@@ -34,7 +34,9 @@ export function iaStart() {
       if (cacheOk()) {
         const c = await caches.open(IA_CACHE);
         const miss = [];
-        for (const x of L) if (!(await c.match(BASE + x.f))) miss.push(x);
+        // Un fichier change de taille quand on refait l'IA (nouvelles phrases) : on le retélécharge.
+        const same = async (hit, x) => { if (!hit) return false; const n = hit.headers.get('X-N'); if (n) return +n === x.n; if (x.n > 2e6) return true; return (await hit.clone().arrayBuffer()).byteLength === x.n; };
+        for (const x of L) if (!(await same(await c.match(BASE + x.f), x))) miss.push(x);
         if (miss.length) {
           st = 'dl'; pct = 0; tell();
           const total = miss.reduce((a, x) => a + x.n, 0);
@@ -50,7 +52,7 @@ export function iaStart() {
               const p = Math.min(99, Math.floor((got / total) * 100));
               if (p !== pct) { pct = p; tell(); }
             }
-            await c.put(BASE + x.f, new Response(new Blob(parts), { headers: { 'Content-Type': x.f.endsWith('.mjs') ? 'text/javascript' : 'application/octet-stream' } }));
+            await c.put(BASE + x.f, new Response(new Blob(parts), { headers: { 'Content-Type': x.f.endsWith('.mjs') ? 'text/javascript' : 'application/octet-stream', 'X-N': String(x.n) } }));
           }
         }
       }
